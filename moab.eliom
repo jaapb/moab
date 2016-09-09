@@ -22,6 +22,7 @@ let login_service = create ~id:Global
 let logout_service = create ~id:Global
   ~meth:(Post (unit, unit))
  ();;
+let ldap_urls = ref []
 
 let user = Eliom_reference.eref ~scope:Eliom_common.default_session_scope
   None;;
@@ -29,10 +30,19 @@ let login_err = Eliom_reference.eref ~scope:Eliom_common.request_scope
   None;;
 
 let login_action () (name, password) =
-  let%lwt u = Lwt.return (Some ("Jaap1", "Jaap Boender", true)) in
-  match u with
-  | Some (uid, name, is_admin) -> Eliom_reference.set user (Some (uid, name, is_admin))
-  | None -> Eliom_reference.set login_err (Some "Unknown user or wrong password")
+	if password = "" then Eliom_reference.set login_err (Some "Empty password")
+	else
+		try
+		let conn = Ldap_funclient.init (List.rev !ldap_urls) in
+			Ldap_funclient.bind_s ~who:(Printf.sprintf "Uni\\%s" name) ~cred:password ~auth_method:`SIMPLE conn;
+			Eliom_reference.set user (Some name)
+		with
+		| Ldap_types.LDAP_Failure (`INVALID_CREDENTIALS, _, _) ->
+			Eliom_reference.set login_err (Some "Unknown user or wrong password")
+		| Ldap_types.LDAP_Failure (_, s, _) ->
+			Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
+		| e ->
+			Eliom_reference.set login_err (Some (Printexc.to_string e))
 ;;
 
 let logout_action () () =
@@ -64,7 +74,7 @@ let login_box () =
       | Some e -> [tr [td ~a:[a_colspan 3; a_class ["error"]] [pcdata e]]]
       )
     )]) ()]
-  | Some (_, n, _) -> [Form.post_form ~service:logout_service (fun () ->
+  | Some n -> [Form.post_form ~service:logout_service (fun () ->
     [table [
       tr [
         td [pcdata (Printf.sprintf "Logged in as %s" n)]
@@ -117,5 +127,16 @@ let main_page () () =
 	(fun e -> error_page (Printexc.to_string e))
 ;;
 
+let ldap_configuration = Ocsigen_extensions.Configuration.element
+	~name:"ldap"
+	~obligatory:true
+	~pcdata:(fun s -> ldap_urls := s::!ldap_urls)
+	()
+;;
+
 let () =
-  Moab_app.register ~service:main_service main_page;;
+	Eliom_config.parse_config [ldap_configuration];
+  Moab_app.register ~service:main_service main_page;
+	Eliom_registration.Action.register ~service:login_service login_action;
+	Eliom_registration.Action.register ~service:logout_service logout_action
+;;
