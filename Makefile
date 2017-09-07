@@ -12,9 +12,9 @@ include Makefile.options
 ##			      Internals
 
 ## Required binaries
-ELIOMC            := eliomc -ppx
-ELIOMOPT          := eliomopt -ppx
-JS_OF_ELIOM       := js_of_eliom -ppx
+ELIOMC            := eliomc
+ELIOMOPT          := eliomopt
+JS_OF_ELIOM       := js_of_eliom
 ELIOMDEP          := eliomdep
 OCSIGENSERVER     := ocsigenserver
 OCSIGENSERVER.OPT := ocsigenserver.opt
@@ -153,36 +153,43 @@ $(TEST_PREFIX)${ETCDIR}/${PROJECT_NAME}-test.conf: ${PROJECT_NAME}.conf.in Makef
 ## Server side compilation
 
 SERVER_INC  := ${addprefix -package ,${SERVER_PACKAGES}}
+SERVER_DB_INC := ${addprefix -package ,${SERVER_PACKAGES} ${SERVER_DB_PACKAGES}}
 
 ${ELIOM_TYPE_DIR}/%.type_mli: %.eliom
-	${ELIOMC} -infer ${SERVER_INC} $<
+	${ELIOMC} -ppx -infer ${SERVER_INC} $<
 
 $(TEST_PREFIX)$(LIBDIR)/$(PROJECT_NAME).cma: $(call objs,$(ELIOM_SERVER_DIR),cmo,$(SERVER_FILES)) | $(TEST_PREFIX)$(LIBDIR)
 	${ELIOMC} -a -o $@ $(GENERATE_DEBUG) \
-          $(call depsort,$(ELIOM_SERVER_DIR),cmo,-server,$(SERVER_INC),$(SERVER_FILES))
+          $(call depsort,$(ELIOM_SERVER_DIR),cmo,-server,$(SERVER_DB_INC),$(SERVER_FILES))
 
 $(TEST_PREFIX)$(LIBDIR)/$(PROJECT_NAME).cmxa: $(call objs,$(ELIOM_SERVER_DIR),cmx,$(SERVER_FILES)) | $(TEST_PREFIX)$(LIBDIR)
 	${ELIOMOPT} -a -o $@ $(GENERATE_DEBUG) \
-          $(call depsort,$(ELIOM_SERVER_DIR),cmx,-server,$(SERVER_INC),$(SERVER_FILES))
+          $(call depsort,$(ELIOM_SERVER_DIR),cmx,-server,$(SERVER_DB_INC),$(SERVER_FILES))
 
 %.cmxs: %.cmxa
 	$(ELIOMOPT) -shared -linkall -o $@ $(GENERATE_DEBUG) $<
 
+${ELIOM_SERVER_DIR}/%_db.cmi: %_db.mli
+	${ELIOMC} -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmi: %.mli
 	${ELIOMC} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
 ${ELIOM_SERVER_DIR}/%.cmi: %.eliomi
-	${ELIOMC} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
+	${ELIOMC} -ppx -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
+${ELIOM_SERVER_DIR}/%_db.cmo: %_db.ml
+	${ELIOMC} -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmo: %.ml
 	${ELIOMC} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmo: %.eliom
-	${ELIOMC} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
+	${ELIOMC} -ppx -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
+${ELIOM_SERVER_DIR}/%_db.cmx: %_db.ml
+	${ELIOMOPT} -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmx: %.ml
 	${ELIOMOPT} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmx: %.eliom
-	${ELIOMOPT} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
+	${ELIOMOPT} -ppx -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
 
 ##----------------------------------------------------------------------
@@ -219,7 +226,7 @@ include .depend
 	cat $^ > $@
 
 $(DEPSDIR)/%.server: % | $(DEPSDIR)
-	$(ELIOMDEP) -server -ppx $(SERVER_INC) $< > $@
+	$(ELIOMDEP) -server -ppx $(SERVER_DB_INC) $< > $@
 
 $(DEPSDIR)/%.client: % | $(DEPSDIR)
 	$(ELIOMDEP) -client -ppx $(CLIENT_INC) $< > $@
