@@ -13,13 +13,13 @@ module Moab_app =
       let global_data_path = None
     end)
 
-let main_service = create ~id:(Path [])
+let main_service = create ~path:(Path [])
 	~meth:(Get unit)
 	();;
-let login_service = create ~id:Global
+let login_service = create ~path:No_path
   ~meth:(Post (unit, (string "name" ** string "password")))
 	();;
-let logout_service = create ~id:Global
+let logout_service = create ~path:No_path
   ~meth:(Post (unit, unit))
  ();;
 let ldap_urls = ref []
