@@ -30,19 +30,23 @@ let login_err = Eliom_reference.eref ~scope:Eliom_common.request_scope
   None;;
 
 let login_action () (name, password) =
-	if password = "" then Eliom_reference.set login_err (Some "Empty password")
-	else
-		try
-		let conn = Ldap_funclient.init (List.rev !ldap_urls) in
-			Ldap_funclient.bind_s ~who:(Printf.sprintf "Uni\\%s" name) ~cred:password ~auth_method:`SIMPLE conn;
-			Eliom_reference.set user (Some name)
-		with
-		| Ldap_types.LDAP_Failure (`INVALID_CREDENTIALS, _, _) ->
-			Eliom_reference.set login_err (Some "Unknown user or wrong password")
-		| Ldap_types.LDAP_Failure (_, s, _) ->
-			Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
-		| e ->
-			Eliom_reference.set login_err (Some (Printexc.to_string e))
+	match !ldap_urls with
+	| [] -> Eliom_reference.set user (Some name)
+	| l ->
+		if password = "" then
+			Eliom_reference.set login_err (Some "Empty password")
+		else
+			try
+			let conn = Ldap_funclient.init (List.rev l) in
+				Ldap_funclient.bind_s ~who:(Printf.sprintf "Uni\\%s" name) ~cred:password ~auth_method:`SIMPLE conn;
+				Eliom_reference.set user (Some name)
+			with
+			| Ldap_types.LDAP_Failure (`INVALID_CREDENTIALS, _, _) ->
+				Eliom_reference.set login_err (Some "Unknown user or wrong password")
+			| Ldap_types.LDAP_Failure (_, s, _) ->
+				Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
+			| e ->
+				Eliom_reference.set login_err (Some (Printexc.to_string e))
 ;;
 
 let logout_action () () =
@@ -129,7 +133,7 @@ let main_page () () =
 
 let ldap_configuration = Ocsigen_extensions.Configuration.element
 	~name:"ldap"
-	~obligatory:true
+	~obligatory:false
 	~pcdata:(fun s -> ldap_urls := s::!ldap_urls)
 	()
 ;;
