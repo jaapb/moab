@@ -99,7 +99,13 @@ let container cts_div =
 		Html.F.(body [
 			div ~a:[a_class ["layout"]; a_id "header"] [h1 [pcdata "CSD 3600"]];
       div ~a:[a_class ["layout"]; a_id "logbox"] box;
-      div ~a:[a_class ["layout"]; a_id "menu"] [];
+      div ~a:[a_class ["layout"]; a_id "menu"] [
+				ul [
+					li [pcdata "Attendance recording"];
+					li [pcdata "Presentation feedback"];
+					li [pcdata "Blog"]
+				]
+			];
       div ~a:[a_class ["layout"]; a_id "contents"] cts_div;
       div ~a:[a_class ["layout"]; a_id "footer"] [
         img ~alt:"Powered by Ocsigen"
