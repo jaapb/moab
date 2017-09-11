@@ -33,12 +33,19 @@ let get_db () =
 		end
 ;;
 
-let find_sessions () =
+let find_sessions_now () =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT type, weekday, start_time, end_time \
+		"SELECT type \
 		FROM sessions \
-		WHERE year = EXTRACT(year FROM now ())"
+		WHERE year = EXTRACT(year FROM now())
+		AND EXTRACT(week FROM now()) BETWEEN start_week AND end_week
+		AND weekday = EXTRACT(dow FROM now())
+		AND localtime BETWEEN start_time AND end_time" >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| ["L"] -> Lwt.return `Lecture
+	| ["S"] -> Lwt.return `Seminar
+	| ["T"] -> Lwt.return `Test
+	| _ -> Lwt.fail (Invalid_argument "multiple sessions found")
 ;;
-
-

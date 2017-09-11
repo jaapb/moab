@@ -95,11 +95,6 @@ let container cts_div =
 			div ~a:[a_class ["layout"]; a_id "header"] [h1 [pcdata "CSD 3600"]];
       div ~a:[a_class ["layout"]; a_id "logbox"] box;
       div ~a:[a_class ["layout"]; a_id "menu"] [
-				ul [
-					li [pcdata "Attendance recording"];
-					li [pcdata "Presentation feedback"];
-					li [pcdata "Blog"]
-				]
 			];
       div ~a:[a_class ["layout"]; a_id "contents"] cts_div;
       div ~a:[a_class ["layout"]; a_id "footer"] [
@@ -126,7 +121,12 @@ let main_page () () =
 		| None -> container []
 		| Some _ -> container
 			[
-				h1 [pcdata "Welcome"]
+				h1 [pcdata "Welcome"];
+				ul [
+					li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
+					li [pcdata "Presentation feedback"];
+					li [pcdata "Blog"]
+				]
 			]
 	)
 	(fun e -> error_page (Printexc.to_string e))
