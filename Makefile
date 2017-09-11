@@ -225,8 +225,11 @@ include .depend
 .depend: $(patsubst %,$(DEPSDIR)/%.server,$(SERVER_FILES)) $(patsubst %,$(DEPSDIR)/%.client,$(CLIENT_FILES))
 	cat $^ > $@
 
+$(DEPSDIR)/%_db.ml.server: %_db.ml | $(DEPSDIR)
+	$(ELIOMDEP) -server $(SERVER_DB_INC) $< > $@
+
 $(DEPSDIR)/%.server: % | $(DEPSDIR)
-	$(ELIOMDEP) -server -ppx $(SERVER_DB_INC) $< > $@
+	$(ELIOMDEP) -server -ppx $(SERVER_INC) $< > $@
 
 $(DEPSDIR)/%.client: % | $(DEPSDIR)
 	$(ELIOMDEP) -client -ppx $(CLIENT_INC) $< > $@
