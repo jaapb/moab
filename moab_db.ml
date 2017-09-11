@@ -36,9 +36,9 @@ let get_db () =
 let find_user user_id =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT user_id, name, is_admin \
+		"SELECT id, name, is_admin \
 		FROM users \
-		WHERE user_id = upper($user_id)" >>=
+		WHERE id = upper($user_id)" >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [f] -> Lwt.return f
@@ -48,7 +48,7 @@ let find_user user_id =
 let find_sessions_now () =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT type \
+		"SELECT id, type \
 		FROM sessions \
 		WHERE year = EXTRACT(year FROM now())
 		AND EXTRACT(week FROM now()) BETWEEN start_week AND end_week
@@ -56,8 +56,28 @@ let find_sessions_now () =
 		AND localtime BETWEEN start_time AND end_time" >>=
 	function
 	| [] -> Lwt.fail Not_found
-	| ["L"] -> Lwt.return `Lecture
-	| ["S"] -> Lwt.return `Seminar
-	| ["T"] -> Lwt.return `Test
+	| [id, "L"] -> Lwt.return (id, `Lecture)
+	| [id, "S"] -> Lwt.return (id, `Seminar)
+	| [id, "T"] -> Lwt.return (id, `Test)
 	| _ -> Lwt.fail_with "multiple sessions found"
+;;
+
+let get_session_code session_id week =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT code \
+		FROM session_codes \
+		WHERE session_id = $session_id AND week = $week" >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [c] -> Lwt.return c
+	| _ -> Lwt.fail_with "multiple sessions found"
+;;
+
+let register_attendance session_id user_id week =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"INSERT INTO attendance (session_id, user_id, week) \
+		VALUES \
+		($session_id, $user_id, $week)"
 ;;

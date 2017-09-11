@@ -9,30 +9,83 @@
 [%%server
 	open Services
 	open Moab
+	open CalendarLib
 ]
 
 let no_session_found () =
 	container
 	[
 		h1 [pcdata "No session found"];
-		p [pcdata "No session was found at this time. This action will be logged."]
+		p [pcdata "No session was found at this time. This action will be logged."];
+		p [a ~service:main_service [pcdata "Return to the main menu"] ()]
 	]
 ;;
 
+let do_attendance_page () (user_id, (session_id, code)) =
+	Ocsigen_messages.console (fun () -> Printf.sprintf "Registering for %s %ld (%s)" user_id session_id code);
+	Lwt.catch (fun () ->
+		let week = Date.week (Date.today ()) in
+		let%lwt db_code = Moab_db.get_session_code session_id week in
+		if db_code = code then
+			let%lwt () = Moab_db.register_attendance session_id user_id week in
+			container
+			[
+				h1 [pcdata "Attendance"];
+				p [pcdata "Your attendance has been successfully registered for this session."];
+				p [a ~service:main_service [pcdata "Return to main menu"] ()]
+			]
+		else
+			container
+			[
+				h1 [pcdata "Attendance"];
+				p [pcdata "That is not the right code for this session. This action will be logged."];
+			]
+	)
+	(function
+	| Not_found -> error_page "User or session does not exist"
+	| e -> error_page (Printexc.to_string e)
+	)
+;;
+
 let attendance_page () () =
+	let do_attendance_service = create_attached_post ~fallback:attendance_service
+		~post_params:(string "user_id" ** int32 "session_id" ** string "code") () in
+	let register_attendance_form uid sid =
+	begin
+		Form.post_form ~service:do_attendance_service
+		(fun (user_id, (session_id, code)) ->
+		[
+			Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
+			Form.input ~input_type:`Hidden ~name:session_id ~value:sid Form.int32;
+			table
+			[
+				tr [
+					td [pcdata "Code:"];
+					td [Form.input ~input_type:`Text ~name:code Form.string]
+				];
+				tr
+				[
+					td ~a:[a_colspan 2] [Form.input ~input_type:`Submit ~value:"Register" Form.string]
+				]		
+			]
+		]
+		) ()
+	end in
+	Moab_app.register ~scope:Eliom_common.default_session_scope
+		~service:do_attendance_service do_attendance_page;
 	Lwt.catch (fun () ->
 		let%lwt u = Eliom_reference.get user in
 		match u with
 		| None -> container []
-		| Some _ -> 
-			let%lwt session = Moab_db.find_sessions_now () in
-			match session with
+		| Some (uid, _, _) -> 
+			let%lwt (session_id, session_type) = Moab_db.find_sessions_now () in
+			match session_type with
 			| `Lecture | `Test ->
 				container
-				[
-					h1 [pcdata "Lecture"];
-					p [pcdata "You can register your attendance."]
-				]
+				(	
+					h1 [pcdata "Lecture"]::
+					[register_attendance_form uid session_id]
+				)
 			| `Seminar ->
 				container
 				[
