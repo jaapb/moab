@@ -42,11 +42,11 @@ let attendance_page () () =
 	)
 	(function
 	| Not_found -> no_session_found ()
-	| Invalid_argument s -> 
+	| Failure s -> 
 		container
 		[
 			h1 [pcdata "Error"];
-			p [pcdata (Printf.sprintf  "There was an inconsistency in the database (message: %s)." s)]
+			p [pcdata (Printf.sprintf "There was an inconsistency in the database (message: %s)." s)]
 		]
 	| e -> error_page (Printexc.to_string e))
 ;;

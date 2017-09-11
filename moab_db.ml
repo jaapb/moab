@@ -47,5 +47,5 @@ let find_sessions_now () =
 	| ["L"] -> Lwt.return `Lecture
 	| ["S"] -> Lwt.return `Seminar
 	| ["T"] -> Lwt.return `Test
-	| _ -> Lwt.fail (Invalid_argument "multiple sessions found")
+	| _ -> Lwt.fail_with "multiple sessions found"
 ;;
