@@ -28,8 +28,8 @@ let login_action () (name, password) =
 	let do_login name =
 	begin
 		Lwt.catch (fun () ->
-			let%lwt is_admin = Moab_db.find_user name in
-			Eliom_reference.set user (Some (name, is_admin))
+			let%lwt (user_id, is_admin) = Moab_db.find_user name in
+			Eliom_reference.set user (Some (user_id, is_admin))
 		)
 		(function
 		| Not_found -> Eliom_reference.set login_err (Some "Unknown user or wrong password")

@@ -36,9 +36,9 @@ let get_db () =
 let find_user user_id =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT is_admin \
+		"SELECT user_id, is_admin \
 		FROM users \
-		WHERE user_id = $user_id" >>=
+		WHERE user_id = upper($user_id)" >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [f] -> Lwt.return f
