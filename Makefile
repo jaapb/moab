@@ -127,6 +127,9 @@ SED_ARGS += -e "s|%%LIBDIR%%|%%PREFIX%%$(LIBDIR)|g"
 SED_ARGS += -e "s|%%WARNING%%|$(EDIT_WARNING)|g"
 SED_ARGS += -e "s|%%PACKAGES%%|$(FINDLIB_PACKAGES)|g"
 SED_ARGS += -e "s|%%ELIOMSTATICDIR%%|%%PREFIX%%$(ELIOMSTATICDIR)|g"
+SED_ARGS += -e "s|%%PGHOST%%|%%PREFIX%%$(PGHOST)|g"
+SED_ARGS += -e "s|%%PGDATABASE%%|%%PREFIX%%$(PGDATABASE)|g"
+SED_ARGS += -e "s|%%PGUSER%%|%%PREFIX%%$(PGUSER)|g"
 ifeq ($(DEBUG),yes)
   SED_ARGS += -e "s|%%DEBUGMODE%%|\<debugmode /\>|g"
 else

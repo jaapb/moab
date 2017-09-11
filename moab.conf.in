@@ -24,9 +24,9 @@
       <static dir="%%ELIOMSTATICDIR%%" />
       <eliommodule module="%%LIBDIR%%/%%PROJECT_NAME%%.cma">
 				<database>
-					<server></server>
-					<name></name>
-					<user></user>
+					<server>%%PGHOST%%</server>
+					<name>%%PGDATABASE%%</name>
+					<user>%%PGUSER%%</user>
 				</database>
 			</eliommodule>
       <eliom/>
