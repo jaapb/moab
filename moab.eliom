@@ -1,9 +1,13 @@
 [%%shared
-    open Eliom_lib
-    open Eliom_content
-    open Html.D
-		open Eliom_service
-		open Eliom_parameter
+	open Eliom_lib
+	open Eliom_content
+	open Html.D
+	open Eliom_service
+	open Eliom_parameter
+]
+
+[%%server
+	open Services
 ]
 
 module Moab_app =
@@ -144,8 +148,27 @@ let ldap_configuration = Ocsigen_extensions.Configuration.element
 	()
 ;;
 
+let database_server_el = Ocsigen_extensions.Configuration.element
+	~name:"server" ~obligatory:true
+	~pcdata:(fun s -> Moab_db.database_server := s) ();;
+let database_port_el = Ocsigen_extensions.Configuration.element
+	~name:"port"
+	~pcdata:(fun s -> Moab_db.database_port := Some (int_of_string s)) ();;
+let database_name_el = Ocsigen_extensions.Configuration.element
+	~name:"name" ~obligatory:true
+	~pcdata:(fun s -> Moab_db.database_name := s) ();;
+let database_user_el = Ocsigen_extensions.Configuration.element
+	~name:"user" ~obligatory:true
+	~pcdata:(fun s -> Moab_db.database_user := s) ();;
+let database_password_el = Ocsigen_extensions.Configuration.element
+	~name:"password" ~pcdata:(fun s -> Moab_db.database_password := Some s) ();;
+let database_el = Ocsigen_extensions.Configuration.element
+	~name:"database" ~obligatory:true ~elements:[database_server_el;
+		database_port_el; database_name_el; database_user_el; database_password_el]
+	();;
+
 let () =
-	Eliom_config.parse_config [ldap_configuration];
+	Eliom_config.parse_config [ldap_configuration; database_el];
   Moab_app.register ~service:main_service main_page;
 	Eliom_registration.Action.register ~service:login_service login_action;
 	Eliom_registration.Action.register ~service:logout_service logout_action
