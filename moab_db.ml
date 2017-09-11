@@ -36,7 +36,7 @@ let get_db () =
 let find_user user_id =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT user_id, is_admin \
+		"SELECT user_id, name, is_admin \
 		FROM users \
 		WHERE user_id = upper($user_id)" >>=
 	function

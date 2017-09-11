@@ -28,8 +28,8 @@ let login_action () (name, password) =
 	let do_login name =
 	begin
 		Lwt.catch (fun () ->
-			let%lwt (user_id, is_admin) = Moab_db.find_user name in
-			Eliom_reference.set user (Some (user_id, is_admin))
+			let%lwt (user_id, fname, is_admin) = Moab_db.find_user name in
+			Eliom_reference.set user (Some (user_id, fname, is_admin))
 		)
 		(function
 		| Not_found -> Eliom_reference.set login_err (Some "Unknown user or wrong password")
@@ -81,10 +81,10 @@ let login_box () =
       | Some e -> [tr [td ~a:[a_colspan 3; a_class ["error"]] [pcdata e]]]
       )
     )]) ()]
-  | Some (n, ad) -> [Form.post_form ~service:logout_service (fun () ->
+  | Some (n, fn, ad) -> [Form.post_form ~service:logout_service (fun () ->
     [table [
       tr [
-        td [pcdata (Printf.sprintf "Logged in as %s%s" n
+        td [pcdata (Printf.sprintf "Logged in as %s%s" fn
 					(if ad then " (admin)" else ""))]
       ];
       tr [
