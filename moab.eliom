@@ -25,8 +25,20 @@ let login_err = Eliom_reference.eref ~scope:Eliom_common.request_scope
   None;;
 
 let login_action () (name, password) =
+	let do_login name =
+	begin
+		Lwt.catch (fun () ->
+			let%lwt is_admin = Moab_db.find_user name in
+			Eliom_reference.set user (Some (name, is_admin))
+		)
+		(function
+		| Not_found -> Eliom_reference.set login_err (Some "Unknown user or wrong password")
+		| Failure s -> Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
+		| e -> Eliom_reference.set login_err (Some (Printexc.to_string e))
+		)
+	end in
 	match !ldap_urls with
-	| [] -> Eliom_reference.set user (Some name)
+	| [] -> do_login name
 	| l ->
 		if password = "" then
 			Eliom_reference.set login_err (Some "Empty password")
@@ -34,7 +46,7 @@ let login_action () (name, password) =
 			try
 			let conn = Ldap_funclient.init (List.rev l) in
 				Ldap_funclient.bind_s ~who:(Printf.sprintf "Uni\\%s" name) ~cred:password ~auth_method:`SIMPLE conn;
-				Eliom_reference.set user (Some name)
+				do_login name
 			with
 			| Ldap_types.LDAP_Failure (`INVALID_CREDENTIALS, _, _) ->
 				Eliom_reference.set login_err (Some "Unknown user or wrong password")
@@ -64,19 +76,16 @@ let login_box () =
         td [Form.input ~input_type:`Password ~name:password Form.string];
         td [Form.input ~input_type:`Submit ~value:"Login" Form.string]
       ]::
-      (*tr [
-        td ~a:[a_colspan 3]
-          [a ~service:register_service [pcdata "Create a new account"] ()]
-      ]::*)
       (match err with
       | None -> []
       | Some e -> [tr [td ~a:[a_colspan 3; a_class ["error"]] [pcdata e]]]
       )
     )]) ()]
-  | Some n -> [Form.post_form ~service:logout_service (fun () ->
+  | Some (n, ad) -> [Form.post_form ~service:logout_service (fun () ->
     [table [
       tr [
-        td [pcdata (Printf.sprintf "Logged in as %s" n)]
+        td [pcdata (Printf.sprintf "Logged in as %s%s" n
+					(if ad then " (admin)" else ""))]
       ];
       tr [
         td [Form.input ~input_type:`Submit ~value:"Logout" Form.string]

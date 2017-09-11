@@ -33,6 +33,18 @@ let get_db () =
 		end
 ;;
 
+let find_user user_id =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT is_admin \
+		FROM users \
+		WHERE user_id = $user_id" >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [f] -> Lwt.return f
+	| _ -> Lwt.fail_with "multiple users found"
+;;
+
 let find_sessions_now () =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
