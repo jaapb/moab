@@ -17,15 +17,6 @@ module Moab_app =
       let global_data_path = None
     end)
 
-let main_service = create ~path:(Path [])
-	~meth:(Get unit)
-	();;
-let login_service = create ~path:No_path
-  ~meth:(Post (unit, (string "name" ** string "password")))
-	();;
-let logout_service = create ~path:No_path
-  ~meth:(Post (unit, unit))
- ();;
 let ldap_urls = ref []
 
 let user = Eliom_reference.eref ~scope:Eliom_common.default_session_scope
