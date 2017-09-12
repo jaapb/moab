@@ -21,25 +21,16 @@ let no_session_found () =
 	]
 ;;
 
-let do_attendance_page () (user_id, (session_id, code)) =
-	Ocsigen_messages.console (fun () -> Printf.sprintf "Registering for %s %ld (%s)" user_id session_id code);
+let do_attendance_page () (user_id, session_id) =
 	Lwt.catch (fun () ->
 		let week = Date.week (Date.today ()) in
-		let%lwt db_code = Moab_db.get_session_code session_id week in
-		if db_code = code then
-			let%lwt () = Moab_db.register_attendance session_id user_id week in
-			container
-			[
-				h1 [pcdata "Attendance"];
-				p [pcdata "Your attendance has been successfully registered for this session."];
-				p [a ~service:main_service [pcdata "Return to main menu"] ()]
-			]
-		else
-			container
-			[
-				h1 [pcdata "Attendance"];
-				p [pcdata "That is not the right code for this session. This action will be logged."];
-			]
+		let%lwt () = Moab_db.register_attendance session_id user_id week in
+		container
+		[
+			h1 [pcdata "Attendance"];
+			p [pcdata "Your attendance has been successfully registered for this session."];
+			p [a ~service:main_service [pcdata "Return to main menu"] ()]
+		]
 	)
 	(function
 	| Not_found -> error_page "User or session does not exist"
@@ -49,25 +40,15 @@ let do_attendance_page () (user_id, (session_id, code)) =
 
 let attendance_page () () =
 	let do_attendance_service = create_attached_post ~fallback:attendance_service
-		~post_params:(string "user_id" ** int32 "session_id" ** string "code") () in
+		~post_params:(string "user_id" ** int32 "session_id") () in
 	let register_attendance_form uid sid =
 	begin
 		Form.post_form ~service:do_attendance_service
-		(fun (user_id, (session_id, code)) ->
+		(fun (user_id, session_id) ->
 		[
 			Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
 			Form.input ~input_type:`Hidden ~name:session_id ~value:sid Form.int32;
-			table
-			[
-				tr [
-					td [pcdata "Code:"];
-					td [Form.input ~input_type:`Text ~name:code Form.string]
-				];
-				tr
-				[
-					td ~a:[a_colspan 2] [Form.input ~input_type:`Submit ~value:"Register" Form.string]
-				]		
-			]
+			Form.input ~input_type:`Submit ~value:"Register" Form.string
 		]
 		) ()
 	end in

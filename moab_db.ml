@@ -62,18 +62,6 @@ let find_sessions_now () =
 	| _ -> Lwt.fail_with "multiple sessions found"
 ;;
 
-let get_session_code session_id week =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
-		"SELECT code \
-		FROM session_codes \
-		WHERE session_id = $session_id AND week = $week" >>=
-	function
-	| [] -> Lwt.fail Not_found
-	| [c] -> Lwt.return c
-	| _ -> Lwt.fail_with "multiple sessions found"
-;;
-
 let register_attendance session_id user_id week =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
