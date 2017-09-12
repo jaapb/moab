@@ -62,10 +62,33 @@ let find_sessions_now () =
 	| _ -> Lwt.fail_with "multiple sessions found"
 ;;
 
+let has_attended session_id user_id week =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT session_id \
+		FROM attendance \
+		WHERE session_id = $session_id AND user_id = $user_id AND week = $week" >>=
+	function
+	| [] -> Lwt.return false
+	| [s] -> Lwt.return true
+	| _ -> Lwt.fail_with "multiple sessions found"
+;;
+
 let register_attendance session_id user_id week =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
 		"INSERT INTO attendance (session_id, user_id, week) \
 		VALUES \
 		($session_id, $user_id, $week)"
+;;
+
+let log user_id ip_address thing =
+	let str = match thing with
+	| `No_session_found -> "S"
+	| `External_address -> "X" in
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"INSERT INTO log (user_id, ip_address, time, action) \
+		VALUES \
+		($user_id, $ip_address, now (), $str)"
 ;;
