@@ -48,11 +48,11 @@ let find_user user_id =
 let find_sessions_now () =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT id, type \
-		FROM sessions \
-		WHERE year = EXTRACT(year FROM now())
-		AND EXTRACT(week FROM now()) BETWEEN start_week AND end_week
-		AND weekday = EXTRACT(dow FROM now())
+		"SELECT s.id, type \
+		FROM sessions s JOIN timetable t ON s.timetable_id = t.id \
+		WHERE year = EXTRACT(year FROM now()) \
+		AND EXTRACT(week FROM now()) BETWEEN start_week AND end_week \
+		AND weekday = EXTRACT(dow FROM now()) \
 		AND localtime BETWEEN start_time AND end_time" >>=
 	function
 	| [] -> Lwt.fail Not_found
@@ -91,4 +91,59 @@ let log user_id ip_address thing =
 		"INSERT INTO log (user_id, ip_address, time, action) \
 		VALUES \
 		($user_id, $ip_address, now (), $str)"
+;;
+
+let get_presentation_slots term group =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT week, weekday \
+		FROM timetable t JOIN sessions s ON s.timetable_id = t.id 
+			JOIN generate_series(1,53) AS gs(week) ON \
+			week BETWEEN start_week AND end_week \
+		WHERE t.group_number = $?group AND term = $term AND type = 'S'" >>=
+ 	Lwt_list.map_s (function
+		| (None, _) -> Lwt.fail_with "session found without a week"
+		| (Some x, wd) -> Lwt.return (x, wd)) 
+;;
+
+let get_user_group user_id =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT group_number \
+		FROM users \
+		WHERE id = $user_id" >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [nr] -> Lwt.return nr
+	| _ -> Lwt.fail_with "multiple users found"
+;;
+
+let get_presenters group week weekday =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT u.name
+		FROM timetable t JOIN sessions s ON t.id = s.timetable_id \
+			JOIN schedule sch ON sch.session_id = s.id \ 
+			JOIN users u ON sch.user_id = u.id \
+		WHERE weekday = $weekday \
+		AND sch.week = $week \
+		AND sch.first \
+		AND type = 'S' \
+		AND t.group_number = $?group" >>=
+	fun u1 -> PGSQL(dbh)
+		"SELECT u.name
+		FROM timetable t JOIN sessions s ON t.id = s.timetable_id \
+			JOIN schedule sch ON sch.session_id = s.id \ 
+			JOIN users u ON sch.user_id = u.id \
+		WHERE weekday = $weekday \
+		AND sch.week = $week \
+		AND NOT sch.first \
+		AND type = 'S' \
+		AND t.group_number = $?group" >>=
+	fun u2 -> match u1, u2 with
+	| [], [] -> Lwt.return (None, None)
+	| [p1], [] -> Lwt.return (Some p1, None)
+	| [], [p2] -> Lwt.return (None, Some p2)
+	| [p1], [p2] -> Lwt.return (Some p1, Some p2)
+	| _ -> Lwt.fail_with "multiple sessions found"
 ;;

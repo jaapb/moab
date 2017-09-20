@@ -8,6 +8,7 @@
 
 [%%server
 	open Services
+	open Ocsigen_extensions.Configuration
 ]
 
 module Moab_app =
@@ -18,6 +19,8 @@ module Moab_app =
     end)
 
 let ldap_urls = ref []
+let term = ref 0
+let start_week = ref 0
 
 let user = Eliom_reference.eref ~scope:Eliom_common.default_session_scope
   None;;
@@ -32,7 +35,7 @@ let login_action () (name, password) =
 			Eliom_reference.set user (Some (user_id, fname, is_admin))
 		)
 		(function
-		| Not_found -> Eliom_reference.set login_err (Some "Unknown user or wrong password")
+		| Not_found -> Eliom_reference.set login_err (Some "Not registered for this module")
 		| Failure s -> Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
 		| e -> Eliom_reference.set login_err (Some (Printexc.to_string e))
 		)
@@ -134,6 +137,7 @@ let main_page () () =
 				ul [
 					li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
 					li [pcdata "Presentation feedback"];
+					li [a ~service:schedule_service [pcdata "Presentation schedule"] ()];
 					li [pcdata "Blog"]
 				]
 			]
@@ -141,34 +145,49 @@ let main_page () () =
 	(fun e -> error_page (Printexc.to_string e))
 ;;
 
-let ldap_configuration = Ocsigen_extensions.Configuration.element
+let ldap_configuration = element
 	~name:"ldap"
-	~obligatory:false
 	~pcdata:(fun s -> ldap_urls := s::!ldap_urls)
 	()
 ;;
 
-let database_server_el = Ocsigen_extensions.Configuration.element
+let database_server_el = element
 	~name:"server" ~obligatory:true
 	~pcdata:(fun s -> Moab_db.database_server := s) ();;
-let database_port_el = Ocsigen_extensions.Configuration.element
+let database_port_el = element
 	~name:"port"
 	~pcdata:(fun s -> Moab_db.database_port := Some (int_of_string s)) ();;
-let database_name_el = Ocsigen_extensions.Configuration.element
+let database_name_el = element
 	~name:"name" ~obligatory:true
 	~pcdata:(fun s -> Moab_db.database_name := s) ();;
-let database_user_el = Ocsigen_extensions.Configuration.element
+let database_user_el = element
 	~name:"user" ~obligatory:true
 	~pcdata:(fun s -> Moab_db.database_user := s) ();;
-let database_password_el = Ocsigen_extensions.Configuration.element
+let database_password_el = element
 	~name:"password" ~pcdata:(fun s -> Moab_db.database_password := Some s) ();;
-let database_el = Ocsigen_extensions.Configuration.element
+let database_el = element
 	~name:"database" ~obligatory:true ~elements:[database_server_el;
 		database_port_el; database_name_el; database_user_el; database_password_el]
 	();;
 
+let term_year = attribute
+	~name:"year"
+	~obligatory:true
+	(fun s -> term := int_of_string s)
+	;;
+let term_pres_start = attribute
+	~name:"pres_start"
+	~obligatory:true
+	(fun s -> start_week := int_of_string s)
+	;;
+let term_configuration = element
+	~name:"term"
+	~obligatory:true
+	~attributes:[term_year; term_pres_start]
+	();;
+
 let () =
-	Eliom_config.parse_config [ldap_configuration; database_el];
+	Eliom_config.parse_config [ldap_configuration; database_el; term_configuration];
   Moab_app.register ~service:main_service main_page;
 	Eliom_registration.Action.register ~service:login_service login_action;
 	Eliom_registration.Action.register ~service:logout_service logout_action
