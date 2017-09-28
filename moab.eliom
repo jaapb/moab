@@ -21,6 +21,7 @@ module Moab_app =
 let ldap_urls = ref []
 let term = ref 0
 let start_week = ref 0
+let inside_res = ref []
 
 let user = Eliom_reference.eref ~scope:Eliom_common.default_session_scope
   None;;
@@ -186,8 +187,23 @@ let term_configuration = element
 	~attributes:[term_year; term_pres_start]
 	();;
 
+let network_inside_re = attribute
+	~name:"re"
+	~obligatory:true
+	(fun s -> inside_res := (Re_str.regexp s)::!inside_res)
+	;;
+let network_inside = element
+	~name:"inside"
+	~obligatory:true
+	~attributes:[network_inside_re]
+	();;
+let network_configuration = element
+	~name:"network"
+	~elements:[network_inside]
+	();;
+
 let () =
-	Eliom_config.parse_config [ldap_configuration; database_el; term_configuration];
+	Eliom_config.parse_config [ldap_configuration; database_el; term_configuration; network_configuration];
   Moab_app.register ~service:main_service main_page;
 	Eliom_registration.Action.register ~service:login_service login_action;
 	Eliom_registration.Action.register ~service:logout_service logout_action

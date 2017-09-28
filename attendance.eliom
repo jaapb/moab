@@ -22,7 +22,11 @@ let no_session_found uid =
 ;;
 
 let is_internal_ip str =
-	str = "::1"
+	match !Moab.inside_res with
+	| [] -> true
+	| l -> List.fold_left (fun acc re ->
+		acc || Re_str.string_match re str 0
+	) false l
 ;;
 
 let do_attendance_page () (user_id, session_id) =
