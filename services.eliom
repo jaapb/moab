@@ -10,3 +10,4 @@ let logout_service = create ~path:No_path
   ~meth:(Post (unit, unit)) ();;
 let main_service = create ~path:(Path []) ~meth:(Get unit) ();;
 let schedule_service = create ~path:(Path ["schedule"]) ~meth:(Get unit) ();;
+let write_blog_service = create ~path:(Path ["write_blog"]) ~meth:(Get unit) ();;

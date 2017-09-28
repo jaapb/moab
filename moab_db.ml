@@ -147,3 +147,38 @@ let get_presenters group week weekday =
 	| [p1], [p2] -> Lwt.return (Some p1, Some p2)
 	| _ -> Lwt.fail_with "multiple sessions found"
 ;;
+
+let get_learning_weeks group term =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT week, year \
+		FROM timetable t JOIN sessions s ON t.id = s.timetable_id \
+			JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
+			WHERE group_number = $?group AND term = $term \
+			ORDER by year ASC, week ASC" >>=
+	fun l -> Lwt_list.map_s (function
+	| None, _ -> Lwt.fail_with "NULL value in generated series (get_learning_weeks)"
+	| Some w, y -> Lwt.return (w, y)
+	) l
+;;
+
+let get_blog uid week year =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"SELECT title, contents \
+			FROM blogs
+			WHERE uid = $uid AND week = $week AND year = $year" >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [t, c] -> Lwt.return (t, c)
+	| _ -> Lwt.fail_with "multiple blogs found"
+;;
+
+let update_blog uid week year title text =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh)
+		"INSERT INTO blogs (uid, week, year, title, contents) VALUES
+			($uid, $week, $year, $title, $text) \
+			ON CONFLICT (uid, week, year) DO UPDATE \
+			SET title = EXCLUDED.title, contents = EXCLUDED.contents"
+;;

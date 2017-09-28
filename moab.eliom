@@ -137,9 +137,9 @@ let main_page () () =
 				h1 [pcdata "Welcome"];
 				ul [
 					li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
-					li [pcdata "Presentation feedback"];
+					li [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
 					li [a ~service:schedule_service [pcdata "Presentation schedule"] ()];
-					li [pcdata "Blog"]
+					li [a ~service:write_blog_service [pcdata "Write blog"] ()]
 				]
 			]
 	)
