@@ -23,7 +23,8 @@ let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
 	fun () ->
 	container [
 		h1 [pcdata "Blog saved"];
-		p [pcdata (Printf.sprintf "Your entry for week %d has been saved. " week); pcdata "You will be able to update it until the end of the week."]
+		p [pcdata (Printf.sprintf "Your entry for week %d has been saved. " week); pcdata "You will be able to update it until the end of the week."];
+		p [a ~service:main_service [pcdata "Return to main menu"] ()]
 	]
 ;;
 
@@ -83,7 +84,8 @@ let write_blog_page () () =
 		(function
 		| Not_found -> container [
 				h1 [pcdata "Not a learning week"];
-				p [pcdata "This week is not a learning week, so no need to write a blog for this week."]
+				p [pcdata "This week is not a learning week, so no need to write a blog for this week."];
+				p [a ~service:main_service [pcdata "Return to main menu"] ()]
 			]
 		| e -> error_page (Printexc.to_string e))
 ;;
