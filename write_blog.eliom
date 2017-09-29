@@ -41,7 +41,7 @@ let write_blog_page () () =
 			let week = Date.week now in
 			let year = Date.year now in
 			let term = !Moab.term in
-			let%lwt (group, _) = Moab_db.get_user_group uid term in
+			let%lwt (group, _, _) = Moab_db.get_user_group uid term in
 			let%lwt lws = Moab_db.get_learning_weeks group term in
 			let this_lw = find_nr (fun (w, y) -> w = week && y = year) lws 1 in
 			let%lwt (v_title, v_text) = Lwt.catch

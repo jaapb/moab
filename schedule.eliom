@@ -45,12 +45,12 @@ let schedule_page () () =
 		Lwt.catch (fun () ->
 			let term = !Moab.term in
 			let start_week = !Moab.start_week in
-			let%lwt (group, wd) = Moab_db.get_user_group uid term in
+			let%lwt (group, wd, locked) = Moab_db.get_user_group uid term in
 			let%lwt slots = Moab_db.get_presentation_slots term group start_week in
 			let%lwt my_pres = Moab_db.get_presentation_week uid term in
 			container
-			[
-				h1 [pcdata "Presentation schedule"];
+			(
+				h1 [pcdata "Presentation schedule"]::
 				table
 				(
 					tr [th [pcdata "Week"]; th [pcdata "Date"]; th [pcdata "Presenter 1"]; th [pcdata "Presenter 2"]]::
@@ -67,38 +67,42 @@ let schedule_page () () =
 							tr [td [pcdata (string_of_int lw)]; td [pcdata (Printer.Date.sprint "%d %b" day)];
 								td [n1s]; td [n2s]]
 					) slots)
-				);
-				h2 [pcdata "Schedule your presentation"];
-				p [match err with
-				| None -> pcdata "Choose a week for your presentation."
-				| Some e -> pcdata e];
-				Form.post_form ~service:add_schedule_service
-				(fun (user_id, (t, (g, week))) -> [
-					table
-					[
-						tr [
-							td [pcdata "Week:"];
-							td [match slots with
-								| [] -> Form.input ~input_type:`Text ~name:week Form.int
-								| (w, _, _, _, _)::t -> Form.select ~name:week Form.int
-									(Form.Option ([], w, Some (pcdata (string_of_int start_week)), is_mine my_pres w))
-									(List.mapi (fun n (w, _, _, _, _) ->
-										Form.Option ([], w, Some (pcdata (string_of_int (n+start_week+1))), is_mine my_pres w)
-									) t)
-							]
-						];
-						tr [
-							td [
-								Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
-								Form.input ~input_type:`Hidden ~name:t ~value:term Form.int;
-								Form.input ~input_type:`Hidden ~name:g ~value:group Form.int;
-								Form.input ~input_type:`Submit ~value:"Save" Form.string
+				)::
+				h2 [pcdata "Schedule your presentation"]::
+				(match locked with
+				| Some true ->
+					[p [pcdata "This session is locked. If you wish to switch with another person, you must obtain their agreement and then contact the module leader."]]
+				| _ ->
+					[p [match err with
+					| None -> pcdata "Choose a week for your presentation."
+					| Some e -> pcdata e];
+					Form.post_form ~service:add_schedule_service
+					(fun (user_id, (t, (g, week))) -> [
+						table
+						[
+							tr [
+								td [pcdata "Week:"];
+								td [match slots with
+									| [] -> Form.input ~input_type:`Text ~name:week Form.int
+									| (w, _, _, _, _)::t -> Form.select ~name:week Form.int
+										(Form.Option ([], w, Some (pcdata (string_of_int start_week)), is_mine my_pres w))
+										(List.mapi (fun n (w, _, _, _, _) ->
+											Form.Option ([], w, Some (pcdata (string_of_int (n+start_week+1))), is_mine my_pres w)
+										) t)
+								]
+							];
+							tr [
+								td [
+									Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
+									Form.input ~input_type:`Hidden ~name:t ~value:term Form.int;
+									Form.input ~input_type:`Hidden ~name:g ~value:group Form.int;
+									Form.input ~input_type:`Submit ~value:"Save" Form.string
+								]
 							]
 						]
-					]
-				]) ();
-				p [a ~service:main_service [pcdata "Return to main menu"] ()]
-			]
+					]) ()
+				])
+			)
 		)
 		(function
 		| Moab_db.No_group -> error_page "you are an administrator"

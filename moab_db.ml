@@ -134,13 +134,13 @@ let get_presentation_slots term group start_week =
 let get_user_group user_id term =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT u.group_number, weekday \
+		"SELECT u.group_number, weekday, locked \
 		FROM users u JOIN timetable t ON u.group_number = t.group_number \
 		WHERE u.id = $user_id AND t.term = $term" >>=
 	function
 	| [] -> Lwt.fail Not_found
-	| [Some nr, wd] -> Lwt.return (nr, wd)
-	| [None, wd] -> Lwt.fail No_group
+	| [Some nr, wd, l] -> Lwt.return (nr, wd, l)
+	| [None, _, _] -> Lwt.fail No_group
 	| _ -> Lwt.fail_with "multiple users found"
 ;;
 
