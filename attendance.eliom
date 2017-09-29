@@ -14,10 +14,9 @@
 
 let no_session_found uid =
 	Moab_db.log uid (Eliom_request_info.get_remote_ip ()) `No_session_found >>=
-	fun () -> container [
+	fun () -> container (standard_menu ()) [
 		h1 [pcdata "No session found"];
-		p [pcdata "No session was found at this time. This action has been logged."];
-		p [a ~service:main_service [pcdata "Return to the main menu"] ()]
+		p [pcdata "No session was found at this time. This action has been logged."]
 	]
 ;;
 
@@ -35,7 +34,7 @@ let do_attendance_page () (user_id, session_id) =
 		if not (is_internal_ip remote_ip)
 		then
 			Moab_db.log user_id remote_ip `External_address >>=
-			fun () -> container
+			fun () -> container (standard_menu ())
 			[
 				h1 [pcdata "Exterior address"];
 				p [pcdata "You tried to register from a non-Middlesex IP address. This
@@ -44,11 +43,10 @@ let do_attendance_page () (user_id, session_id) =
 		else
 			let week = Date.week (Date.today ()) in
 			let%lwt () = Moab_db.register_attendance session_id user_id week in
-			container
+			container (standard_menu ())
 			[
 				h1 [pcdata "Attendance"];
-				p [pcdata "Your attendance has been successfully registered for this session."];
-				p [a ~service:main_service [pcdata "Return to main menu"] ()]
+				p [pcdata "Your attendance has been successfully registered for this session."]
 			]
 	)
 	(function
@@ -75,29 +73,28 @@ let attendance_page () () =
 		~service:do_attendance_service do_attendance_page;
 	let%lwt u = Eliom_reference.get user in
 	match u with
-	| None -> container []
+	| None -> container [] [p [pcdata "Please log in first."]]
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
 			let week = Date.week (Date.today ()) in
 			let%lwt (session_id, session_type) = Moab_db.find_sessions_now () in
 			let%lwt att = Moab_db.has_attended session_id uid week in
 			if att then
-				container
+				container (standard_menu ())
 				[
 					h1 [pcdata "Already registered"];
-					p [pcdata "Your attendance has already been registered for this session."];
-					p [a ~service:main_service [pcdata "Return to main menu"] ()]
+					p [pcdata "Your attendance has already been registered for this session."]
 				]
 			else
 			match session_type with
 			| `Lecture | `Test ->
-				container
+				container (standard_menu ())
 				[	
 					h1 [pcdata "Lecture"];
 					register_attendance_form uid session_id
 				]
 			| `Seminar ->
-				container
+				container (standard_menu ())
 				[
 					h1 [pcdata "Seminar"];
 					p [pcdata "You can register your attendance. If there are presentations scheduled in this session, then submitting one or more feedback forms will automatically register you for attendance as well."];
@@ -107,7 +104,7 @@ let attendance_page () () =
 		(function
 		| Not_found -> no_session_found uid
 		| Failure s -> 
-			container
+			container (standard_menu ())
 			[
 				h1 [pcdata "Error"];
 				p [pcdata (Printf.sprintf "There was an inconsistency in the database (message: %s)." s)]

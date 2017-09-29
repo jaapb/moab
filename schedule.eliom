@@ -40,7 +40,7 @@ let schedule_page () () =
 	let%lwt err = Eliom_reference.get schedule_err in
 	Eliom_reference.set schedule_err None;
 	match u with
-	| None -> container []
+	| None -> container [] [p [pcdata "Please log in first."]]
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
 			let term = !Moab.term in
@@ -48,7 +48,7 @@ let schedule_page () () =
 			let%lwt (group, wd, locked) = Moab_db.get_user_group uid term in
 			let%lwt slots = Moab_db.get_presentation_slots term group start_week in
 			let%lwt my_pres = Moab_db.get_presentation_week uid term in
-			container
+			container (standard_menu ())
 			(
 				h1 [pcdata "Presentation schedule"]::
 				table

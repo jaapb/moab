@@ -99,7 +99,15 @@ let login_box () =
   )
 ;; 
 
-let container cts_div =
+let standard_menu () =
+	[table [
+		tr [
+			td [a ~service:main_service [pcdata "Main menu"] ()]
+		]
+	]]
+;;
+
+let container menu_thread cts_div =
 	let%lwt box = login_box () in
 	Lwt.return
 	(Eliom_tools.F.html
@@ -108,8 +116,7 @@ let container cts_div =
 		Html.F.(body [
 			div ~a:[a_class ["layout"]; a_id "header"] [h1 [pcdata "CSD 3600"]];
       div ~a:[a_class ["layout"]; a_id "logbox"] box;
-      div ~a:[a_class ["layout"]; a_id "menu"] [
-			];
+      div ~a:[a_class ["layout"]; a_id "menu"] menu_thread;
       div ~a:[a_class ["layout"]; a_id "contents"] cts_div;
       div ~a:[a_class ["layout"]; a_id "footer"] [
         img ~alt:"Powered by Ocsigen"
@@ -121,7 +128,7 @@ let container cts_div =
 ;;
 
 let error_page e =
-	container
+	container (standard_menu ())
 	[
 		h1 [pcdata "Error"];
 		p [pcdata e]
@@ -132,8 +139,8 @@ let main_page () () =
 	Lwt.catch (fun () ->
 		let%lwt u = Eliom_reference.get user in
 		match u with
-		| None -> container []
-		| Some _ -> container
+		| None -> container [] [p [pcdata "You can log in using the box in the upper right corner."]]
+		| Some _ -> container (standard_menu ())
 			[
 				h1 [pcdata "Welcome"];
 				ul [

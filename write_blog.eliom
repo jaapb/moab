@@ -15,10 +15,9 @@
 let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
 	Moab_db.update_blog user_id week year title text >>=
 	fun () ->
-	container [
+	container (standard_menu ()) [
 		h1 [pcdata "Blog saved"];
-		p [pcdata (Printf.sprintf "Your entry for week %d has been saved. " week); pcdata "You will be able to update it until the end of the week."];
-		p [a ~service:main_service [pcdata "Return to main menu"] ()]
+		p [pcdata (Printf.sprintf "Your entry for week %d has been saved. " week); pcdata "You will be able to update it until the end of the week."]
 	]
 ;;
 
@@ -34,7 +33,7 @@ let write_blog_page () () =
 			~service:do_write_blog_service do_write_blog_page;
 	let%lwt u = Eliom_reference.get user in
 	match u with
-	| None -> container []
+	| None -> container [] [p [pcdata "Please log in first."]]
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
 			let now = Date.today () in
@@ -49,7 +48,7 @@ let write_blog_page () () =
 				(function
 				| Not_found -> Lwt.return ("", "")
 				| e -> Lwt.fail e) in
-			container
+			container (standard_menu ())
 			[ 
 				h1 [pcdata "Blog"];
 				p [pcdata (Printf.sprintf "You are now writing your blog for week %d" this_lw)];
@@ -82,10 +81,9 @@ let write_blog_page () () =
 			]
 		)
 		(function
-		| Not_found -> container [
+		| Not_found -> container (standard_menu ()) [
 				h1 [pcdata "Not a learning week"];
-				p [pcdata "This week is not a learning week, so no need to write a blog for this week."];
-				p [a ~service:main_service [pcdata "Return to main menu"] ()]
+				p [pcdata "This week is not a learning week, so no need to write a blog for this week."]
 			]
 		| Moab_db.No_group -> error_page "you are an administrator"
 		| e -> error_page (Printexc.to_string e))
