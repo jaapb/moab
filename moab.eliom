@@ -67,7 +67,8 @@ let logout_action () () =
 let login_box () =
   let%lwt u = Eliom_reference.get user in
   let%lwt err = Eliom_reference.get login_err in
-  Lwt.return (match u with
+	Eliom_reference.set login_err None >>=
+	fun () -> Lwt.return (match u with
   | None -> [Form.post_form ~service:login_service (fun (name, password) ->
     [table (
       tr [
