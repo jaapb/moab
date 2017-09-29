@@ -46,6 +46,20 @@ CREATE TABLE attendance (
 
 
 --
+-- Name: blogs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE blogs (
+    user_id character varying(16) NOT NULL,
+    week smallint NOT NULL,
+    year smallint NOT NULL,
+    title text NOT NULL,
+    contents text NOT NULL,
+    approved boolean DEFAULT false NOT NULL
+);
+
+
+--
 -- Name: log; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -63,9 +77,9 @@ CREATE TABLE log (
 
 CREATE TABLE schedule (
     user_id character varying(16) NOT NULL,
-    session_id integer NOT NULL,
     first boolean NOT NULL,
-    week smallint NOT NULL
+    week smallint NOT NULL,
+    timetable_id integer NOT NULL
 );
 
 
@@ -112,7 +126,9 @@ CREATE TABLE timetable (
     term smallint NOT NULL,
     id integer NOT NULL,
     type character(1) NOT NULL,
-    group_number smallint
+    group_number smallint,
+    locked boolean,
+    CONSTRAINT timetable_check CHECK ((((type = 'S'::bpchar) AND (group_number IS NOT NULL) AND (locked IS NOT NULL)) OR ((group_number IS NULL) AND (locked IS NULL))))
 );
 
 
@@ -143,7 +159,8 @@ CREATE TABLE users (
     id character varying(16) NOT NULL,
     is_admin boolean DEFAULT false NOT NULL,
     name text NOT NULL,
-    group_number smallint
+    group_number smallint,
+    CONSTRAINT users_check CHECK ((is_admin OR (group_number IS NOT NULL)))
 );
 
 
@@ -167,6 +184,22 @@ ALTER TABLE ONLY timetable ALTER COLUMN id SET DEFAULT nextval('timetable_id_seq
 
 ALTER TABLE ONLY attendance
     ADD CONSTRAINT attendance_session_id_user_id_week_key UNIQUE (session_id, user_id, week);
+
+
+--
+-- Name: blogs blogs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY blogs
+    ADD CONSTRAINT blogs_pkey PRIMARY KEY (user_id, week, year);
+
+
+--
+-- Name: schedule schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY schedule
+    ADD CONSTRAINT schedule_pkey PRIMARY KEY (user_id, timetable_id);
 
 
 --
@@ -210,6 +243,14 @@ ALTER TABLE ONLY attendance
 
 
 --
+-- Name: blogs blogs_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY blogs
+    ADD CONSTRAINT blogs_uid_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+
+--
 -- Name: log log_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -218,11 +259,11 @@ ALTER TABLE ONLY log
 
 
 --
--- Name: schedule schedule_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: schedule schedule_timetable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY schedule
-    ADD CONSTRAINT schedule_session_id_fkey FOREIGN KEY (session_id) REFERENCES sessions(id);
+    ADD CONSTRAINT schedule_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
 
 
 --

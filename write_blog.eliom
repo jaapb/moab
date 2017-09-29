@@ -12,12 +12,6 @@
 	open CalendarLib
 ]
 
-let rec find_nr f l s =
-	match l with
-	| [] -> raise Not_found
-	| h::t -> if f h then s else find_nr f t (s+1)
-;;
-
 let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
 	Moab_db.update_blog user_id week year title text >>=
 	fun () ->
@@ -29,6 +23,11 @@ let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
 ;;
 
 let write_blog_page () () =
+	let rec find_nr f l s =
+		match l with
+		| [] -> raise Not_found
+		| h::t -> if f h then s else find_nr f t (s+1)
+	in
 	let do_write_blog_service = create_attached_post ~fallback:write_blog_service
 		~post_params:(string "user_id" ** int "week" ** int "year" ** string "title" ** string "text") () in
 		Moab_app.register ~scope:Eliom_common.default_session_scope
@@ -41,9 +40,10 @@ let write_blog_page () () =
 			let now = Date.today () in
 			let week = Date.week now in
 			let year = Date.year now in
-			let%lwt group = Moab_db.get_user_group uid in
-			let%lwt lws = Moab_db.get_learning_weeks group !Moab.term in
-			let this_lw = find_nr (fun (w, y) -> Int32.to_int w = week && y = year) lws 1 in
+			let term = !Moab.term in
+			let%lwt (group, _) = Moab_db.get_user_group uid term in
+			let%lwt lws = Moab_db.get_learning_weeks group term in
+			let this_lw = find_nr (fun (w, y) -> w = week && y = year) lws 1 in
 			let%lwt (v_title, v_text) = Lwt.catch
 				(fun () -> Moab_db.get_blog uid week year)
 				(function
@@ -87,6 +87,7 @@ let write_blog_page () () =
 				p [pcdata "This week is not a learning week, so no need to write a blog for this week."];
 				p [a ~service:main_service [pcdata "Return to main menu"] ()]
 			]
+		| Moab_db.No_group -> error_page "you are an administrator"
 		| e -> error_page (Printexc.to_string e))
 ;;
 
