@@ -155,6 +155,11 @@ let main_page () () =
 				let%lwt pr = Moab_db.get_presentation_week user_id !term in
 				let%lwt (group, weekday, locked) = Moab_db.get_user_group user_id !term in
 				let%lwt weeks = Moab_db.get_learning_weeks group !term in
+				let%lwt blogs = Moab_db.get_user_blogs user_id !term in
+				let now = Date.today () in
+				let this_week = Date.week (Date.today ()) in
+				let this_year = Date.year (Date.today ()) in
+				let this_lw = Moab_db.find_nr (fun (w, y) -> w = this_week && y = this_year) weeks 1 in
 				container (standard_menu ())
 				[
 					h1 [pcdata "Welcome"];
@@ -179,6 +184,9 @@ let main_page () () =
 							let (sd, _) = Date.week_first_last p_wk p_yr in
 							let day = Date.add sd (Date.Period.day (weekday - 1)) in
 								pcdata (Printer.Date.sprint "Your presentation is scheduled on %d %B %Y." day)
+						];
+						li [
+							p [pcdata (Printf.sprintf "You have written a blog for %d out of %d week(s) so far. " (List.length blogs) this_lw); pcdata (Printf.sprintf "%d have been approved." (List.length (List.filter (fun (_, a) -> a) blogs)))]
 						]
 					]
 				]

@@ -22,11 +22,6 @@ let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
 ;;
 
 let write_blog_page () () =
-	let rec find_nr f l s =
-		match l with
-		| [] -> raise Not_found
-		| h::t -> if f h then s else find_nr f t (s+1)
-	in
 	let do_write_blog_service = create_attached_post ~fallback:write_blog_service
 		~post_params:(string "user_id" ** int "week" ** int "year" ** string "title" ** string "text") () in
 		Moab_app.register ~scope:Eliom_common.default_session_scope
@@ -42,7 +37,7 @@ let write_blog_page () () =
 			let term = !Moab.term in
 			let%lwt (group, _, _) = Moab_db.get_user_group uid term in
 			let%lwt lws = Moab_db.get_learning_weeks group term in
-			let this_lw = find_nr (fun (w, y) -> w = week && y = year) lws 1 in
+			let this_lw = Moab_db.find_nr (fun (w, y) -> w = week && y = year) lws 1 in
 			let%lwt (v_title, v_text) = Lwt.catch
 				(fun () -> Moab_db.get_blog uid this_lw term)
 				(function

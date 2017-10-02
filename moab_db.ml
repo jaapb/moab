@@ -2,6 +2,12 @@ open Lwt
 
 exception No_group
 
+let rec find_nr f l s =
+	match l with
+	| [] -> raise Not_found
+	| h::t -> if f h then s else find_nr f t (s+1)
+;;
+
 let take n l =
 	let rec take_aux n l res =
 		if n <= 0 then List.rev res
@@ -231,3 +237,11 @@ let set_presenter user_id term group week first =
 			SET learning_week = $week, first = $first" >>=
 	fun () -> PGOCaml.commit dbh
 ;;
+
+let get_user_blogs user_id term =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh) "SELECT learning_week, approved \
+		FROM blogs \
+		WHERE user_id = $user_id AND term = $term \
+		ORDER BY learning_week ASC" 
+;;		
