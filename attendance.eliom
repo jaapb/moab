@@ -87,6 +87,7 @@ let attendance_page () () =
 				]
 			else
 			match session_type with
+			| `No_session -> no_session_found uid
 			| `Lecture | `Test ->
 				container
 				[	
@@ -102,7 +103,6 @@ let attendance_page () () =
 				]
 		)
 		(function
-		| Not_found -> no_session_found uid
 		| Failure s -> 
 			container
 			[

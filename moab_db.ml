@@ -81,7 +81,7 @@ let find_sessions_now () =
 		AND weekday = EXTRACT(dow FROM now()) \
 		AND localtime BETWEEN start_time AND end_time" >>=
 	function
-	| [] -> Lwt.fail Not_found
+	| [] -> Lwt.return (0l, `No_session)
 	| [id, "L"] -> Lwt.return (id, `Lecture)
 	| [id, "S"] -> Lwt.return (id, `Seminar)
 	| [id, "T"] -> Lwt.return (id, `Test)
