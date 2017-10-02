@@ -18,9 +18,9 @@ let add_schedule_action () (user_id, (term, (group, week))) =
 	Lwt.catch (fun () -> let%lwt (p1, p2) = Moab_db.get_presenters term group week in
 		match (p1, p2) with
 		| None, None -> Moab_db.set_presenter user_id term group week true
-		| Some i1, None -> if i1 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week false
-		| None, Some i2 -> if i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week true
-		| Some i1, Some i2 -> if i1 = user_id || i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Eliom_reference.set schedule_err (Some "That session is full.")
+		| Some (i1, _), None -> if i1 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week false
+		| None, Some (i2, _) -> if i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week true
+		| Some (i1, _), Some (i2, _) -> if i1 = user_id || i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Eliom_reference.set schedule_err (Some "That session is full.")
 	)
 	(function
 	| e -> Eliom_reference.set schedule_err (Some (Printexc.to_string e))

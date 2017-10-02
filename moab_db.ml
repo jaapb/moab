@@ -1,4 +1,5 @@
 open Lwt
+open CalendarLib
 
 exception No_group
 
@@ -161,15 +162,16 @@ let get_user_group user_id term =
 let get_presenters term group week =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT user_id, first \
+		"SELECT user_id, u.name, first \
 		FROM timetable t JOIN schedule sch ON sch.timetable_id = t.id \
+		JOIN users u on u.id = sch.user_id \
 		WHERE t.group_number = $group AND term = $term AND learning_week = $week" >>=
 	function
 	| [] -> Lwt.return (None, None)
-	| [u, true] -> Lwt.return (Some u, None)
-	| [u, false] -> Lwt.return (None, Some u)
-	| [u1, true; u2, false] -> Lwt.return (Some u1, Some u2)
-	| [u1, false; u2, true] -> Lwt.return (Some u2, Some u1)
+	| [u, n, true] -> Lwt.return (Some (u, n), None)
+	| [u, n, false] -> Lwt.return (None, Some (u, n))
+	| [u1, n1, true; u2, n2, false] -> Lwt.return (Some (u1, n1), Some (u2, n2))
+	| [u1, n1, false; u2, n2, true] -> Lwt.return (Some (u2, n2), Some (u1, n1))
 	| _ -> Lwt.fail_with "more than two presenters found"
 ;;
 
@@ -245,3 +247,11 @@ let get_user_blogs user_id term =
 		WHERE user_id = $user_id AND term = $term \
 		ORDER BY learning_week ASC" 
 ;;		
+
+let current_learning_week group term =
+	let now = Date.today () in
+	get_learning_weeks group term >>=
+	fun lws -> Lwt.return (find_nr (fun (w, y) ->
+		w = (Date.week now) && y = (Date.year now))
+		lws 1)
+;;

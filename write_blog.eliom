@@ -31,13 +31,9 @@ let write_blog_page () () =
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
-			let now = Date.today () in
-			let week = Date.week now in
-			let year = Date.year now in
 			let term = !Moab.term in
 			let%lwt (group, _, _) = Moab_db.get_user_group uid term in
-			let%lwt lws = Moab_db.get_learning_weeks group term in
-			let this_lw = Moab_db.find_nr (fun (w, y) -> w = week && y = year) lws 1 in
+			let%lwt this_lw = Moab_db.current_learning_week group term in
 			let%lwt (v_title, v_text) = Lwt.catch
 				(fun () -> Moab_db.get_blog uid this_lw term)
 				(function
@@ -57,7 +53,7 @@ let write_blog_page () () =
 				(fun (user_id, (wk, (yr, (title, text)))) -> [
 					Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
 					Form.input ~input_type:`Hidden ~name:wk ~value:this_lw Form.int;
-					Form.input ~input_type:`Hidden ~name:yr ~value:year Form.int; 
+					Form.input ~input_type:`Hidden ~name:yr ~value:(Date.year (Date.today ())) Form.int; 
 					table [
 						tr [
 							td [pcdata "Title: "];

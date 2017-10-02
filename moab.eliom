@@ -155,10 +155,7 @@ let main_page () () =
 				let%lwt (group, weekday, locked) = Moab_db.get_user_group user_id !term in
 				let%lwt weeks = Moab_db.get_learning_weeks group !term in
 				let%lwt blogs = Moab_db.get_user_blogs user_id !term in
-				let now = Date.today () in
-				let this_week = Date.week (Date.today ()) in
-				let this_year = Date.year (Date.today ()) in
-				let this_lw = Moab_db.find_nr (fun (w, y) -> w = this_week && y = this_year) weeks 1 in
+				let%lwt this_lw = Moab_db.current_learning_week group !term in
 				container
 				[
 					h1 [pcdata "Welcome"];
