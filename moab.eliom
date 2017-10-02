@@ -9,6 +9,7 @@
 [%%server
 	open Services
 	open Ocsigen_extensions.Configuration
+	open CalendarLib
 ]
 
 module Moab_app =
@@ -136,22 +137,53 @@ let error_page e =
 ;;
 
 let main_page () () =
+	let admin_page () =
+		container (standard_menu ())
+		[
+			h1 [pcdata "Welcome"];
+			p [pcdata "Admin page still under construction."];
+		]
+	in
 	Lwt.catch (fun () ->
 		let%lwt u = Eliom_reference.get user in
 		match u with
 		| None -> container [] [p [pcdata "You can log in using the box in the upper right corner."]]
-		| Some _ -> container (standard_menu ())
-			[
-				h1 [pcdata "Welcome"];
-				ul [
-					li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
-					li [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
-					li [a ~service:schedule_service [pcdata "Presentation schedule"] ()];
-					li [a ~service:write_blog_service [pcdata "Write blog"] ()]
+		| Some (user_id, _, is_admin) ->
+			if is_admin then
+				admin_page ()
+			else
+				let%lwt pr = Moab_db.get_presentation_week user_id !term in
+				let%lwt (group, weekday, locked) = Moab_db.get_user_group user_id !term in
+				container (standard_menu ())
+				[
+					h1 [pcdata "Welcome"];
+					ul [
+						li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
+						li [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
+						li [a ~service:schedule_service [pcdata "Presentation schedule"] ()];
+						li [a ~service:write_blog_service [pcdata "Write blog"] ()]
+					];
+					h2 [pcdata "Status"];
+					ul [
+						li [pcdata (Printf.sprintf "You are assigned to seminar group %d.\n" group)];
+						li [match pr with
+						| None ->
+								(match locked with
+								| Some true ->
+									pcdata "You do not have a presentation time scheduled. Contact the module leader as soon as possible."
+								| None ->
+									pcdata "You do not have a presentation time scheduled. You can schedule your session in the 'Presentation schedule' section or wait to be randomly assigned one.")
+						| Some (p_wk, _ ) ->
+							let (sd, _) = Date.week_first_last p_wk (if p_wk > 26 then !term else !term + 1) in
+							let day = Date.add sd (Date.Period.day (weekday - 1)) in
+								pcdata (Printer.Date.sprint "Your presentation is scheduled on %d %B %Y." day)
+						]
+					]
 				]
-			]
 	)
-	(fun e -> error_page (Printexc.to_string e))
+	(function
+	| Not_found -> error_page "You do not seem to be assigned a group number. This should not happen."
+	| e -> error_page (Printexc.to_string e))
 ;;
 
 let ldap_configuration = element
