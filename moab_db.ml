@@ -115,16 +115,24 @@ let log user_id ip_address thing =
 
 let get_presentation_slots term group start_week =
 	get_db () >>=
-	fun dbh -> PGSQL(dbh) "nullable-results"
+	fun dbh -> PGOCaml.transact dbh (fun dbh ->
+		PGSQL(dbh) "SELECT id \
+			FROM timetable \
+			WHERE term = $term AND group_number = $group AND type='S'" >>=
+		(function
+		| [] -> Lwt.fail Not_found
+		| [id] -> Lwt.return id
+		| _ -> Lwt.fail_with "multiple timetable slots found") >>=
+		fun slot -> PGSQL(dbh) "nullable-results"
 		"SELECT gs.week, sch1.user_id, u1.name, sch2.user_id, u2.name \
-		FROM timetable t JOIN sessions s ON s.timetable_id = t.id \
-		JOIN generate_series(1,53) AS gs(week) ON week BETWEEN start_week AND end_week \
-		LEFT JOIN schedule sch1 ON sch1.week = gs.week AND sch1.first \
-		LEFT JOIN schedule sch2 ON sch2.week = gs.week AND NOT sch2.first \
+		FROM generate_series(1,24) AS gs(week) \
+		LEFT JOIN schedule sch1 ON sch1.learning_week = gs.week AND sch1.first \
+		LEFT JOIN schedule sch2 ON sch2.learning_week = gs.week AND NOT sch2.first \
 		LEFT JOIN users u1 ON sch1.user_id = u1.id \
 		LEFT JOIN users u2 ON sch2.user_id = u2.id \
-		WHERE t.group_number = $group AND term = $term AND type='S' \
-		ORDER BY year ASC, week ASC" >>=
+		WHERE (sch1.timetable_id = $slot OR sch1.timetable_id IS NULL) AND \
+			(sch2.timetable_id = $slot OR sch2.timetable_id IS NULL)\
+		ORDER BY gs.week ASC") >>=
 	fun l -> Lwt_list.map_s (function
 	| (Some w, i1, n1, i2, n2) -> Lwt.return (Int32.to_int w, i1, n1, i2, n2)
 	| _ -> Lwt.fail_with "NULL value in generated series (get_presentation_slots)"
@@ -149,7 +157,7 @@ let get_presenters term group week =
 	fun dbh -> PGSQL(dbh)
 		"SELECT user_id, first \
 		FROM timetable t JOIN schedule sch ON sch.timetable_id = t.id \
-		WHERE t.group_number = $group AND term = $term AND week = $week" >>=
+		WHERE t.group_number = $group AND term = $term AND learning_week = $week" >>=
 	function
 	| [] -> Lwt.return (None, None)
 	| [u, true] -> Lwt.return (Some u, None)
@@ -173,31 +181,31 @@ let get_learning_weeks group term =
 	) l
 ;;
 
-let get_blog uid week year =
+let get_blog uid week term =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
 		"SELECT title, contents \
 			FROM blogs
-			WHERE user_id = $uid AND week = $week AND year = $year" >>=
+			WHERE user_id = $uid AND learning_week = $week AND term = $term" >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [t, c] -> Lwt.return (t, c)
 	| _ -> Lwt.fail_with "multiple blogs found"
 ;;
 
-let update_blog uid week year title text =
+let update_blog uid week term title text =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"INSERT INTO blogs (user_id, week, year, title, contents) VALUES
-			($uid, $week, $year, $title, $text) \
-			ON CONFLICT (user_id, week, year) DO UPDATE \
+		"INSERT INTO blogs (user_id, learning_week, term, title, contents) VALUES
+			($uid, $week, $term, $title, $text) \
+			ON CONFLICT (user_id, learning_week, term) DO UPDATE \
 			SET title = EXCLUDED.title, contents = EXCLUDED.contents"
 ;;
 
 let get_presentation_week uid term =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT week, first \
+		"SELECT learning_week, first \
 			FROM schedule sch JOIN timetable t ON sch.timetable_id = t.id \
 			WHERE user_id = $uid AND term = $term" >>=
 	function
@@ -217,9 +225,9 @@ let set_presenter user_id term group week first =
 	| [x] -> Lwt.return x
 	| _ -> PGOCaml.rollback dbh >>= fun () -> Lwt.fail_with "multiple sessions found") >>=
 	fun t_id -> PGSQL(dbh)
-		"INSERT INTO schedule (timetable_id, user_id, week, first) \
+		"INSERT INTO schedule (timetable_id, user_id, learning_week, first) \
 		VALUES \
 		($t_id, $user_id, $week, $first) ON CONFLICT (timetable_id, user_id) DO UPDATE \
-			SET week = $week, first = $first" >>=
+			SET learning_week = $week, first = $first" >>=
 	fun () -> PGOCaml.commit dbh
 ;;

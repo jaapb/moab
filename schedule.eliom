@@ -48,15 +48,15 @@ let schedule_page () () =
 			let%lwt (group, wd, locked) = Moab_db.get_user_group uid term in
 			let%lwt slots = Moab_db.get_presentation_slots term group start_week in
 			let%lwt my_pres = Moab_db.get_presentation_week uid term in
+			let%lwt weeks = Moab_db.get_learning_weeks group term in
 			container (standard_menu ())
 			(
 				h1 [pcdata "Presentation schedule"]::
 				table
 				(
-					tr [th [pcdata "Week"]; th [pcdata "Date"]; th [pcdata "Presenter 1"]; th [pcdata "Presenter 2"]]::
-					(List.mapi (fun n (w, i1, n1, i2, n2) ->
-						let lw = n + start_week in
-						let (sd, _) = Date.week_first_last w (if w > 26 then term else term + 1) in
+					tr [th [pcdata "Learning week"]; th [pcdata "Date"]; th [pcdata "Presenter 1"]; th [pcdata "Presenter 2"]]::
+					(List.map2 (fun (lw, i1, n1, i2, n2) (w, y) ->
+						let (sd, _) = Date.week_first_last w y in
 						let day = Date.add sd (Date.Period.day (wd - 1)) in
 						let n1s = match i1, n1 with
 						| Some i, Some n -> if i = uid then b [pcdata n] else pcdata n
@@ -66,7 +66,7 @@ let schedule_page () () =
 						| _ -> i [pcdata "no presenter"] in
 							tr [td [pcdata (string_of_int lw)]; td [pcdata (Printer.Date.sprint "%d %b" day)];
 								td [n1s]; td [n2s]]
-					) slots)
+					) slots (Moab_db.drop (start_week-1) weeks))
 				)::
 				h2 [pcdata "Schedule your presentation"]::
 				(match locked with
@@ -85,9 +85,9 @@ let schedule_page () () =
 								td [match slots with
 									| [] -> Form.input ~input_type:`Text ~name:week Form.int
 									| (w, _, _, _, _)::t -> Form.select ~name:week Form.int
-										(Form.Option ([], w, Some (pcdata (string_of_int start_week)), is_mine my_pres w))
-										(List.mapi (fun n (w, _, _, _, _) ->
-											Form.Option ([], w, Some (pcdata (string_of_int (n+start_week+1))), is_mine my_pres w)
+										(Form.Option ([], w, Some (pcdata (string_of_int w)), is_mine my_pres w))
+										(List.map (fun (w, _, _, _, _) ->
+											Form.Option ([], w, Some (pcdata (string_of_int w)), is_mine my_pres w)
 										) t)
 								]
 							];

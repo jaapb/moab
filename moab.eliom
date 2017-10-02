@@ -154,6 +154,7 @@ let main_page () () =
 			else
 				let%lwt pr = Moab_db.get_presentation_week user_id !term in
 				let%lwt (group, weekday, locked) = Moab_db.get_user_group user_id !term in
+				let%lwt weeks = Moab_db.get_learning_weeks group !term in
 				container (standard_menu ())
 				[
 					h1 [pcdata "Welcome"];
@@ -173,8 +174,9 @@ let main_page () () =
 									pcdata "You do not have a presentation time scheduled. Contact the module leader as soon as possible."
 								| _ ->
 									pcdata "You do not have a presentation time scheduled. You can schedule your session in the 'Presentation schedule' section or wait to be randomly assigned one.")
-						| Some (p_wk, _ ) ->
-							let (sd, _) = Date.week_first_last p_wk (if p_wk > 26 then !term else !term + 1) in
+						| Some (p_lw, _ ) ->
+							let (p_wk, p_yr) = List.nth weeks (p_lw-1) in	
+							let (sd, _) = Date.week_first_last p_wk p_yr in
 							let day = Date.add sd (Date.Period.day (weekday - 1)) in
 								pcdata (Printer.Date.sprint "Your presentation is scheduled on %d %B %Y." day)
 						]

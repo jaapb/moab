@@ -44,7 +44,7 @@ let write_blog_page () () =
 			let%lwt lws = Moab_db.get_learning_weeks group term in
 			let this_lw = find_nr (fun (w, y) -> w = week && y = year) lws 1 in
 			let%lwt (v_title, v_text) = Lwt.catch
-				(fun () -> Moab_db.get_blog uid week year)
+				(fun () -> Moab_db.get_blog uid this_lw term)
 				(function
 				| Not_found -> Lwt.return ("", "")
 				| e -> Lwt.fail e) in
@@ -61,7 +61,7 @@ let write_blog_page () () =
 				Form.post_form ~service:do_write_blog_service
 				(fun (user_id, (wk, (yr, (title, text)))) -> [
 					Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
-					Form.input ~input_type:`Hidden ~name:wk ~value:week Form.int;
+					Form.input ~input_type:`Hidden ~name:wk ~value:this_lw Form.int;
 					Form.input ~input_type:`Hidden ~name:yr ~value:year Form.int; 
 					table [
 						tr [
