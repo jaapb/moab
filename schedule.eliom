@@ -38,9 +38,9 @@ let schedule_page () () =
 		~service:add_schedule_service add_schedule_action;
 	let%lwt u = Eliom_reference.get user in
 	let%lwt err = Eliom_reference.get schedule_err in
-	Eliom_reference.set schedule_err None;
-	match u with
-	| None -> container [] [p [pcdata "Please log in first."]]
+	Eliom_reference.set schedule_err None >>=
+	fun () -> match u with
+	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
 			let term = !Moab.term in
@@ -49,7 +49,7 @@ let schedule_page () () =
 			let%lwt slots = Moab_db.get_presentation_slots term group start_week in
 			let%lwt my_pres = Moab_db.get_presentation_week uid term in
 			let%lwt weeks = Moab_db.get_learning_weeks group term in
-			container (standard_menu ())
+			container
 			(
 				h1 [pcdata "Presentation schedule"]::
 				table
@@ -110,5 +110,5 @@ let schedule_page () () =
 ;;
 
 let () =
-  Moab_app.register ~service:schedule_service schedule_page;
+  Eliom_registration.Any.register ~service:schedule_service schedule_page;
 ;;

@@ -14,7 +14,7 @@
 
 let no_session_found uid =
 	Moab_db.log uid (Eliom_request_info.get_remote_ip ()) `No_session_found >>=
-	fun () -> container (standard_menu ()) [
+	fun () -> container [
 		h1 [pcdata "No session found"];
 		p [pcdata "No session was found at this time. This action has been logged."]
 	]
@@ -27,20 +27,20 @@ let feedback_page () () =
 		~service:do_attendance_service do_attendance_page; *)
 	let%lwt u = Eliom_reference.get user in
 	match u with
-	| None -> container [] [p [pcdata "Please log in first."]]
+	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
 			let week = Date.week (Date.today ()) in
 			let%lwt (session_id, session_type) = Moab_db.find_sessions_now () in
 			match session_type with
 			| `Lecture | `Test ->
-				container (standard_menu ())
+				container
 				[	
 					h1 [pcdata "Lecture"];
 					p [pcdata "The session currently running is a lecture, no feedback required."]
 				]
 			| `Seminar -> 
-				container (standard_menu ())
+				container
 				[
 					h1 [pcdata "Feedback"];
 					p [pcdata "So, yeah."]
@@ -49,7 +49,7 @@ let feedback_page () () =
 		(function
 		| Not_found -> no_session_found uid
 		| Failure s -> 
-			container (standard_menu ())
+			container
 			[
 				h1 [pcdata "Error"];
 				p [pcdata (Printf.sprintf "There was an inconsistency in the database (message: %s)." s)]
@@ -58,5 +58,5 @@ let feedback_page () () =
 ;;
 
 let () =
-  Moab_app.register ~service:feedback_service feedback_page;
+  Eliom_registration.Any.register ~service:feedback_service feedback_page;
 ;;

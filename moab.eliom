@@ -29,95 +29,30 @@ let user = Eliom_reference.eref ~scope:Eliom_common.default_session_scope
 let login_err = Eliom_reference.eref ~scope:Eliom_common.request_scope
   None;;
 
-let login_action () (name, password) =
-	let do_login name =
-	begin
-		Lwt.catch (fun () ->
-			let%lwt (user_id, fname, is_admin) = Moab_db.find_user name in
-			Eliom_reference.set user (Some (user_id, fname, is_admin))
-		)
-		(function
-		| Not_found -> Eliom_reference.set login_err (Some "Not registered for this module")
-		| Failure s -> Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
-		| e -> Eliom_reference.set login_err (Some (Printexc.to_string e))
-		)
-	end in
-	match !ldap_urls with
-	| [] -> do_login name
-	| l ->
-		if password = "" then
-			Eliom_reference.set login_err (Some "Empty password")
-		else
-			try
-			let conn = Ldap_funclient.init (List.rev l) in
-				Ldap_funclient.bind_s ~who:(Printf.sprintf "Uni\\%s" name) ~cred:password ~auth_method:`SIMPLE conn;
-				do_login name
-			with
-			| Ldap_types.LDAP_Failure (`INVALID_CREDENTIALS, _, _) ->
-				Eliom_reference.set login_err (Some "Unknown user or wrong password")
-			| Ldap_types.LDAP_Failure (_, s, _) ->
-				Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
-			| e ->
-				Eliom_reference.set login_err (Some (Printexc.to_string e))
-;;
-
 let logout_action () () =
   Eliom_reference.set user None
 ;;
 
-let login_box () =
-  let%lwt u = Eliom_reference.get user in
-  let%lwt err = Eliom_reference.get login_err in
-	Eliom_reference.set login_err None >>=
-	fun () -> Lwt.return (match u with
-  | None -> [Form.post_form ~service:login_service (fun (name, password) ->
-    [table (
-      tr [
-        td [pcdata "Username"];
-        td ~a:[a_colspan 2]
-          [Form.input ~input_type:`Text ~name:name Form.string]
-      ]::
-      tr [
-        td [pcdata "Password"];
-        td [Form.input ~input_type:`Password ~name:password Form.string];
-        td [Form.input ~input_type:`Submit ~value:"Login" Form.string]
-      ]::
-      (match err with
-      | None -> []
-      | Some e -> [tr [td ~a:[a_colspan 3; a_class ["error"]] [pcdata e]]]
-      )
-    )]) ()]
-  | Some (n, fn, ad) -> [Form.post_form ~service:logout_service (fun () ->
-    [table [
-      tr [
-        td [pcdata (Printf.sprintf "Logged in as %s%s" fn
-					(if ad then " (admin)" else ""))]
-      ];
-      tr [
-        td [Form.input ~input_type:`Submit ~value:"Logout" Form.string]
-      ]
-		]]) ()]
-  )
-;; 
-
-let standard_menu () =
-	[table [
-		tr [
-			td [a ~service:main_service [pcdata "Main menu"] ()]
-		]
-	]]
-;;
-
-let container menu_thread cts_div =
-	let%lwt box = login_box () in
-	Lwt.return
-	(Eliom_tools.F.html
+let container cts_div =
+	let%lwt x = Eliom_reference.get user in
+	Eliom_registration.Html.send (Eliom_tools.F.html
 		~title:"CSD 3600"
 		~css:[["css"; "moab.css"]]
 		Html.F.(body [
-			div ~a:[a_class ["layout"]; a_id "header"] [h1 [pcdata "CSD 3600"]];
-      div ~a:[a_class ["layout"]; a_id "logbox"] box;
-      div ~a:[a_class ["layout"]; a_id "menu"] menu_thread;
+			div ~a:[a_class ["layout"]; a_id "header"] (
+				h1 [a ~service:main_service [pcdata "CSD 3600"] ()]::
+				(match x with
+				| None -> []
+				| Some (_, nm, is_admin) -> 
+					[
+						Form.post_form ~a:[a_id "logout_form"] ~service:logout_service
+						(fun () -> [table [
+							tr [td [pcdata (Printf.sprintf "Logged in as %s%s" nm (if is_admin then " (admin)" else ""))]];
+							tr [td [Form.input ~input_type:`Submit ~value:"Logout" Form.string]]
+						]]) ()
+					]
+				)
+			);
       div ~a:[a_class ["layout"]; a_id "contents"] cts_div;
       div ~a:[a_class ["layout"]; a_id "footer"] [
         img ~alt:"Powered by Ocsigen"
@@ -125,20 +60,84 @@ let container menu_thread cts_div =
           ["ocsigen-powered.png"]) ()
       ]
     ])
-  )
+	)
 ;;
 
 let error_page e =
-	container (standard_menu ())
+	container
 	[
 		h1 [pcdata "Error"];
 		p [pcdata e]
 	]
 ;;
 
+let login_page () () =
+	let do_login_action () (name, password) =
+		let do_login name =
+		begin
+			Lwt.catch (fun () ->
+				let%lwt (user_id, fname, is_admin) = Moab_db.find_user name in
+				Eliom_reference.set user (Some (user_id, fname, is_admin))
+			)
+			(function
+			| Not_found -> Eliom_reference.set login_err (Some "Not registered for this module")
+			| Failure s -> Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
+			| e -> Eliom_reference.set login_err (Some (Printexc.to_string e))
+			)
+		end in
+		match !ldap_urls with
+		| [] -> do_login name
+		| l ->
+			if password = "" then
+				Eliom_reference.set login_err (Some "Empty password")
+			else
+				try
+				let conn = Ldap_funclient.init (List.rev l) in
+					Ldap_funclient.bind_s ~who:(Printf.sprintf "Uni\\%s" name) ~cred:password ~auth_method:`SIMPLE conn;
+					do_login name
+				with
+				| Ldap_types.LDAP_Failure (`INVALID_CREDENTIALS, _, _) ->
+					Eliom_reference.set login_err (Some "Unknown user or wrong password")
+				| Ldap_types.LDAP_Failure (_, s, _) ->
+					Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
+				| e ->
+					Eliom_reference.set login_err (Some (Printexc.to_string e))
+	in
+	let do_login_service = create_attached_post ~fallback:login_service
+  	~post_params:(string "name" ** string "password") () in
+	Eliom_registration.Action.register ~scope:Eliom_common.default_session_scope
+		~service:do_login_service do_login_action;
+  let%lwt u = Eliom_reference.get user in
+  let%lwt err = Eliom_reference.get login_err in
+	Eliom_reference.set login_err None >>=
+	fun () -> match u with
+	| None -> container
+  	[Form.post_form ~service:do_login_service (fun (name, password) ->
+   	 [table ~a:[a_id "login_table"] (
+   	   tr [
+   	     td [pcdata "Username"];
+   	     td ~a:[a_colspan 2]
+   	       [Form.input ~input_type:`Text ~name:name Form.string]
+   	   ]::
+   	   tr [
+   	     td [pcdata "Password"];
+   		   td [Form.input ~input_type:`Password ~name:password Form.string]
+			 ]::
+			 tr [ 
+   	     td ~a:[a_colspan 2]
+				 	[Form.input ~input_type:`Submit ~value:"Login" Form.string]
+   	   ]::
+   	   (match err with
+   	   | None -> []
+   	   | Some e -> [tr [td ~a:[a_colspan 3; a_class ["error"]] [pcdata e]]]
+   	   )
+   	 )]) ()]
+	| Some u -> Eliom_registration.Redirection.send (Eliom_registration.Redirection main_service)
+;; 
+
 let main_page () () =
 	let admin_page () =
-		container (standard_menu ())
+		container
 		[
 			h1 [pcdata "Welcome"];
 			p [pcdata "Admin page still under construction."];
@@ -147,7 +146,7 @@ let main_page () () =
 	Lwt.catch (fun () ->
 		let%lwt u = Eliom_reference.get user in
 		match u with
-		| None -> container [] [p [pcdata "You can log in using the box in the upper right corner."]]
+		| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 		| Some (user_id, _, is_admin) ->
 			if is_admin then
 				admin_page ()
@@ -160,7 +159,7 @@ let main_page () () =
 				let this_week = Date.week (Date.today ()) in
 				let this_year = Date.year (Date.today ()) in
 				let this_lw = Moab_db.find_nr (fun (w, y) -> w = this_week && y = this_year) weeks 1 in
-				container (standard_menu ())
+				container
 				[
 					h1 [pcdata "Welcome"];
 					ul [
@@ -189,8 +188,7 @@ let main_page () () =
 							p [pcdata (Printf.sprintf "You have written a blog for %d out of %d week(s) so far. " (List.length blogs) this_lw); pcdata (Printf.sprintf "%d have been approved." (List.length (List.filter (fun (_, a) -> a) blogs)))]
 						]
 					]
-				]
-	)
+				])
 	(function
 	| Not_found -> error_page "You do not seem to be assigned a group number. This should not happen."
 	| e -> error_page (Printexc.to_string e))
@@ -254,7 +252,7 @@ let network_configuration = element
 
 let () =
 	Eliom_config.parse_config [ldap_configuration; database_el; term_configuration; network_configuration];
-  Moab_app.register ~service:main_service main_page;
-	Eliom_registration.Action.register ~service:login_service login_action;
+  Eliom_registration.Any.register ~service:login_service login_page;
+  Eliom_registration.Any.register ~service:main_service main_page;
 	Eliom_registration.Action.register ~service:logout_service logout_action
 ;;

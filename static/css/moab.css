@@ -13,34 +13,19 @@ div.layout
 
 div#header
 {
-  width: 60%;
+  width: 98%;
   height: 10%;
-  left: 1%;
-}
-
-div#logbox
-{
-  width: 35%;
-  height: 10%;
-  right: 1%;
-}
-
-div#menu
-{
-  width: 20%;
-  height: 70%;
-  top: 15%;
   left: 1%;
 }
 
 div#contents
 {
-  width: 75%;
-  width: 75%;
+  width: 98%;
   height: 70%;
   top: 15%;
-  right: 1%;
+  left: 1%;
   overflow-y: scroll;
+	padding: 5px;
 } 
   
 div#footer 
@@ -50,3 +35,22 @@ div#footer
   bottom: 1%;
   left: 1%;
 } 
+
+table#login_table
+{
+	width: 30%;
+	top: 20%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+div#header h1
+{
+	float: left;
+}
+
+form#logout_form
+{
+	float: right;
+	padding: 10px;
+}
