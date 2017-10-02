@@ -171,7 +171,7 @@ let main_page () () =
 								(match locked with
 								| Some true ->
 									pcdata "You do not have a presentation time scheduled. Contact the module leader as soon as possible."
-								| None ->
+								| _ ->
 									pcdata "You do not have a presentation time scheduled. You can schedule your session in the 'Presentation schedule' section or wait to be randomly assigned one.")
 						| Some (p_wk, _ ) ->
 							let (sd, _) = Date.week_first_last p_wk (if p_wk > 26 then !term else !term + 1) in
