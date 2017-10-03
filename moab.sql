@@ -51,11 +51,23 @@ CREATE TABLE attendance (
 
 CREATE TABLE blogs (
     user_id character varying(16) NOT NULL,
-    week smallint NOT NULL,
-    year smallint NOT NULL,
+    learning_week smallint NOT NULL,
+    term smallint NOT NULL,
     title text NOT NULL,
     contents text NOT NULL,
     approved boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: feedback; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE feedback (
+    presenter_id character varying(16) NOT NULL,
+    user_id character varying(16) NOT NULL,
+    term smallint NOT NULL,
+    CONSTRAINT feedback_check CHECK (((presenter_id)::text <> (user_id)::text))
 );
 
 
@@ -78,7 +90,7 @@ CREATE TABLE log (
 CREATE TABLE schedule (
     user_id character varying(16) NOT NULL,
     first boolean NOT NULL,
-    week smallint NOT NULL,
+    learning_week smallint NOT NULL,
     timetable_id integer NOT NULL
 );
 
@@ -191,7 +203,15 @@ ALTER TABLE ONLY attendance
 --
 
 ALTER TABLE ONLY blogs
-    ADD CONSTRAINT blogs_pkey PRIMARY KEY (user_id, week, year);
+    ADD CONSTRAINT blogs_pkey PRIMARY KEY (user_id, learning_week, term);
+
+
+--
+-- Name: feedback feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY feedback
+    ADD CONSTRAINT feedback_pkey PRIMARY KEY (presenter_id, user_id, term);
 
 
 --
@@ -248,6 +268,22 @@ ALTER TABLE ONLY attendance
 
 ALTER TABLE ONLY blogs
     ADD CONSTRAINT blogs_uid_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+
+--
+-- Name: feedback feedback_presenter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY feedback
+    ADD CONSTRAINT feedback_presenter_id_fkey FOREIGN KEY (presenter_id) REFERENCES users(id);
+
+
+--
+-- Name: feedback feedback_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY feedback
+    ADD CONSTRAINT feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 
 --

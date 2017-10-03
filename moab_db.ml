@@ -278,4 +278,14 @@ let last_learning_week group term =
 			| e -> Lwt.fail e)
 		| e -> Lwt.fail e)
 	| e -> Lwt.fail e)
+
+let get_feedback_given user_id term learning_week =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh) "nullable-results" "SELECT learning_week, presenter_id \
+		FROM schedule sch JOIN timetable t ON sch.timetable_id = t.id \
+		LEFT JOIN feedback f ON f.presenter_id = sch.user_id AND f.user_id = $user_id \
+		WHERE t.term = $term AND sch.user_id <> $user_id AND learning_week <= $learning_week" >>=
+	Lwt_list.map_s (fun (lw, p_id) -> match lw with
+	| None -> Lwt.fail_with "NULL value in learning weeks (get_feedback_given)"
+	| Some x -> Lwt.return (x, p_id))
 ;;
