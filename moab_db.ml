@@ -183,10 +183,10 @@ let get_learning_weeks group term =
 			JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
 			WHERE group_number = $group AND term = $term \
 			ORDER by year ASC, week ASC" >>=
-	fun l -> Lwt_list.map_s (function
+	Lwt_list.map_s (function
 	| None, _ -> Lwt.fail_with "NULL value in generated series (get_learning_weeks)"
 	| Some w, y -> Lwt.return (Int32.to_int w, y)
-	) l
+	)
 ;;
 
 let get_blog uid week term =
