@@ -156,6 +156,9 @@ let main_page () () =
 				let%lwt weeks = Moab_db.get_learning_weeks group !term in
 				let%lwt blogs = Moab_db.get_user_blogs user_id !term in
 				let%lwt this_lw = Moab_db.current_learning_week group !term in
+				let%lwt	last_lw = match this_lw with
+				| None -> Moab_db.last_learning_week group !term
+				| x -> Lwt.return x in
 				container
 				[
 					h1 [pcdata "Welcome"];
@@ -182,7 +185,9 @@ let main_page () () =
 								pcdata (Printer.Date.sprint "Your presentation is scheduled on %d %B %Y." day)
 						];
 						li [
-							p [pcdata (Printf.sprintf "You have written a blog for %d out of %d week(s) so far. " (List.length blogs) this_lw); pcdata (Printf.sprintf "%d have been approved." (List.length (List.filter (fun (_, a) -> a) blogs)))]
+							match last_lw with
+							| None -> p [pcdata "I don't know what learning week it is, sorry."]
+							| Some lw -> p [pcdata (Printf.sprintf "You have written a blog for %d out of %d week(s) so far. " (List.length blogs) lw); pcdata (Printf.sprintf "%d have been approved." (List.length (List.filter (fun (_, a) -> a) blogs)))]
 						]
 					]
 				])

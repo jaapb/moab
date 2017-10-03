@@ -251,7 +251,31 @@ let get_user_blogs user_id term =
 let current_learning_week group term =
 	let now = Date.today () in
 	get_learning_weeks group term >>=
-	fun lws -> Lwt.return (find_nr (fun (w, y) ->
-		w = (Date.week now) && y = (Date.year now))
-		lws 1)
+	fun lws -> Lwt.catch (fun () -> Lwt.return
+		(Some (find_nr (fun (w, y) -> w = (Date.week now) && y = (Date.year now)) lws 1))
+	)
+	(function
+	| Not_found -> Lwt.return None
+	| e -> Lwt.fail e)
+;;
+
+let last_learning_week group term =
+	let now = Date.today () in
+	get_learning_weeks group term >>=
+	fun lws -> Lwt.catch (fun () -> Lwt.return
+		(Some (find_nr (fun (w, y) -> w = (Date.week now) && y = (Date.year now)) lws 1))
+	)
+	(function
+	| Not_found -> Lwt.catch (fun () -> Lwt.return
+		(Some (find_nr (fun (w, y) -> w >= (Date.week now) && y = (Date.year now)) lws 1))
+		)
+		(function
+		| Not_found -> Lwt.catch (fun () -> Lwt.return
+			(Some (find_nr (fun (w, y) -> y = (Date.year now) + 1) lws 1))
+			)
+			(function
+			| Not_found -> Lwt.return None
+			| e -> Lwt.fail e)
+		| e -> Lwt.fail e)
+	| e -> Lwt.fail e)
 ;;

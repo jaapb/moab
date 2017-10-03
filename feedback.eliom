@@ -38,7 +38,9 @@ let feedback_page () () =
 			let%lwt (session_id, session_type) = Moab_db.find_sessions_now () in
 			let%lwt (group, _, _) = Moab_db.get_user_group uid !Moab.term in
 			let%lwt this_lw = Moab_db.current_learning_week group !Moab.term in
-			let%lwt (p1, p2) = Moab_db.get_presenters !term group this_lw in
+			let%lwt (p1, p2) = match this_lw with
+			| None -> Lwt.return (None, None)
+			| Some lw -> Moab_db.get_presenters !term group lw in
 			match session_type with
 			| `No_session -> no_session_found uid
 			| `Lecture | `Test ->
