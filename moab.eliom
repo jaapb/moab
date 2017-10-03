@@ -187,7 +187,7 @@ let main_page () () =
 					]
 				])
 	(function
-	| Not_found -> error_page "You do not seem to be assigned a group number. This should not happen."
+	| Not_found -> error_page "You do not seem to have been assigned a group number. This should not happen."
 	| e -> error_page (Printexc.to_string e))
 ;;
 
