@@ -289,3 +289,20 @@ let get_feedback_given user_id term learning_week =
 	| None -> Lwt.fail_with "NULL value in learning weeks (get_feedback_given)"
 	| Some x -> Lwt.return (x, p_id))
 ;;
+
+let check_password user_id password =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh) "SELECT password = crypt($password, password) \
+		FROM users \
+		WHERE id = upper($user_id)" >>=
+	function
+	| [Some true] -> Lwt.return None
+	| _ -> Lwt.return (Some "Unknown user or wrong password")
+;;
+
+let set_password user_id new_password =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh) "UPDATE users \
+		SET password = crypt($new_password, gen_salt('md5')) \
+		WHERE id = $user_id"
+;;

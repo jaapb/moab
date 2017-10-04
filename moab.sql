@@ -28,6 +28,20 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
+--
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
 SET search_path = public, pg_catalog;
 
 SET default_tablespace = '';
@@ -172,6 +186,8 @@ CREATE TABLE users (
     is_admin boolean DEFAULT false NOT NULL,
     name text NOT NULL,
     group_number smallint,
+    student_id character(9),
+    password text,
     CONSTRAINT users_check CHECK ((is_admin OR (group_number IS NOT NULL)))
 );
 
