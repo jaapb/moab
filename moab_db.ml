@@ -94,7 +94,7 @@ let has_attended session_id user_id week =
 	fun dbh -> PGSQL(dbh)
 		"SELECT session_id \
 		FROM attendance \
-		WHERE session_id = $session_id AND user_id = $user_id AND week = $week" >>=
+		WHERE session_id = $session_id AND user_id = $user_id AND learning_week = $week" >>=
 	function
 	| [] -> Lwt.return false
 	| [s] -> Lwt.return true
@@ -104,7 +104,7 @@ let has_attended session_id user_id week =
 let register_attendance session_id user_id week =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"INSERT INTO attendance (session_id, user_id, week) \
+		"INSERT INTO attendance (session_id, user_id, learning_week) \
 		VALUES \
 		($session_id, $user_id, $week)"
 ;;

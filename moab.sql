@@ -55,7 +55,7 @@ SET default_with_oids = false;
 CREATE TABLE attendance (
     session_id integer NOT NULL,
     user_id character varying(16) NOT NULL,
-    week smallint NOT NULL
+    learning_week smallint NOT NULL
 );
 
 
@@ -187,7 +187,7 @@ CREATE TABLE users (
     name text NOT NULL,
     group_number smallint,
     student_id character(9),
-    password text,
+    password text NOT NULL,
     CONSTRAINT users_check CHECK ((is_admin OR (group_number IS NOT NULL)))
 );
 
@@ -211,7 +211,7 @@ ALTER TABLE ONLY timetable ALTER COLUMN id SET DEFAULT nextval('timetable_id_seq
 --
 
 ALTER TABLE ONLY attendance
-    ADD CONSTRAINT attendance_session_id_user_id_week_key UNIQUE (session_id, user_id, week);
+    ADD CONSTRAINT attendance_session_id_user_id_week_key UNIQUE (session_id, user_id, learning_week);
 
 
 --

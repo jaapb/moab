@@ -28,7 +28,7 @@ let is_internal_ip str =
 	) false l
 ;;
 
-let do_attendance_page () (user_id, session_id) =
+let do_attendance_page () (user_id, (session_id, lw)) =
 	let remote_ip = Eliom_request_info.get_remote_ip () in
 	Lwt.catch (fun () ->
 		if not (is_internal_ip remote_ip)
@@ -41,8 +41,7 @@ let do_attendance_page () (user_id, session_id) =
 				action will be logged."]
 			]
 		else
-			let week = Date.week (Date.today ()) in
-			let%lwt () = Moab_db.register_attendance session_id user_id week in
+			let%lwt () = Moab_db.register_attendance session_id user_id lw in
 			container
 			[
 				h1 [pcdata "Attendance"];
@@ -57,14 +56,15 @@ let do_attendance_page () (user_id, session_id) =
 
 let attendance_page () () =
 	let do_attendance_service = create_attached_post ~fallback:attendance_service
-		~post_params:(string "user_id" ** int32 "session_id") () in
-	let register_attendance_form uid sid =
+		~post_params:(string "user_id" ** int32 "session_id" ** int "learning_week") () in
+	let register_attendance_form uid sid lw =
 	begin
 		Form.post_form ~service:do_attendance_service
-		(fun (user_id, session_id) ->
+		(fun (user_id, (session_id, learning_week)) ->
 		[
 			Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
 			Form.input ~input_type:`Hidden ~name:session_id ~value:sid Form.int32;
+			Form.input ~input_type:`Hidden ~name:learning_week ~value:lw Form.int;
 			Form.input ~input_type:`Submit ~value:"Register" Form.string
 		]
 		) ()
@@ -76,32 +76,40 @@ let attendance_page () () =
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
-			let week = Date.week (Date.today ()) in
 			let%lwt (session_id, session_type) = Moab_db.find_sessions_now () in
-			let%lwt att = Moab_db.has_attended session_id uid week in
-			if att then
-				container
+			let%lwt (group, _, _) = Moab_db.get_user_group uid !Moab.term in
+			let%lwt clw = Moab_db.current_learning_week group !Moab.term in
+			match clw with
+			| None -> container 
 				[
-					h1 [pcdata "Already registered"];
-					p [pcdata "Your attendance has already been registered for this session."]
+					h1 [pcdata "Free"];
+					p [pcdata "We are not in term, there is no need to register attendance."]
 				]
-			else
-			match session_type with
-			| `No_session -> no_session_found uid
-			| `Lecture | `Test ->
-				container
-				[	
-					h1 [pcdata "Lecture"];
-					register_attendance_form uid session_id
-				]
-			| `Seminar ->
-				container
-				[
-					h1 [pcdata "Seminar"];
-					p [pcdata "You can register your attendance. If there are presentations scheduled in this session, then submitting one or more feedback forms will automatically register you for attendance as well."];
-					register_attendance_form uid session_id
-				]
-		)
+			| Some lw -> let%lwt att = Moab_db.has_attended session_id uid lw in
+				(if att then
+					container
+					[
+						h1 [pcdata "Already registered"];
+						p [pcdata "Your attendance has already been registered for this session."]
+					]
+				else
+				match session_type with
+				| `No_session -> no_session_found uid
+				| `Lecture | `Test ->
+					container
+					[	
+						h1 [pcdata "Lecture"];
+						register_attendance_form uid session_id lw
+					]
+				| `Seminar ->
+					container
+					[
+						h1 [pcdata "Seminar"];
+						p [pcdata "You can register your attendance. If there are presentations scheduled in this session, then submitting one or more feedback forms will automatically register you for attendance as well."];
+						register_attendance_form uid session_id lw
+					]
+				)
+			)
 		(function
 		| Failure s -> 
 			container
