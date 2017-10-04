@@ -291,13 +291,15 @@ let get_feedback_given user_id term learning_week =
 ;;
 
 let check_password user_id password =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh) "SELECT password = crypt($password, password) \
-		FROM users \
-		WHERE id = upper($user_id)" >>=
-	function
-	| [Some true] -> Lwt.return None
-	| _ -> Lwt.return (Some "Unknown user or wrong password")
+	if password = "" then Lwt.return (Some "Empty password")
+	else
+		get_db () >>=
+		fun dbh -> PGSQL(dbh) "SELECT password = crypt($password, password) \
+			FROM users \
+			WHERE id = upper($user_id)" >>=
+		function
+		| [Some true] -> Lwt.return None
+		| _ -> Lwt.return (Some "Unknown user or wrong password")
 ;;
 
 let set_password user_id new_password =
