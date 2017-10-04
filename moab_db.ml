@@ -302,9 +302,14 @@ let check_password user_id password =
 		| _ -> Lwt.return (Some "Unknown user or wrong password")
 ;;
 
-let set_password user_id new_password =
+let set_user_data user_id name new_password =
 	get_db () >>=
-	fun dbh -> PGSQL(dbh) "UPDATE users \
-		SET password = crypt($new_password, gen_salt('md5')) \
+	fun dbh -> if new_password = "" then
+		PGSQL(dbh) "UPDATE users \
+			SET name = $name \
+			WHERE id = $user_id"
+	else
+		PGSQL(dbh) "UPDATE users \
+			SET name = $name, password = crypt($new_password, gen_salt('md5')) \
 		WHERE id = $user_id"
 ;;
