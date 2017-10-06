@@ -75,17 +75,17 @@ let find_user user_id =
 let find_sessions_now () =
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"SELECT s.id, type \
+		"SELECT s.id, type, group_number \
 		FROM sessions s JOIN timetable t ON s.timetable_id = t.id \
 		WHERE year = EXTRACT(year FROM now()) \
 		AND EXTRACT(week FROM now()) BETWEEN start_week AND end_week \
 		AND weekday = EXTRACT(dow FROM now()) \
 		AND localtime BETWEEN start_time AND end_time" >>=
 	function
-	| [] -> Lwt.return (0l, `No_session)
-	| [id, "L"] -> Lwt.return (id, `Lecture)
-	| [id, "S"] -> Lwt.return (id, `Seminar)
-	| [id, "T"] -> Lwt.return (id, `Test)
+	| [] -> Lwt.return (0l, `No_session, None)
+	| [id, "L", g] -> Lwt.return (id, `Lecture, g)
+	| [id, "S", g] -> Lwt.return (id, `Seminar, g)
+	| [id, "T", g] -> Lwt.return (id, `Test, g)
 	| _ -> Lwt.fail_with "multiple sessions found"
 ;;
 

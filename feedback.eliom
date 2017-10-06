@@ -35,7 +35,7 @@ let feedback_page () () =
 	| Some (uid, _, _) -> 
 		Lwt.catch (fun () ->
 			let week = Date.week (Date.today ()) in
-			let%lwt (session_id, session_type) = Moab_db.find_sessions_now () in
+			let%lwt (session_id, session_type, sgroup) = Moab_db.find_sessions_now () in
 			let%lwt (group, _, _) = Moab_db.get_user_group uid !Moab.term in
 			let%lwt this_lw = Moab_db.current_learning_week group !Moab.term in
 			let%lwt (p1, p2) = match this_lw with
