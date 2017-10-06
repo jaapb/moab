@@ -101,8 +101,8 @@ let login_page () () =
 				with
 				| Ldap_types.LDAP_Failure (`INVALID_CREDENTIALS, _, _) ->
 					Eliom_reference.set login_err (Some "Unknown user or wrong password")
-				| Ldap_types.LDAP_Failure (_, s, _) ->
-					Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s" s))
+				| Ldap_types.LDAP_Failure (c, s, _) ->
+					Eliom_reference.set login_err (Some (Printf.sprintf "Failure: %s %s" (Ldap_error.err2string c) s))
 				| e ->
 					Eliom_reference.set login_err (Some (Printexc.to_string e))
 	in
