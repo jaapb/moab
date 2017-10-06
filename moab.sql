@@ -55,7 +55,8 @@ SET default_with_oids = false;
 CREATE TABLE attendance (
     session_id integer NOT NULL,
     user_id character varying(16) NOT NULL,
-    learning_week smallint NOT NULL
+    learning_week smallint NOT NULL,
+    confirmed character(1)
 );
 
 

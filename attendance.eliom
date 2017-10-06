@@ -69,15 +69,19 @@ let attendance_page () () =
 						p [pcdata "Your attendance has been successfully registered for this session."]
 					]
 				| `Seminar ->
-					Moab_db.register_attendance session_id uid lw >>=
-					fun () -> container (
-						h1 [pcdata "Attendance"]::
-						p [pcdata "Your attendance has been successfully registered for this session."]::
-						if Some group <> sgroup then
-							[p [pcdata "However, since you are not normally part of this group, it will have to be confirmed. Please see your tutor after the session."]]
-						else
-							[]
-					)
+					if Some group <> sgroup then
+						Moab_db.register_attendance ~need_confirmation:true session_id uid lw >>=
+						fun () -> container [
+							h1 [pcdata "Attendance"];
+							p [pcdata "Your attendance has been successfully registered for this session."];
+							p [pcdata "However, since you are not normally part of this group, it will have to be confirmed. Please see your tutor after the session."]
+						]
+					else
+						Moab_db.register_attendance session_id uid lw >>=
+						fun () -> container [
+							h1 [pcdata "Attendance"];
+							p [pcdata "Your attendance has been successfully registered for this session."]
+						]
 				)
 			)
 		(function

@@ -140,10 +140,26 @@ let login_page () () =
 
 let main_page () () =
 	let admin_page () =
+		let%lwt att = Moab_db.get_confirmable_attendance !term in
 		container
 		[
-			h1 [pcdata "Welcome"];
-			p [pcdata "Admin page still under construction."];
+			h1 [pcdata "Welcome, admin"];
+			h2 [pcdata "Attendance"];
+			p [pcdata "To be confirmed:"];
+			table (
+				tr [
+					th [pcdata "Student"]; th [pcdata "Session"]; th [pcdata "Learning week"]; th [pcdata "Action"]
+				]::
+				(List.map (fun (n, lw, wd, st, et) ->
+					tr [
+						td [pcdata n];
+						td [pcdata (Printf.sprintf "%s %s-%s" (Printer.name_of_day (Date.day_of_int wd))
+							(Printer.Time.sprint "%H:%M" st) (Printer.Time.sprint "%H:%M" et))];
+						td [pcdata (string_of_int lw)];
+						td []
+					]
+				) att)
+			)
 		]
 	in
 	Lwt.catch (fun () ->

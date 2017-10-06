@@ -101,12 +101,13 @@ let has_attended session_id user_id week =
 	| _ -> Lwt.fail_with "multiple sessions found"
 ;;
 
-let register_attendance session_id user_id week =
+let register_attendance ?(need_confirmation=false) session_id user_id week =
+	let confirmed = if need_confirmation then Some "W" else None in
 	get_db () >>=
 	fun dbh -> PGSQL(dbh)
-		"INSERT INTO attendance (session_id, user_id, learning_week) \
+		"INSERT INTO attendance (session_id, user_id, learning_week, confirmed) \
 		VALUES \
-		($session_id, $user_id, $week)"
+		($session_id, $user_id, $week, $?confirmed)"
 ;;
 
 let log user_id ip_address thing =
@@ -312,4 +313,13 @@ let set_user_data user_id name new_password =
 		PGSQL(dbh) "UPDATE users \
 			SET name = $name, password = crypt($new_password, gen_salt('md5')) \
 		WHERE id = $user_id"
+;;
+
+let get_confirmable_attendance term =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh) "SELECT name, learning_week, weekday, start_time, end_time \
+		FROM attendance a JOIN sessions s ON a.session_id = s.id \
+			JOIN timetable t ON s.timetable_id = t.id \
+			JOIN users u ON u.id = a.user_id \
+		WHERE confirmed = 'W' AND term = $term"
 ;;
