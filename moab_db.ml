@@ -135,11 +135,11 @@ let get_presentation_slots term group start_week =
 		"SELECT gs.week, sch1.user_id, u1.name, sch2.user_id, u2.name \
 		FROM generate_series(1,24) AS gs(week) \
 		LEFT JOIN schedule sch1 ON sch1.learning_week = gs.week AND sch1.first \
-		LEFT JOIN schedule sch2 ON sch2.learning_week = gs.week AND NOT sch2.first \
+			AND sch1.timetable_id = $slot \ 
+		LEFT JOIN schedule sch2 ON sch2.learning_week = gs.week AND NOT sch2.first 
+			AND sch2.timetable_id = $slot \
 		LEFT JOIN users u1 ON sch1.user_id = u1.id \
 		LEFT JOIN users u2 ON sch2.user_id = u2.id \
-		WHERE (sch1.timetable_id = $slot OR sch1.timetable_id IS NULL) AND \
-			(sch2.timetable_id = $slot OR sch2.timetable_id IS NULL)\
 		ORDER BY gs.week ASC") >>=
 	fun l -> Lwt_list.map_s (function
 	| (Some w, i1, n1, i2, n2) -> Lwt.return (Int32.to_int w, i1, n1, i2, n2)
