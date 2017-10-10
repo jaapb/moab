@@ -143,6 +143,7 @@ let login_page () () =
 let main_page () () =
 	let admin_page () =
 		let%lwt att = Moab_db.get_confirmable_attendance !term in
+		let%lwt (i, t, g) = Moab_db.find_sessions_now () in
 		container
 		[
 			h1 [pcdata "Welcome, admin"];
@@ -163,6 +164,17 @@ let main_page () () =
 					]
 				) att)
 			);
+			h2 [pcdata "Sessions"];
+			table [
+				tr [
+					th [pcdata "ID"]; th [pcdata "Type"]; th [pcdata "Group"]
+				];
+				tr [
+					td [pcdata (Int32.to_string i)];
+					td [pcdata (match t with `No_session -> "none" | `Lecture -> "lecture" | `Seminar -> "seminar" | `Test -> "test")];
+					td [pcdata (match g with None -> "" | Some x -> (string_of_int x))]
+				]
+			]
 		]
 	in
 	Lwt.catch (fun () ->
