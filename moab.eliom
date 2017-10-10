@@ -116,7 +116,8 @@ let login_page () () =
 	Eliom_reference.set login_err None >>=
 	fun () -> match u with
 	| None -> container
-  	[Form.post_form ~service:do_login_service (fun (name, password) ->
+  	[p [pcdata "Please use your normal University username (XX1234) as your user name, and your student ID (M12345678) as your password (initially; you can change this from the main menu)."];
+		Form.post_form ~service:do_login_service (fun (name, password) ->
    	 [table ~a:[a_id "login_table"] (
    	   tr [
    	     td [pcdata "Username"];
@@ -186,6 +187,7 @@ let main_page () () =
 				container
 				[
 					h1 [pcdata "Welcome"];
+					p [pcdata "Please note that trying to register attendance or feedback out of session, or when not connected to the Middlesex network, is not allowed and will be logged."];
 					ul [
 						li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
 						li [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
