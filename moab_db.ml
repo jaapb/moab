@@ -323,3 +323,24 @@ let get_confirmable_attendance term =
 			JOIN users u ON u.id = a.user_id \
 		WHERE confirmed = 'W' AND term = $term"
 ;;
+
+let get_planned_sessions term =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh) "SELECT MAX(year), gs.week, COUNT(s.id) \
+		FROM timetable t JOIN sessions s ON t.id = s.timetable_id \
+			JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
+		WHERE (group_number=1 OR group_number IS NULL) AND term=2017 \
+		AND type IN ('S', 'L') GROUP BY gs.week ORDER BY 1, 2"
+;;
+
+let get_user_attendance term week =
+	get_db () >>=
+	fun dbh -> PGSQL(dbh) "SELECT u.id, student_id, COUNT(a.session_id) \
+		FROM users u LEFT JOIN attendance a ON u.id = a.user_id \
+		LEFT JOIN sessions s ON s.id = a.session_id \
+		LEFT JOIN timetable t ON s.timetable_id = t.id \
+		WHERE (a.learning_week = $week OR a.learning_week IS NULL)
+		AND is_admin = false \
+		AND (term = $term OR term IS NULL) \
+		GROUP BY u.id"
+;;

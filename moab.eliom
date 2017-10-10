@@ -55,9 +55,10 @@ let container cts_div =
 			);
       div ~a:[a_class ["layout"]; a_id "contents"] cts_div;
       div ~a:[a_class ["layout"]; a_id "footer"] [
-        img ~alt:"Powered by Ocsigen"
+        a ~service:(Eliom_service.extern ~prefix:"http://www.ocsigen.org"
+					~path:[] ~meth:(Get unit) ()) [img ~alt:"Powered by Ocsigen"
         ~src:(make_uri ~service:(static_dir ())
-          ["ocsigen-powered.png"]) ()
+          ["ocsigen-powered.png"]) ()] ()
       ]
     ])
 	)
@@ -145,6 +146,7 @@ let main_page () () =
 		[
 			h1 [pcdata "Welcome, admin"];
 			h2 [pcdata "Attendance"];
+			p [a ~service:attendance_report_service [pcdata "Generate attendance report"] ()];
 			p [pcdata "To be confirmed:"];
 			table (
 				tr [
@@ -159,7 +161,7 @@ let main_page () () =
 						td []
 					]
 				) att)
-			)
+			);
 		]
 	in
 	Lwt.catch (fun () ->
