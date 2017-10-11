@@ -29,7 +29,7 @@ let write_blog_page () () =
 	let%lwt u = Eliom_reference.get user in
 	match u with
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
-	| Some (uid, _, _) -> 
+	| Some (uid, _, _, _) -> 
 		Lwt.catch (fun () ->
 			let term = !Moab.term in
 			let%lwt (group, _, _) = Moab_db.get_user_group uid term in

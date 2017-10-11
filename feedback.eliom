@@ -32,7 +32,7 @@ let feedback_page () () =
 	let%lwt u = Eliom_reference.get user in
 	match u with
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
-	| Some (uid, _, _) -> 
+	| Some (uid, _, _, _) -> 
 		Lwt.catch (fun () ->
 			let week = Date.week (Date.today ()) in
 			let%lwt (session_id, session_type, sgroup) = Moab_db.find_sessions_now () in
@@ -60,22 +60,22 @@ let feedback_page () () =
 								td (match p1, p2 with
 								| None, None ->
 									[i [pcdata "no presentations scheduled"]]
-								| Some (i1, n1), None when i1 = uid ->
+								| Some (i1, fn1, ln1), None when i1 = uid ->
 									[i [pcdata "Yourself"]]
-								| None, Some (i2, n2) when i2 = uid ->
+								| None, Some (i2, fn2, ln2) when i2 = uid ->
 									[i [pcdata "Yourself"]]
-								| Some (i1, n1), None ->
-									[Form.radio ~checked:true ~name:presenter_id ~value:i1 Form.string; pcdata " "; pcdata n1]
-								| Some (i1, n1), Some (i2, n2) when i2 = uid ->
-									[Form.radio ~checked:true ~name:presenter_id ~value:i1 Form.string; pcdata " "; pcdata n1]
-								| None, Some (i2, n2) ->
-									[Form.radio ~checked:true ~name:presenter_id ~value:i2 Form.string; pcdata " "; pcdata n2]
-								| Some (i1, n1), Some (i2, n2) when i1 = uid ->
-									[Form.radio ~checked:true ~name:presenter_id ~value:i2 Form.string; pcdata " "; pcdata n2]
-								| Some (i1, n1), Some (i2, n2) ->
-									[Form.radio ~checked:true ~name:presenter_id ~value:i1 Form.string; pcdata " "; pcdata n1;
+								| Some (i1, fn1, ln1), None ->
+									[Form.radio ~checked:true ~name:presenter_id ~value:i1 Form.string; pcdata " "; pcdata (Printf.sprintf "%s %s" fn1 ln1)]
+								| Some (i1, fn1, ln1), Some (i2, fn2, ln2) when i2 = uid ->
+									[Form.radio ~checked:true ~name:presenter_id ~value:i1 Form.string; pcdata " "; pcdata (Printf.sprintf "%s %s" fn1 ln1)]
+								| None, Some (i2, fn2, ln2) ->
+									[Form.radio ~checked:true ~name:presenter_id ~value:i2 Form.string; pcdata " "; pcdata (Printf.sprintf "%s %s" fn2 ln2)]
+								| Some (i1, fn1, ln1), Some (i2, fn2, ln2) when i1 = uid ->
+									[Form.radio ~checked:true ~name:presenter_id ~value:i2 Form.string; pcdata " "; pcdata (Printf.sprintf "%s %s" fn2 ln2)]
+								| Some (i1, fn1, ln1), Some (i2, fn2, ln2) ->
+									[Form.radio ~checked:true ~name:presenter_id ~value:i1 Form.string; pcdata " "; pcdata (Printf.sprintf "%s %s" fn1 ln1);
 									pcdata " ";
-									Form.radio ~name:presenter_id ~value:i2 Form.string; pcdata " "; pcdata n2]
+									Form.radio ~name:presenter_id ~value:i2 Form.string; pcdata " "; pcdata (Printf.sprintf "%s %s" fn2 ln2)]
 								)
 							]
 						]

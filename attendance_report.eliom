@@ -23,10 +23,8 @@ let do_generate_report () (from_week, to_week) =
 				let lw = n + 1 in
 				if (lw >= from_week) && (lw <= to_week) then
 					let (sw, _) = Date.week_first_last wk y in
-					Ocsigen_messages.console (fun () -> (Printf.sprintf "Learning week %d" lw));
 					let%lwt	users = Moab_db.get_user_attendance !Moab.term lw in 	
-					Lwt_list.map_s (fun (uid, p, x) ->
-						Ocsigen_messages.console (fun () -> (Printf.sprintf "- uid %s" uid));
+					Lwt_list.map_s (fun (uid, fn, ln, p, x) ->
 						let student_id = match p with None -> "" | Some q -> q in
 						let nr_sessions = match x with None -> 0L | Some y -> y in
 						Lwt.return [string_of_int lw;
@@ -36,8 +34,8 @@ let do_generate_report () (from_week, to_week) =
 						Printer.Date.sprint "%Y-%m-%d" sw;
 						"";
 						uid;
-						"";
-						"";
+						fn;
+						ln;
 						(Printf.sprintf "%s@live.mdx.ac.uk" uid);
 						"";
 						""	
@@ -61,7 +59,7 @@ let attendance_report_page () () =
 	let%lwt u = Eliom_reference.get user in
 	match u with
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
-	| Some (uid, _, _) -> 
+	| Some (uid, _, _, _) -> 
 		Lwt.catch (fun () ->
 			let%lwt x = Moab_db.last_learning_week 1 !Moab.term in
 			let llw = match x with

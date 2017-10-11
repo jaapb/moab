@@ -18,9 +18,9 @@ let add_schedule_action () (user_id, (term, (group, week))) =
 	Lwt.catch (fun () -> let%lwt (p1, p2) = Moab_db.get_presenters term group week in
 		match (p1, p2) with
 		| None, None -> Moab_db.set_presenter user_id term group week true
-		| Some (i1, _), None -> if i1 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week false
-		| None, Some (i2, _) -> if i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week true
-		| Some (i1, _), Some (i2, _) -> if i1 = user_id || i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Eliom_reference.set schedule_err (Some "That session is full.")
+		| Some (i1, _, _), None -> if i1 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week false
+		| None, Some (i2, _, _) -> if i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Moab_db.set_presenter user_id term group week true
+		| Some (i1, _, _), Some (i2, _, _) -> if i1 = user_id || i2 = user_id then Eliom_reference.set schedule_err (Some "You are already signed up for this session.") else Eliom_reference.set schedule_err (Some "That session is full.")
 	)
 	(function
 	| e -> Eliom_reference.set schedule_err (Some (Printexc.to_string e))
@@ -41,7 +41,7 @@ let schedule_page () () =
 	Eliom_reference.set schedule_err None >>=
 	fun () -> match u with
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
-	| Some (uid, _, _) -> 
+	| Some (uid, _, _, _) -> 
 		Lwt.catch (fun () ->
 			let term = !Moab.term in
 			let start_week = !Moab.start_week in
@@ -55,14 +55,18 @@ let schedule_page () () =
 				table
 				(
 					tr [th [pcdata "Learning week"]; th [pcdata "Date"]; th [pcdata "Presenter 1"]; th [pcdata "Presenter 2"]]::
-					(List.map2 (fun (lw, i1, n1, i2, n2) (w, y) ->
+					(List.map2 (fun (lw, i1, fn1, ln1, i2, fn2, ln2) (w, y) ->
 						let (sd, _) = Date.week_first_last w y in
 						let day = Date.add sd (Date.Period.day (wd - 1)) in
-						let n1s = match i1, n1 with
-						| Some i, Some n -> if i = uid then b [pcdata n] else pcdata n
+						let n1s = match i1, fn1, ln1 with
+						| Some i, Some fn, Some ln ->
+							let n = Printf.sprintf "%s %s" fn ln in
+							if i = uid then b [pcdata n] else pcdata n
 						| _ -> i [pcdata "no presenter"] in
-						let n2s = match i2, n2 with
-						| Some i, Some n -> if i = uid then b [pcdata n] else pcdata n
+						let n2s = match i2, fn2, ln2 with
+						| Some i, Some fn, Some ln ->
+							let n = Printf.sprintf "%s %s" fn ln in
+							if i = uid then b [pcdata n] else pcdata n
 						| _ -> i [pcdata "no presenter"] in
 							tr [td [pcdata (string_of_int lw)]; td [pcdata (Printer.Date.sprint "%d %b" day)];
 								td [n1s]; td [n2s]]
@@ -84,9 +88,9 @@ let schedule_page () () =
 								td [pcdata "Week:"];
 								td [match slots with
 									| [] -> Form.input ~input_type:`Text ~name:week Form.int
-									| (w, _, _, _, _)::t -> Form.select ~name:week Form.int
+									| (w, _, _, _, _, _, _)::t -> Form.select ~name:week Form.int
 										(Form.Option ([], w, Some (pcdata (string_of_int w)), is_mine my_pres w))
-										(List.map (fun (w, _, _, _, _) ->
+										(List.map (fun (w, _, _, _, _, _, _) ->
 											Form.Option ([], w, Some (pcdata (string_of_int w)), is_mine my_pres w)
 										) t)
 								]

@@ -32,7 +32,7 @@ let attendance_page () () =
 	let%lwt u = Eliom_reference.get user in
 	match u with
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
-	| Some (uid, _, _) -> 
+	| Some (uid, _, _, _) -> 
 		Lwt.catch (fun () ->
 			let remote_ip = Eliom_request_info.get_remote_ip () in
 			let%lwt (session_id, session_type, sgroup) = Moab_db.find_sessions_now () in

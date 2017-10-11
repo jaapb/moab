@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.5
+-- Dumped from database version 9.6.3
 -- Dumped by pg_dump version 9.6.5
 
 SET statement_timeout = 0;
@@ -185,10 +185,13 @@ ALTER SEQUENCE timetable_id_seq OWNED BY timetable.id;
 CREATE TABLE users (
     id character varying(16) NOT NULL,
     is_admin boolean DEFAULT false NOT NULL,
-    name text NOT NULL,
     group_number smallint,
     student_id character(9),
     password text NOT NULL,
+    joined_week smallint,
+    left_week smallint,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
     CONSTRAINT users_check CHECK ((is_admin OR (group_number IS NOT NULL)))
 );
 

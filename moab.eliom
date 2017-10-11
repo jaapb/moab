@@ -43,11 +43,11 @@ let container cts_div =
 				h1 [a ~service:main_service [pcdata "CSD 3600"] ()]::
 				(match x with
 				| None -> []
-				| Some (_, nm, is_admin) -> 
+				| Some (_, fn, ln, is_admin) -> 
 					[
 						Form.post_form ~a:[a_id "logout_form"] ~service:logout_service
 						(fun () -> [table [
-							tr [td [pcdata (Printf.sprintf "Logged in as %s%s" nm (if is_admin then " (admin)" else ""))]];
+							tr [td [pcdata (Printf.sprintf "Logged in as %s %s%s" fn ln (if is_admin then " (admin)" else ""))]];
 							tr [td [Form.input ~input_type:`Submit ~value:"Logout" Form.string]]
 						]]) ()
 					]
@@ -77,8 +77,8 @@ let login_page () () =
 		let do_login name =
 		begin
 			Lwt.catch (fun () ->
-				let%lwt (user_id, fname, is_admin) = Moab_db.find_user name in
-				Eliom_reference.set user (Some (user_id, fname, is_admin))
+				let%lwt (user_id, fname, lname, is_admin) = Moab_db.find_user name in
+				Eliom_reference.set user (Some (user_id, fname, lname, is_admin))
 			)
 			(function
 			| Not_found -> Eliom_reference.set login_err (Some "Not registered for this module")
@@ -155,9 +155,9 @@ let main_page () () =
 				tr [
 					th [pcdata "Student"]; th [pcdata "Session"]; th [pcdata "Learning week"]; th [pcdata "Action"]
 				]::
-				(List.map (fun (n, lw, wd, st, et) ->
+				(List.map (fun (fn, ln, lw, wd, st, et) ->
 					tr [
-						td [pcdata n];
+						td [pcdata (Printf.sprintf "%s %s" fn ln)];
 						td [pcdata (Printf.sprintf "%s %s-%s" (Printer.name_of_day (Date.day_of_int wd))
 							(Printer.Time.sprint "%H:%M" st) (Printer.Time.sprint "%H:%M" et))];
 						td [pcdata (string_of_int lw)];
@@ -177,7 +177,7 @@ let main_page () () =
 		let%lwt u = Eliom_reference.get user in
 		match u with
 		| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
-		| Some (user_id, _, is_admin) ->
+		| Some (user_id, _, _, is_admin) ->
 			Ocsigen_messages.console (fun () -> Printf.sprintf "[%s] %s" user_id (if is_admin then "admin_page" else "main_page"));
 			if is_admin then
 				admin_page ()

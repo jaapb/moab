@@ -56,9 +56,9 @@ let db_pool = Lwt_pool.create 5
 
 let find_user user_id =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-		"SELECT id, name, is_admin \
+		"SELECT id, first_name, last_name, is_admin \
 		FROM users \
-		WHERE id = upper($user_id)") >>=
+		WHERE id = upper($user_id) AND left_week IS NULL") >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [f] -> Lwt.return f
@@ -121,7 +121,8 @@ let get_presentation_slots term group start_week =
 		| [id] -> Lwt.return id
 		| _ -> Lwt.fail_with "multiple timetable slots found") >>=
 		fun slot -> PGSQL(dbh) "nullable-results"
-		"SELECT gs.week, sch1.user_id, u1.name, sch2.user_id, u2.name \
+		"SELECT gs.week, sch1.user_id, u1.first_name, u1.last_name, \
+		sch2.user_id, u2.first_name, u2.last_name \
 		FROM generate_series(1,24) AS gs(week) \
 		LEFT JOIN schedule sch1 ON sch1.learning_week = gs.week AND sch1.first \
 			AND sch1.timetable_id = $slot \ 
@@ -131,7 +132,8 @@ let get_presentation_slots term group start_week =
 		LEFT JOIN users u2 ON sch2.user_id = u2.id \
 		ORDER BY gs.week ASC")) >>=
 	fun l -> Lwt_list.map_s (function
-	| (Some w, i1, n1, i2, n2) -> Lwt.return (Int32.to_int w, i1, n1, i2, n2)
+	| (Some w, i1, fn1, ln1, i2, fn2, ln2) ->
+		Lwt.return (Int32.to_int w, i1, fn1, ln1, i2, fn2, ln2)
 	| _ -> Lwt.fail_with "NULL value in generated series (get_presentation_slots)"
 	) (drop (start_week-1) l)
 ;;
@@ -150,16 +152,18 @@ let get_user_group user_id term =
 
 let get_presenters term group week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-		"SELECT user_id, u.name, first \
+		"SELECT user_id, u.first_name, u.last_name, first \
 		FROM timetable t JOIN schedule sch ON sch.timetable_id = t.id \
 		JOIN users u on u.id = sch.user_id \
 		WHERE t.group_number = $group AND term = $term AND learning_week = $week") >>=
 	function
 	| [] -> Lwt.return (None, None)
-	| [u, n, true] -> Lwt.return (Some (u, n), None)
-	| [u, n, false] -> Lwt.return (None, Some (u, n))
-	| [u1, n1, true; u2, n2, false] -> Lwt.return (Some (u1, n1), Some (u2, n2))
-	| [u1, n1, false; u2, n2, true] -> Lwt.return (Some (u2, n2), Some (u1, n1))
+	| [u, fn, ln, true] -> Lwt.return (Some (u, fn, ln), None)
+	| [u, fn, ln, false] -> Lwt.return (None, Some (u, fn, ln))
+	| [u1, fn1, ln1, true; u2, fn2, ln2, false] ->
+		Lwt.return (Some (u1, fn1, ln1), Some (u2, fn2, ln2))
+	| [u1, fn1, ln1, false; u2, fn2, ln2, true] ->
+		Lwt.return (Some (u2, fn2, ln2), Some (u1, fn1, ln1))
 	| _ -> Lwt.fail_with "more than two presenters found"
 ;;
 
@@ -287,20 +291,21 @@ let check_password user_id password =
 		| _ -> Lwt.return (Some "Unknown user or wrong password")
 ;;
 
-let set_user_data user_id name new_password =
+let set_user_data user_id fname lname new_password =
 	Lwt_pool.use db_pool (fun dbh -> if new_password = "" then
 		PGSQL(dbh) "UPDATE users \
-			SET name = $name \
+			SET first_name = $fname, last_name = $lname \
 			WHERE id = $user_id"
 	else
 		PGSQL(dbh) "UPDATE users \
-			SET name = $name, password = crypt($new_password, gen_salt('md5')) \
+			SET first_name = $fname, last_name = $lname, \
+			password = crypt($new_password, gen_salt('md5')) \
 		WHERE id = $user_id")
 ;;
 
 let get_confirmable_attendance term =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-	"SELECT name, learning_week, weekday, start_time, end_time \
+	"SELECT first_name, last_name, learning_week, weekday, start_time, end_time \
 		FROM attendance a JOIN sessions s ON a.session_id = s.id \
 			JOIN timetable t ON s.timetable_id = t.id \
 			JOIN users u ON u.id = a.user_id \
@@ -318,7 +323,7 @@ let get_planned_sessions term =
 
 let get_user_attendance term week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-	"SELECT u.id, student_id, COUNT(a.session_id) \
+	"SELECT u.id, u.first_name, u.last_name, student_id, COUNT(a.session_id) \
 		FROM users u LEFT JOIN attendance a ON u.id = a.user_id \
 		LEFT JOIN sessions s ON s.id = a.session_id \
 		LEFT JOIN timetable t ON s.timetable_id = t.id \
