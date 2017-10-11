@@ -170,7 +170,7 @@ let main_page () () =
 			| `No_session -> p [pcdata "no sessions currently running"]
 			| `Lecture -> p [b [pcdata "Lecture"]; pcdata (Printf.sprintf ", ID %ld" i)]
 			| `Seminar -> p [b [pcdata "Seminar"]; pcdata (Printf.sprintf ", ID %ld%s" i (match g with None -> "" | Some x -> (Printf.sprintf ", group %d" x)))]
-			| `Test - p [pcdata "test session"])
+			| `Test -> p [pcdata "test session"])
 		]
 	in
 	Lwt.catch (fun () ->
