@@ -43,29 +43,21 @@ module Lwt_thread = struct
 end
 module PGOCaml = PGOCaml_generic.Make(Lwt_thread)
 
-let db_handler = ref None;;
-
 let database_server = ref "";;
 let database_port = ref None;;
 let database_name = ref "";;
 let database_user = ref "";;
 let database_password = ref None;;
 
-let get_db () =
-	match !db_handler with
-	| Some h -> return h
-	| None -> begin
-			PGOCaml.connect ~host:!database_server ?port:!database_port ~database:!database_name ~user:!database_user ?password:!database_password () >>=
-			fun dbh -> db_handler := Some dbh; return dbh
-		end
-;;
+let db_pool = Lwt_pool.create 5
+	(fun () -> PGOCaml.connect ~host:!database_server ?port:!database_port
+		~database:!database_name ?password:!database_password ());;
 
 let find_user user_id =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT id, name, is_admin \
 		FROM users \
-		WHERE id = upper($user_id)" >>=
+		WHERE id = upper($user_id)") >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [f] -> Lwt.return f
@@ -73,14 +65,13 @@ let find_user user_id =
 ;;
 
 let find_sessions_now () =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT s.id, type, group_number \
 		FROM sessions s JOIN timetable t ON s.timetable_id = t.id \
 		WHERE year = EXTRACT(year FROM now()) \
 		AND EXTRACT(week FROM now()) BETWEEN start_week AND end_week \
 		AND weekday = EXTRACT(dow FROM now()) \
-		AND localtime BETWEEN start_time AND end_time" >>=
+		AND localtime BETWEEN start_time AND end_time") >>=
 	function
 	| [] -> Lwt.return (0l, `No_session, None)
 	| [id, "L", g] -> Lwt.return (id, `Lecture, g)
@@ -90,11 +81,11 @@ let find_sessions_now () =
 ;;
 
 let has_attended session_id user_id week =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT session_id \
 		FROM attendance \
-		WHERE session_id = $session_id AND user_id = $user_id AND learning_week = $week" >>=
+		WHERE session_id = $session_id AND user_id = $user_id \
+		AND learning_week = $week") >>=
 	function
 	| [] -> Lwt.return false
 	| [s] -> Lwt.return true
@@ -103,27 +94,24 @@ let has_attended session_id user_id week =
 
 let register_attendance ?(need_confirmation=false) session_id user_id week =
 	let confirmed = if need_confirmation then Some "W" else None in
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"INSERT INTO attendance (session_id, user_id, learning_week, confirmed) \
 		VALUES \
-		($session_id, $user_id, $week, $?confirmed)"
+		($session_id, $user_id, $week, $?confirmed)")
 ;;
 
 let log user_id ip_address thing =
 	let str = match thing with
 	| `No_session_found -> "S"
 	| `External_address -> "X" in
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"INSERT INTO log (user_id, ip_address, time, action) \
 		VALUES \
-		($user_id, $ip_address, now (), $str)"
+		($user_id, $ip_address, now (), $str)")
 ;;
 
 let get_presentation_slots term group start_week =
-	get_db () >>=
-	fun dbh -> PGOCaml.transact dbh (fun dbh ->
+	Lwt_pool.use db_pool (fun dbh -> PGOCaml.transact dbh (fun dbh ->
 		PGSQL(dbh) "SELECT id \
 			FROM timetable \
 			WHERE term = $term AND group_number = $group AND type='S'" >>=
@@ -140,7 +128,7 @@ let get_presentation_slots term group start_week =
 			AND sch2.timetable_id = $slot \
 		LEFT JOIN users u1 ON sch1.user_id = u1.id \
 		LEFT JOIN users u2 ON sch2.user_id = u2.id \
-		ORDER BY gs.week ASC") >>=
+		ORDER BY gs.week ASC")) >>=
 	fun l -> Lwt_list.map_s (function
 	| (Some w, i1, n1, i2, n2) -> Lwt.return (Int32.to_int w, i1, n1, i2, n2)
 	| _ -> Lwt.fail_with "NULL value in generated series (get_presentation_slots)"
@@ -148,11 +136,10 @@ let get_presentation_slots term group start_week =
 ;;
 
 let get_user_group user_id term =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT u.group_number, weekday, locked \
 		FROM users u JOIN timetable t ON u.group_number = t.group_number \
-		WHERE u.id = $user_id AND t.term = $term" >>=
+		WHERE u.id = $user_id AND t.term = $term") >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [Some nr, wd, l] -> Lwt.return (nr, wd, l)
@@ -161,12 +148,11 @@ let get_user_group user_id term =
 ;;
 
 let get_presenters term group week =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT user_id, u.name, first \
 		FROM timetable t JOIN schedule sch ON sch.timetable_id = t.id \
 		JOIN users u on u.id = sch.user_id \
-		WHERE t.group_number = $group AND term = $term AND learning_week = $week" >>=
+		WHERE t.group_number = $group AND term = $term AND learning_week = $week") >>=
 	function
 	| [] -> Lwt.return (None, None)
 	| [u, n, true] -> Lwt.return (Some (u, n), None)
@@ -177,13 +163,12 @@ let get_presenters term group week =
 ;;
 
 let get_learning_weeks group term =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT week, year \
 		FROM timetable t JOIN sessions s ON t.id = s.timetable_id \
 			JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
 			WHERE group_number = $group AND term = $term \
-			ORDER by year ASC, week ASC" >>=
+			ORDER by year ASC, week ASC") >>=
 	Lwt_list.map_s (function
 	| None, _ -> Lwt.fail_with "NULL value in generated series (get_learning_weeks)"
 	| Some w, y -> Lwt.return (Int32.to_int w, y)
@@ -191,11 +176,10 @@ let get_learning_weeks group term =
 ;;
 
 let get_blog uid week term =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT title, contents \
 			FROM blogs
-			WHERE user_id = $uid AND learning_week = $week AND term = $term" >>=
+			WHERE user_id = $uid AND learning_week = $week AND term = $term") >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [t, c] -> Lwt.return (t, c)
@@ -203,20 +187,18 @@ let get_blog uid week term =
 ;;
 
 let update_blog uid week term title text =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"INSERT INTO blogs (user_id, learning_week, term, title, contents) VALUES
 			($uid, $week, $term, $title, $text) \
 			ON CONFLICT (user_id, learning_week, term) DO UPDATE \
-			SET title = EXCLUDED.title, contents = EXCLUDED.contents"
+			SET title = EXCLUDED.title, contents = EXCLUDED.contents")
 ;;
 
 let get_presentation_week uid term =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh)
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT learning_week, first \
 			FROM schedule sch JOIN timetable t ON sch.timetable_id = t.id \
-			WHERE user_id = $uid AND term = $term" >>=
+			WHERE user_id = $uid AND term = $term") >>=
 	function
 	| [] -> Lwt.return None
 	| [w, f] -> Lwt.return (Some (w, f))
@@ -224,8 +206,7 @@ let get_presentation_week uid term =
 ;;
 
 let set_presenter user_id term group week first =
-	get_db () >>=
-	fun dbh -> PGOCaml.begin_work dbh >>=
+	Lwt_pool.use db_pool (fun dbh -> PGOCaml.begin_work dbh >>=
 	fun () -> PGSQL(dbh)
 		"SELECT id FROM timetable \
 			WHERE term = $term AND group_number = $group AND type = 'S'" >>=
@@ -236,17 +217,18 @@ let set_presenter user_id term group week first =
 	fun t_id -> PGSQL(dbh)
 		"INSERT INTO schedule (timetable_id, user_id, learning_week, first) \
 		VALUES \
-		($t_id, $user_id, $week, $first) ON CONFLICT (timetable_id, user_id) DO UPDATE \
+		($t_id, $user_id, $week, $first) \
+		ON CONFLICT (timetable_id, user_id) DO UPDATE \
 			SET learning_week = $week, first = $first" >>=
-	fun () -> PGOCaml.commit dbh
+	fun () -> PGOCaml.commit dbh)
 ;;
 
 let get_user_blogs user_id term =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh) "SELECT learning_week, approved \
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+	"SELECT learning_week, approved \
 		FROM blogs \
 		WHERE user_id = $user_id AND term = $term \
-		ORDER BY learning_week ASC" 
+		ORDER BY learning_week ASC")
 ;;		
 
 let current_learning_week group term =
@@ -281,11 +263,12 @@ let last_learning_week group term =
 	| e -> Lwt.fail e)
 
 let get_feedback_given user_id term learning_week =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh) "nullable-results" "SELECT learning_week, presenter_id \
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh) "nullable-results"
+	"SELECT learning_week, presenter_id \
 		FROM schedule sch JOIN timetable t ON sch.timetable_id = t.id \
 		LEFT JOIN feedback f ON f.presenter_id = sch.user_id AND f.user_id = $user_id \
-		WHERE t.term = $term AND sch.user_id <> $user_id AND learning_week <= $learning_week" >>=
+		WHERE t.term = $term AND sch.user_id <> $user_id \
+		AND learning_week <= $learning_week") >>=
 	Lwt_list.map_s (fun (lw, p_id) -> match lw with
 	| None -> Lwt.fail_with "NULL value in learning weeks (get_feedback_given)"
 	| Some x -> Lwt.return (x, p_id))
@@ -294,53 +277,52 @@ let get_feedback_given user_id term learning_week =
 let check_password user_id password =
 	if password = "" then Lwt.return (Some "Empty password")
 	else
-		get_db () >>=
-		fun dbh -> PGSQL(dbh) "SELECT password = crypt($password, password) \
+		Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+		"SELECT password = crypt($password, password) \
 			FROM users \
-			WHERE id = upper($user_id)" >>=
+			WHERE id = upper($user_id)") >>=
 		function
 		| [Some true] -> Lwt.return None
 		| _ -> Lwt.return (Some "Unknown user or wrong password")
 ;;
 
 let set_user_data user_id name new_password =
-	get_db () >>=
-	fun dbh -> if new_password = "" then
+	Lwt_pool.use db_pool (fun dbh -> if new_password = "" then
 		PGSQL(dbh) "UPDATE users \
 			SET name = $name \
 			WHERE id = $user_id"
 	else
 		PGSQL(dbh) "UPDATE users \
 			SET name = $name, password = crypt($new_password, gen_salt('md5')) \
-		WHERE id = $user_id"
+		WHERE id = $user_id")
 ;;
 
 let get_confirmable_attendance term =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh) "SELECT name, learning_week, weekday, start_time, end_time \
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+	"SELECT name, learning_week, weekday, start_time, end_time \
 		FROM attendance a JOIN sessions s ON a.session_id = s.id \
 			JOIN timetable t ON s.timetable_id = t.id \
 			JOIN users u ON u.id = a.user_id \
-		WHERE confirmed = 'W' AND term = $term"
+		WHERE confirmed = 'W' AND term = $term")
 ;;
 
 let get_planned_sessions term =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh) "SELECT MAX(year), gs.week, COUNT(s.id) \
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+	"SELECT MAX(year), gs.week, COUNT(s.id) \
 		FROM timetable t JOIN sessions s ON t.id = s.timetable_id \
-			JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
+		JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
 		WHERE (group_number=1 OR group_number IS NULL) AND term=2017 \
-		AND type IN ('S', 'L') GROUP BY gs.week ORDER BY 1, 2"
+		AND type IN ('S', 'L') GROUP BY gs.week ORDER BY 1, 2")
 ;;
 
 let get_user_attendance term week =
-	get_db () >>=
-	fun dbh -> PGSQL(dbh) "SELECT u.id, student_id, COUNT(a.session_id) \
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+	"SELECT u.id, student_id, COUNT(a.session_id) \
 		FROM users u LEFT JOIN attendance a ON u.id = a.user_id \
 		LEFT JOIN sessions s ON s.id = a.session_id \
 		LEFT JOIN timetable t ON s.timetable_id = t.id \
 		WHERE (a.learning_week = $week OR a.learning_week IS NULL)
 		AND is_admin = false \
 		AND (term = $term OR term IS NULL) \
-		GROUP BY u.id"
+		GROUP BY u.id")
 ;;
