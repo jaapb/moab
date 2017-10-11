@@ -51,7 +51,8 @@ let database_password = ref None;;
 
 let db_pool = Lwt_pool.create 5
 	(fun () -> PGOCaml.connect ~host:!database_server ?port:!database_port
-		~database:!database_name ?password:!database_password ());;
+		~database:!database_name ~user:!database_user
+		?password:!database_password ());;
 
 let find_user user_id =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
