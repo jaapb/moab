@@ -86,6 +86,7 @@ let login_page () () =
 			| e -> Eliom_reference.set login_err (Some (Printexc.to_string e))
 			)
 		end in
+		Ocsigen_messages.console (fun () -> Printf.sprintf "[%s] login attempt" name);
 		match !ldap_urls with
 		| [] -> let%lwt e = Moab_db.check_password name password in
 			(match e with
@@ -165,16 +166,10 @@ let main_page () () =
 				) att)
 			);
 			h2 [pcdata "Sessions"];
-			table [
-				tr [
-					th [pcdata "ID"]; th [pcdata "Type"]; th [pcdata "Group"]
-				];
-				tr [
-					td [pcdata (Int32.to_string i)];
-					td [pcdata (match t with `No_session -> "none" | `Lecture -> "lecture" | `Seminar -> "seminar" | `Test -> "test")];
-					td [pcdata (match g with None -> "" | Some x -> (string_of_int x))]
-				]
-			]
+			(match t with
+			| `No_session -> p [pcdata "no sessions currently running"]
+			| `Lecture -> p [b [pcdata "Lecture"]; pcdata (Printf.sprintf ", ID %ld" i)]
+			| `Group -> p [b [pcdata "Seminar"]; pcdata (Printf.sprintf ", ID %ld%s" i (match g with None -> "" | Some x -> (Printf.sprintf ", group %d" x)))])
 		]
 	in
 	Lwt.catch (fun () ->
@@ -182,6 +177,7 @@ let main_page () () =
 		match u with
 		| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 		| Some (user_id, _, is_admin) ->
+			Ocsigen_messages.console (fun () -> Printf.sprintf "[%s] %s" user_id (if is_admin then "admin_page" else "main_page"));
 			if is_admin then
 				admin_page ()
 			else
