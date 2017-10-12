@@ -192,6 +192,7 @@ CREATE TABLE users (
     left_week smallint,
     first_name text NOT NULL,
     last_name text NOT NULL,
+    visa boolean DEFAULT false NOT NULL,
     CONSTRAINT users_check CHECK ((is_admin OR (group_number IS NOT NULL)))
 );
 
@@ -264,6 +265,22 @@ ALTER TABLE ONLY timetable
 
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_student_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_student_id_key UNIQUE (student_id);
+
+
+--
+-- Name: users users_student_id_key1; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_student_id_key1 UNIQUE (student_id);
 
 
 --

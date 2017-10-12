@@ -24,7 +24,7 @@ let do_generate_report () (from_week, to_week) =
 				if (lw >= from_week) && (lw <= to_week) then
 					let (sw, _) = Date.week_first_last wk y in
 					let%lwt	users = Moab_db.get_user_attendance !Moab.term lw in 	
-					Lwt_list.map_s (fun (uid, fn, ln, p, x) ->
+					Lwt_list.map_s (fun (uid, fn, ln, p, x, vs) ->
 						let student_id = match p with None -> "" | Some q -> q in
 						let nr_sessions = match x with None -> 0L | Some y -> y in
 						Lwt.return [string_of_int lw;
@@ -37,7 +37,7 @@ let do_generate_report () (from_week, to_week) =
 						fn;
 						ln;
 						(Printf.sprintf "%s@live.mdx.ac.uk" uid);
-						"";
+						if vs then "1" else "0";
 						""	
 						]	
 					) users

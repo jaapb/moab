@@ -323,12 +323,14 @@ let get_planned_sessions term =
 
 let get_user_attendance term week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-	"SELECT u.id, u.first_name, u.last_name, student_id, COUNT(a.session_id) \
+	"SELECT u.id, u.first_name, u.last_name, student_id, COUNT(a.session_id), visa \
 		FROM users u LEFT JOIN attendance a ON u.id = a.user_id \
 		LEFT JOIN sessions s ON s.id = a.session_id \
 		LEFT JOIN timetable t ON s.timetable_id = t.id \
 		WHERE (a.learning_week = $week OR a.learning_week IS NULL)
 		AND is_admin = false \
 		AND (term = $term OR term IS NULL) \
+		AND ($week BETWEEN joined_week AND left_week OR \
+			($week >= joined_week AND left_week IS NULL)) \
 		GROUP BY u.id")
 ;;
