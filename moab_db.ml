@@ -69,9 +69,9 @@ let find_sessions_now () =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT s.id, type, group_number \
 		FROM sessions s JOIN timetable t ON s.timetable_id = t.id \
-		WHERE year = EXTRACT(year FROM now()) \
-		AND EXTRACT(week FROM now()) BETWEEN start_week AND end_week \
-		AND weekday = EXTRACT(dow FROM now()) \
+		WHERE year = EXTRACT(year FROM current_date) \
+		AND EXTRACT(week FROM current_date) BETWEEN start_week AND end_week \
+		AND weekday = EXTRACT(dow FROM current_date) \
 		AND localtime BETWEEN start_time AND end_time") >>=
 	function
 	| [] -> Lwt.return (0l, `No_session, None)
@@ -108,7 +108,7 @@ let log user_id ip_address thing =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"INSERT INTO log (user_id, ip_address, time, action) \
 		VALUES \
-		($user_id, $ip_address, now (), $str)")
+		($user_id, $ip_address, now(), $str)")
 ;;
 
 let get_presentation_slots term group start_week =
