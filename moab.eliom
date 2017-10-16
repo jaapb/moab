@@ -156,10 +156,13 @@ let main_page () () =
 					th [pcdata "Student"]; th [pcdata "Session"]; th [pcdata "Learning week"]; th [pcdata "Action"]
 				]::
 				(List.map (fun (fn, ln, lw, wd, st, et) ->
+					let start_time = Time.from_gmt st in
+					let end_time = Time.from_gmt st in
 					tr [
 						td [pcdata (Printf.sprintf "%s %s" fn ln)];
 						td [pcdata (Printf.sprintf "%s %s-%s" (Printer.name_of_day (Date.day_of_int wd))
-							(Printer.Time.sprint "%H:%M" st) (Printer.Time.sprint "%H:%M" et))];
+							(Printer.Time.sprint "%H:%M" start_time)
+							(Printer.Time.sprint "%H:%M" end_time))];
 						td [pcdata (string_of_int lw)];
 						td []
 					]
