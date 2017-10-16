@@ -46,7 +46,8 @@ let do_generate_report () (from_week, to_week) =
 		| _, _, _ -> Lwt.return []
 	) planned in
 	let csv_header = ["Week number"; "Scheduled sessions"; "Student Number"; "Sessions attended"; "Week starting"; "Tutor"; "Network Name"; "First Name"; "Last Name"; "Email"; "Visa?"; "Foundation?"] in
-		Csv.output_all csv_ch (csv_header::List.flatten csv);
+		Csv.output_all csv_ch (csv_header::
+			List.sort (fun [_; _; _; _; _; _; x; _; _; _; _; _] [_; _; _; _; _; _; y; _; _; _; _; _] -> compare x y) (List.flatten csv));
 		Csv.close_out csv_ch;
 		Eliom_registration.File.send ~content_type:"text/csv" tmpnam
 ;;
@@ -65,8 +66,8 @@ let attendance_report_page () () =
 			let llw = match x with
 			| None -> 25
 			| Some y -> y in
-			let fw = max 1 (llw - 1) in
-			let tw = max 1 (llw - 5) in
+			let fw = max 1 (llw - 5) in
+			let tw = max 1 (llw - 1) in
 			container [
 				h1 [pcdata "Weekly attendance report"];
 				Form.post_form ~service:generate_report_service 
