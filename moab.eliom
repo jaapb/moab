@@ -145,6 +145,7 @@ let main_page () () =
 	let admin_page () =
 		let%lwt att = Moab_db.get_confirmable_attendance !term in
 		let%lwt (i, t, g) = Moab_db.find_sessions_now () in
+		let%lwt blogs = Moab_db.get_approvable_blogs !term in
 		container
 		[
 			h1 [pcdata "Welcome, admin"];
@@ -167,6 +168,21 @@ let main_page () () =
 						td []
 					]
 				) att)
+			);
+			h2 [pcdata "Blogs"];
+			p [pcdata "To be approved:"];
+			table (
+				tr [
+					th [pcdata "Student"]; th [pcdata "Learning week"]; th [pcdata "Title"]; th [pcdata "Action"];
+				]::
+				(List.map (fun (fn, ln, t, lw) ->
+					tr [
+						td [pcdata (Printf.sprintf "%s %s" fn ln)];
+						td [pcdata (string_of_int lw)];
+						td [pcdata t];
+						td []
+					]
+				) blogs)
 			);
 			h2 [pcdata "Sessions"];
 			(match t with

@@ -334,3 +334,9 @@ let get_user_attendance term week =
 			($week >= joined_week AND left_week IS NULL)) \
 		GROUP BY u.id")
 ;;
+
+let get_approvable_blogs term =
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+	"SELECT u.first_name, u.last_name, title, learning_week \
+		FROM blogs b JOIN users u ON b.user_id = u.id \
+		WHERE term = $term AND NOT b.approved");;
