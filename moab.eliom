@@ -175,12 +175,12 @@ let main_page () () =
 				tr [
 					th [pcdata "Student"]; th [pcdata "Learning week"]; th [pcdata "Title"]; th [pcdata "Action"];
 				]::
-				(List.map (fun (fn, ln, t, lw) ->
+				(List.map (fun (u, fn, ln, t, lw) ->
 					tr [
 						td [pcdata (Printf.sprintf "%s %s" fn ln)];
 						td [pcdata (string_of_int lw)];
 						td [pcdata t];
-						td []
+						td [a ~service:view_blog_service [pcdata "View"] (u, lw)]
 					]
 				) blogs)
 			);
