@@ -219,7 +219,7 @@ let main_page () () =
 					ul [
 						li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
 						li [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
-						li [a ~service:schedule_service [pcdata "Presentation schedule"] ()];
+						li [a ~service:schedule_service [pcdata "Presentation schedule"] (None)];
 						li [a ~service:write_blog_service [pcdata "Write blog"] ()];
 						li [a ~service:user_data_service [pcdata "Change your name or password"] ()]
 					];
