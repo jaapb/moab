@@ -339,7 +339,8 @@ let get_approvable_blogs term =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 	"SELECT u.id, u.first_name, u.last_name, title, learning_week \
 		FROM blogs b JOIN users u ON b.user_id = u.id \
-		WHERE term = $term AND NOT b.approved");;
+		WHERE term = $term AND NOT b.approved \
+		ORDER By learning_week ASC");;
 
 let approve_blog term user_id week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh) 

@@ -13,12 +13,16 @@
 ]
 
 let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
-	Moab_db.update_blog user_id week year title text >>=
-	fun () ->
-	container [
-		h1 [pcdata "Blog saved"];
-		p [pcdata (Printf.sprintf "Your entry for week %d has been saved. " week); pcdata "You will be able to update it until the end of the week."]
-	]
+	Lwt.catch (fun () ->
+		let%lwt () = Moab_db.update_blog user_id week year title text in
+		container [
+			h1 [pcdata "Blog saved"];
+			p [pcdata (Printf.sprintf "Your entry for week %d has been saved. " week); pcdata "You will be able to update it until the end of the week."]
+		]
+	)
+	(function
+	| e -> error_page (Printexc.to_string e)
+	)
 ;;
 
 let write_blog_page () () =
@@ -48,6 +52,7 @@ let write_blog_page () () =
 				[ 
 					h1 [pcdata "Blog"];
 					p [pcdata (Printf.sprintf "You are now writing your blog for week %d" lw)];
+					p [em [pcdata "Please note that this blog is about your project, not about what you learned this week in the module or about your presentation."]];
 					p [pcdata "You are welcome to use any writing style you like, but one suggestion is to use Scrum-style stand-ups and answer the following questions:"];
 					ol [
 						li [pcdata "What did I do last week and how did it help my project progess?"];
