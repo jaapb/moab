@@ -342,9 +342,22 @@ let get_approvable_blogs term =
 	"SELECT u.id, u.first_name, u.last_name, title, learning_week \
 		FROM blogs b JOIN users u ON b.user_id = u.id \
 		WHERE term = $term AND NOT b.approved \
-		ORDER By learning_week ASC");;
+		ORDER By learning_week ASC")
+;;
 
 let approve_blog term user_id week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh) 
 		"UPDATE blogs SET approved = true \
-			WHERE term = $term AND user_id = $user_id AND learning_week = $week");;
+			WHERE term = $term AND user_id = $user_id AND learning_week = $week")
+;;
+
+let get_user_weeks user_id term =
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+		"SELECT joined_week, left_week \
+			FROM users u JOIN students st ON u.id = st.user_id \
+			WHERE u.id = $user_id AND term = $term") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [jw, lw] -> Lwt.return (jw, lw)
+	| _ -> Lwt.fail_with "multiple users found (get_user_weeks)"
+;;

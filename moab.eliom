@@ -212,6 +212,7 @@ let main_page () () =
 				let%lwt fb = match last_lw with
 				| None -> Lwt.return []
 				| Some x -> Moab_db.get_feedback_given user_id !term x in
+				let%lwt (joined_week, _) = Moab_db.get_user_weeks user_id !term in
 				container
 				[
 					h1 [pcdata "Welcome"];
@@ -242,7 +243,7 @@ let main_page () () =
 						li [
 							match last_lw with
 							| None -> pcdata "I don't know what learning week it is, sorry."
-							| Some lw -> pcdata (Printf.sprintf "You have written a blog for %d out of %d week(s) so far. %d have been approved." (List.length blogs) lw (List.length (List.filter (fun (_, a) -> a) blogs)))
+							| Some lw -> pcdata (Printf.sprintf "You have written a blog for %d out of %d week(s) so far. %d have been approved." (List.length blogs) (max 1 (lw - joined_week + 1)) (List.length (List.filter (fun (_, a) -> a) blogs)))
 						];
 						li [
 							let fbp = List.length fb in
