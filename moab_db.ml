@@ -156,7 +156,7 @@ let get_presenters term group week =
 		"SELECT user_id, u.first_name, u.last_name, first \
 		FROM timetable t JOIN schedule sch ON sch.timetable_id = t.id \
 		JOIN users u on u.id = sch.user_id \
-		WHERE t.group_number = $group AND term = $term AND learning_week = $week") >>=
+		WHERE t.group_number = $group AND t.term = $term AND learning_week = $week") >>=
 	function
 	| [] -> Lwt.return (None, None)
 	| [u, fn, ln, true] -> Lwt.return (Some (u, fn, ln), None)
@@ -310,7 +310,7 @@ let get_confirmable_attendance term =
 		FROM attendance a JOIN sessions s ON a.session_id = s.id \
 			JOIN timetable t ON s.timetable_id = t.id \
 			JOIN users u ON u.id = a.user_id \
-		WHERE confirmed = 'W' AND term = $term")
+		WHERE confirmed = 'W' AND t.term = $term")
 ;;
 
 let get_planned_sessions term =
