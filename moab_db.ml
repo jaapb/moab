@@ -361,3 +361,10 @@ let get_user_weeks user_id term =
 	| [jw, lw] -> Lwt.return (jw, lw)
 	| _ -> Lwt.fail_with "multiple users found (get_user_weeks)"
 ;;
+
+let get_active_students term =
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+		"SELECT u.id, first_name, last_name \
+			FROM users u JOIN students st ON u.id = st.user_id \
+			WHERE term = $term AND left_week IS NULL")
+;;

@@ -146,6 +146,7 @@ let main_page () () =
 		let%lwt att = Moab_db.get_confirmable_attendance !term in
 		let%lwt (i, t, g) = Moab_db.find_sessions_now () in
 		let%lwt blogs = Moab_db.get_approvable_blogs !term in
+		let%lwt users = Moab_db.get_active_students !term in
 		container
 		[
 			h1 [pcdata "Welcome, admin"];
@@ -170,6 +171,29 @@ let main_page () () =
 				) att)
 			);
 			h2 [pcdata "Blogs"];
+			p [pcdata "View student blog:"];
+			Form.get_form ~service:view_blog_service (fun (user_id, learning_week) -> [
+				table [
+					tr [
+						th [pcdata "Student: "];
+						td [match users with
+						| [] -> pcdata "no registered students"
+						| (id, fn, ln)::t -> Form.select ~name:user_id Form.string
+								(Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false))
+								(List.map (fun (id, fn, ln) ->
+									Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false)
+								) t)
+						]
+					];
+					tr [
+						th [pcdata "Learning week:"];
+						td [Form.input ~input_type:`Text ~name:learning_week Form.int]
+					];
+					tr [
+						td ~a:[a_colspan 2] [Form.input ~input_type:`Submit ~value:"View" Form.string]
+					]	
+				]	
+			]);
 			p [pcdata "To be approved:"];
 			table (
 				tr [
