@@ -77,7 +77,7 @@ let login_page () () =
 		let do_login name =
 		begin
 			Lwt.catch (fun () ->
-				let%lwt (user_id, fname, lname, is_admin) = Moab_db.find_user name in
+				let%lwt (user_id, fname, lname, is_admin) = Moab_db.find_user name !term in
 				Eliom_reference.set user (Some (user_id, fname, lname, is_admin))
 			)
 			(function

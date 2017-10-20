@@ -54,11 +54,12 @@ let db_pool = Lwt_pool.create 5
 		~database:!database_name ~user:!database_user
 		?password:!database_password ());;
 
-let find_user user_id =
+let find_user user_id term =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT id, first_name, last_name, is_admin \
-		FROM users \
-		WHERE id = upper($user_id) AND left_week IS NULL") >>=
+		FROM users u LEFT JOIN students st ON u.id = st.user_id \
+		WHERE id = upper($user_id) AND left_week IS NULL \
+			AND (term = $term OR is_admin)") >>=
 	function
 	| [] -> Lwt.fail Not_found
 	| [f] -> Lwt.return f
@@ -140,13 +141,13 @@ let get_presentation_slots term group start_week =
 
 let get_user_group user_id term =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-		"SELECT u.group_number, weekday, locked \
-		FROM users u JOIN timetable t ON u.group_number = t.group_number \
+		"SELECT st.group_number, weekday, locked \
+		FROM users u JOIN students st ON u.id = st.user_id \
+			JOIN timetable t ON st.group_number = t.group_number AND t.term = st.term \
 		WHERE u.id = $user_id AND t.term = $term") >>=
 	function
 	| [] -> Lwt.fail Not_found
-	| [Some nr, wd, l] -> Lwt.return (nr, wd, l)
-	| [None, _, _] -> Lwt.fail No_group
+	| [nr, wd, l] -> Lwt.return (nr, wd, l)
 	| _ -> Lwt.fail_with "multiple users found"
 ;;
 
@@ -323,13 +324,14 @@ let get_planned_sessions term =
 
 let get_user_attendance term week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-	"SELECT u.id, u.first_name, u.last_name, student_id, COUNT(a.session_id), visa \
-		FROM users u LEFT JOIN attendance a ON u.id = a.user_id \
-		LEFT JOIN sessions s ON s.id = a.session_id \
-		LEFT JOIN timetable t ON s.timetable_id = t.id \
+	"SELECT u.id, u.first_name, u.last_name, MAX(st.student_id), COUNT(a.session_id), bool_and(visa) \
+		FROM users u JOIN students st ON u.id = st.user_id \
+			LEFT JOIN attendance a ON u.id = a.user_id \
+			LEFT JOIN sessions s ON s.id = a.session_id \
+			LEFT JOIN timetable t ON s.timetable_id = t.id AND st.term = t.term \
 		WHERE (a.learning_week = $week OR a.learning_week IS NULL)
 		AND is_admin = false \
-		AND (term = $term OR term IS NULL) \
+		AND (t.term = $term OR t.term IS NULL) \
 		AND ($week BETWEEN joined_week AND left_week OR \
 			($week >= joined_week AND left_week IS NULL)) \
 		GROUP BY u.id")

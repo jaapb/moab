@@ -15,41 +15,46 @@
 let do_generate_report () (from_week, to_week) =
 	let (tmpnam, out_ch) = Filename.open_temp_file "moab_report" ".csv" in
 	let csv_ch = Csv.to_channel out_ch in
-	let%lwt planned = Moab_db.get_planned_sessions !Moab.term in
-	let%lwt csv = Lwt_list.mapi_s (fun n (year, week, sessions) ->
-		match year, week, sessions with
-		| Some y, Some w, Some s -> 
-				let wk = Int32.to_int w in
-				let lw = n + 1 in
-				if (lw >= from_week) && (lw <= to_week) then
-					let (sw, _) = Date.week_first_last wk y in
-					let%lwt	users = Moab_db.get_user_attendance !Moab.term lw in 	
-					Lwt_list.map_s (fun (uid, fn, ln, p, x, vs) ->
-						let student_id = match p with None -> "" | Some q -> q in
-						let nr_sessions = match x with None -> 0L | Some y -> y in
-						Lwt.return [string_of_int lw;
-						Int64.to_string s;
-						student_id;
-						Int64.to_string nr_sessions;
-						Printer.Date.sprint "%Y-%m-%d" sw;
-						"";
-						uid;
-						fn;
-						ln;
-						(Printf.sprintf "%s@live.mdx.ac.uk" uid);
-						if vs then "1" else "0";
-						""	
-						]	
-					) users
-				else
-					Lwt.return []
-		| _, _, _ -> Lwt.return []
-	) planned in
-	let csv_header = ["Week number"; "Scheduled sessions"; "Student Number"; "Sessions attended"; "Week starting"; "Tutor"; "Network Name"; "First Name"; "Last Name"; "Email"; "Visa?"; "Foundation?"] in
-		Csv.output_all csv_ch (csv_header::
-			List.sort (fun [_; _; _; _; _; _; x; _; _; _; _; _] [_; _; _; _; _; _; y; _; _; _; _; _] -> compare x y) (List.flatten csv));
-		Csv.close_out csv_ch;
-		Eliom_registration.File.send ~content_type:"text/csv" tmpnam
+	Lwt.catch (fun () -> 
+		let%lwt planned = Moab_db.get_planned_sessions !Moab.term in
+		let%lwt csv = Lwt_list.mapi_s (fun n (year, week, sessions) ->
+			match year, week, sessions with
+			| Some y, Some w, Some s -> 
+					let wk = Int32.to_int w in
+					let lw = n + 1 in
+					if (lw >= from_week) && (lw <= to_week) then
+						let (sw, _) = Date.week_first_last wk y in
+						let%lwt	users = Moab_db.get_user_attendance !Moab.term lw in 	
+						Lwt_list.map_s (fun (uid, fn, ln, p, x, vs) ->
+							let student_id = match p with None -> "" | Some q -> q in
+							let nr_sessions = match x with None -> 0L | Some y -> y in
+							Lwt.return [string_of_int lw;
+							Int64.to_string s;
+							student_id;
+							Int64.to_string nr_sessions;
+							Printer.Date.sprint "%Y-%m-%d" sw;
+							"";
+							uid;
+							fn;
+							ln;
+							(Printf.sprintf "%s@live.mdx.ac.uk" uid);
+							(match vs with | Some true -> "1" | _ -> "0");
+							""	
+							]	
+						) users
+					else
+						Lwt.return []
+			| _, _, _ -> Lwt.return []
+		) planned in
+		let csv_header = ["Week number"; "Scheduled sessions"; "Student Number"; "Sessions attended"; "Week starting"; "Tutor"; "Network Name"; "First Name"; "Last Name"; "Email"; "Visa?"; "Foundation?"] in
+			Csv.output_all csv_ch (csv_header::
+				List.sort (fun [_; _; _; _; _; _; x; _; _; _; _; _] [_; _; _; _; _; _; y; _; _; _; _; _] -> compare x y) (List.flatten csv));
+			Csv.close_out csv_ch;
+			Eliom_registration.File.send ~content_type:"text/csv" tmpnam
+	)
+	(function
+	| e -> error_page (Printexc.to_string e)
+	)
 ;;
 
 let attendance_report_page () () =

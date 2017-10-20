@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.3
+-- Dumped from database version 9.6.5
 -- Dumped by pg_dump version 9.6.5
 
 SET statement_timeout = 0;
@@ -75,6 +75,16 @@ CREATE TABLE blogs (
 
 
 --
+-- Name: eliom__persistent_refs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE eliom__persistent_refs (
+    key text NOT NULL,
+    value bytea
+);
+
+
+--
 -- Name: feedback; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -143,6 +153,21 @@ ALTER SEQUENCE sessions_session_id_seq OWNED BY sessions.id;
 
 
 --
+-- Name: students; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE students (
+    user_id character varying(16) NOT NULL,
+    group_number smallint NOT NULL,
+    student_id character(9) NOT NULL,
+    joined_week smallint NOT NULL,
+    left_week smallint,
+    visa boolean DEFAULT false NOT NULL,
+    term smallint NOT NULL
+);
+
+
+--
 -- Name: timetable; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -185,15 +210,9 @@ ALTER SEQUENCE timetable_id_seq OWNED BY timetable.id;
 CREATE TABLE users (
     id character varying(16) NOT NULL,
     is_admin boolean DEFAULT false NOT NULL,
-    group_number smallint,
-    student_id character(9),
     password text NOT NULL,
-    joined_week smallint,
-    left_week smallint,
     first_name text NOT NULL,
-    last_name text NOT NULL,
-    visa boolean DEFAULT false NOT NULL,
-    CONSTRAINT users_check CHECK ((is_admin OR (group_number IS NOT NULL)))
+    last_name text NOT NULL
 );
 
 
@@ -228,6 +247,14 @@ ALTER TABLE ONLY blogs
 
 
 --
+-- Name: eliom__persistent_refs eliom__persistent_refs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY eliom__persistent_refs
+    ADD CONSTRAINT eliom__persistent_refs_pkey PRIMARY KEY (key);
+
+
+--
 -- Name: feedback feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -252,6 +279,14 @@ ALTER TABLE ONLY sessions
 
 
 --
+-- Name: students students_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY students
+    ADD CONSTRAINT students_pkey PRIMARY KEY (user_id, term);
+
+
+--
 -- Name: timetable timetable_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -265,22 +300,6 @@ ALTER TABLE ONLY timetable
 
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: users users_student_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY users
-    ADD CONSTRAINT users_student_id_key UNIQUE (student_id);
-
-
---
--- Name: users users_student_id_key1; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY users
-    ADD CONSTRAINT users_student_id_key1 UNIQUE (student_id);
 
 
 --
@@ -353,6 +372,14 @@ ALTER TABLE ONLY schedule
 
 ALTER TABLE ONLY sessions
     ADD CONSTRAINT sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
+
+
+--
+-- Name: students students_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY students
+    ADD CONSTRAINT students_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 
 --
