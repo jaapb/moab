@@ -146,6 +146,7 @@ let main_page () () =
 		let%lwt att = Moab_db.get_confirmable_attendance !term in
 		let%lwt (i, t, g) = Moab_db.find_sessions_now () in
 		let%lwt blogs = Moab_db.get_approvable_blogs !term in
+		let%lwt users = Moab_db.get_active_students !term in
 		container
 		[
 			h1 [pcdata "Welcome, admin"];
@@ -170,6 +171,29 @@ let main_page () () =
 				) att)
 			);
 			h2 [pcdata "Blogs"];
+			p [pcdata "View student blog:"];
+			Form.get_form ~service:view_blog_service (fun (user_id, learning_week) -> [
+				table [
+					tr [
+						th [pcdata "Student: "];
+						td [match users with
+						| [] -> pcdata "no registered students"
+						| (id, fn, ln)::t -> Form.select ~name:user_id Form.string
+								(Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false))
+								(List.map (fun (id, fn, ln) ->
+									Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false)
+								) t)
+						]
+					];
+					tr [
+						th [pcdata "Learning week:"];
+						td [Form.input ~input_type:`Text ~name:learning_week Form.int]
+					];
+					tr [
+						td ~a:[a_colspan 2] [Form.input ~input_type:`Submit ~value:"View" Form.string]
+					]	
+				]	
+			]);
 			p [pcdata "To be approved:"];
 			table (
 				tr [
@@ -221,7 +245,7 @@ let main_page () () =
 						li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
 						li [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
 						li [a ~service:schedule_service [pcdata "Presentation schedule"] (None)];
-						li [a ~service:write_blog_service [pcdata "Write blog"] ()];
+						li [a ~service:write_blog_service [pcdata "Write blog"] (); pcdata " (week runs from Monday to Sunday)"];
 						li [a ~service:user_data_service [pcdata "Change your name or password"] ()]
 					];
 					h2 [pcdata "Status"];
@@ -251,7 +275,13 @@ let main_page () () =
 							pcdata (Printf.sprintf "You have given feedback for %d out of %d presentations (%d%%) (this may be off by one or two if your session for this week has not yet taken place)." fbg fbp
 								(if fbp = 0 then 0 else (fbg / fbp * 100)));
 						]
-					]
+					];
+					h2 [pcdata "Blogs"];
+					p (pcdata "View your blogs:"::
+						List.concat (List.map (fun (wk, _) ->
+							[pcdata " "; a ~service:view_blog_service [pcdata (string_of_int wk)] (user_id, wk)]
+					 	) blogs)
+					)
 				])
 	(function
 	| Not_found -> error_page "You do not seem to have been assigned a group number. This should not happen."

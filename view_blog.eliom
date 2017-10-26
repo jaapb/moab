@@ -52,6 +52,7 @@ let view_blog_page (user_id, lw) () =
 		)
 		(function
 		| Moab_db.No_group -> error_page "you are an administrator"
+		| Not_found -> error_page "This blog does not exist"
 		| e -> error_page (Printexc.to_string e))
 ;;
 
