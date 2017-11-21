@@ -109,6 +109,16 @@ CREATE TABLE log (
 
 
 --
+-- Name: optional_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE optional_sessions (
+    timetable_id smallint NOT NULL,
+    week smallint NOT NULL
+);
+
+
+--
 -- Name: schedule; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -263,6 +273,14 @@ ALTER TABLE ONLY feedback
 
 
 --
+-- Name: optional_sessions optional_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY optional_sessions
+    ADD CONSTRAINT optional_sessions_pkey PRIMARY KEY (timetable_id, week);
+
+
+--
 -- Name: schedule schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -348,6 +366,14 @@ ALTER TABLE ONLY feedback
 
 ALTER TABLE ONLY log
     ADD CONSTRAINT log_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+
+
+--
+-- Name: optional_sessions optional_sessions_timetable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY optional_sessions
+    ADD CONSTRAINT optional_sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
 
 
 --

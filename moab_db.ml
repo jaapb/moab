@@ -313,12 +313,14 @@ let get_confirmable_attendance term =
 		WHERE confirmed = 'W' AND t.term = $term")
 ;;
 
-let get_planned_sessions term =
+let get_planned_sessions user_id term =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 	"SELECT MAX(year), gs.week, COUNT(s.id) \
 		FROM timetable t JOIN sessions s ON t.id = s.timetable_id \
 		JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
-		WHERE (group_number=1 OR group_number IS NULL) AND term=2017 \
+		LEFT JOIN optional_sessions os ON t.id = os.timetable_id AND gs.week = os.week \
+		JOIN students st ON (st.group_number = t.group_number OR t.group_number IS NULL) \
+		WHERE user_id = $user_id AND term = $term AND os.week IS NULL \
 		AND type IN ('S', 'L') GROUP BY gs.week ORDER BY 1, 2")
 ;;
 
