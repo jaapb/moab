@@ -320,7 +320,7 @@ let get_planned_sessions user_id term =
 		JOIN generate_series(1,53) AS gs(week) ON gs.week BETWEEN start_week AND end_week \
 		LEFT JOIN optional_sessions os ON t.id = os.timetable_id AND gs.week = os.week \
 		JOIN students st ON (st.group_number = t.group_number OR t.group_number IS NULL) \
-		WHERE user_id = $user_id AND term = $term AND os.week IS NULL \
+		WHERE user_id = $user_id AND t.term = $term AND os.week IS NULL \
 		AND type IN ('S', 'L') GROUP BY gs.week ORDER BY 1, 2")
 ;;
 
@@ -328,12 +328,10 @@ let get_user_attendance term week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 	"SELECT u.id, u.first_name, u.last_name, MAX(st.student_id), COUNT(a.session_id), bool_and(visa) \
 		FROM users u JOIN students st ON u.id = st.user_id \
-			LEFT JOIN attendance a ON u.id = a.user_id \
+			LEFT JOIN attendance a ON u.id = a.user_id AND a.learning_week = $week \
 			LEFT JOIN sessions s ON s.id = a.session_id \
 			LEFT JOIN timetable t ON s.timetable_id = t.id AND st.term = t.term \
-		WHERE (a.learning_week = $week OR a.learning_week IS NULL)
-		AND is_admin = false \
-		AND (t.term = $term OR t.term IS NULL) \
+		WHERE (t.term = $term OR t.term IS NULL) \
 		AND ($week BETWEEN joined_week AND left_week OR \
 			($week >= joined_week AND left_week IS NULL)) \
 		GROUP BY u.id")
@@ -364,9 +362,14 @@ let get_user_weeks user_id term =
 	| _ -> Lwt.fail_with "multiple users found (get_user_weeks)"
 ;;
 
-let get_active_students term =
-	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
-		"SELECT u.id, first_name, last_name \
-			FROM users u JOIN students st ON u.id = st.user_id \
-			WHERE term = $term AND left_week IS NULL")
+let get_students ?active_only:(act=true) term =
+	Lwt_pool.use db_pool (fun dbh -> 
+		if act then
+			PGSQL(dbh) "SELECT u.id, first_name, last_name \
+				FROM users u JOIN students st ON u.id = st.user_id \
+				WHERE term = $term AND left_week IS NULL"
+		else
+			PGSQL(dbh) "SELECT u.id, first_name, last_name \
+				FROM users u JOIN students st ON u.id = st.user_id \
+				WHERE term = $term")
 ;;

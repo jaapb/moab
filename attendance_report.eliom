@@ -16,7 +16,8 @@ let do_generate_report () (from_week, to_week) =
 	let (tmpnam, out_ch) = Filename.open_temp_file "moab_report" ".csv" in
 	let csv_ch = Csv.to_channel out_ch in
 	Lwt.catch (fun () -> 
-		let%lwt planned = Moab_db.get_planned_sessions !Moab.term in
+		let%lwt students = Moab_db.get_students ~active_only:false !Moab.term in
+		let%lwt planned = Lwt_list.map_s (fun (id, _, _) -> Moab_db.get_planned_sessions id !Moab.term) students in
 		let%lwt csv = Lwt_list.mapi_s (fun n (year, week, sessions) ->
 			match year, week, sessions with
 			| Some y, Some w, Some s -> 
@@ -45,7 +46,7 @@ let do_generate_report () (from_week, to_week) =
 					else
 						Lwt.return []
 			| _, _, _ -> Lwt.return []
-		) planned in
+		) (List.flatten planned) in
 		let csv_header = ["Week number"; "Scheduled sessions"; "Student Number"; "Sessions attended"; "Week starting"; "Tutor"; "Network Name"; "First Name"; "Last Name"; "Email"; "Visa?"; "Foundation?"] in
 			Csv.output_all csv_ch (csv_header::
 				List.sort (fun [_; _; _; _; _; _; x; _; _; _; _; _] [_; _; _; _; _; _; y; _; _; _; _; _] -> compare x y) (List.flatten csv));

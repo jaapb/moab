@@ -146,7 +146,7 @@ let main_page () () =
 		let%lwt att = Moab_db.get_confirmable_attendance !term in
 		let%lwt (i, t, g) = Moab_db.find_sessions_now () in
 		let%lwt blogs = Moab_db.get_approvable_blogs !term in
-		let%lwt users = Moab_db.get_active_students !term in
+		let%lwt users = Moab_db.get_students !term in
 		container
 		[
 			h1 [pcdata "Welcome, admin"];
