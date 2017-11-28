@@ -6,6 +6,7 @@
 let attendance_service = create ~path:(Path ["attendance"]) ~meth:(Get unit) ();;
 let attendance_report_service = create ~path:(Path ["attendance_report"]) ~meth:(Get unit) ();;
 let feedback_service = create ~path:(Path ["feedback"]) ~meth:(Get unit) ();;
+let generate_schedule_service = create ~path:(Path ["generate_schedule"]) ~meth:(Get (int "group_number")) ();;
 let login_service = create ~path:(Path []) ~meth:(Get unit) ();;
 let logout_service = create ~path:No_path
   ~meth:(Post (unit, unit)) ();;

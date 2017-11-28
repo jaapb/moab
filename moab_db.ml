@@ -373,3 +373,14 @@ let get_students ?active_only:(act=true) term =
 				FROM users u JOIN students st ON u.id = st.user_id \
 				WHERE term = $term")
 ;;
+
+let get_group_info group_number term =
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+		"SELECT weekday \
+			FROM timetable \
+			WHERE group_number = $group_number AND term = $term") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [wd] -> Lwt.return wd
+	| _ -> Lwt.fail_with "multiple timetables for group found"
+;;

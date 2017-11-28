@@ -170,6 +170,19 @@ let main_page () () =
 					]
 				) att)
 			);
+			h2 [pcdata "Schedule"];
+			Form.get_form ~service:generate_schedule_service (fun (group) -> [
+				table [
+					tr [
+						th [pcdata "Group:"];
+						td [Form.input ~input_type:`Text ~name:group Form.int]
+					];
+					tr
+					[
+						td ~a:[a_colspan 2] [Form.input ~input_type:`Submit ~value:"View and generate" Form.string]
+					]
+				]
+			]);
 			h2 [pcdata "Blogs"];
 			p [pcdata "View student blog:"];
 			Form.get_form ~service:view_blog_service (fun (user_id, learning_week) -> [
