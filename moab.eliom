@@ -255,7 +255,7 @@ let main_page () () =
 					p [pcdata "Please note that trying to register attendance or feedback out of session, or when not connected to the Middlesex network, is not allowed and will be logged."];
 					ul [
 						li [a ~service:attendance_service [pcdata "Attendance recording"] ()];
-						li [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
+						li [a ~service:feedback_service [pcdata "Presentation feedback"] (); pcdata " (also registers attendance)"];
 						li [a ~service:schedule_service [pcdata "Presentation schedule"] (None)];
 						li [a ~service:write_blog_service [pcdata "Write blog"] (); pcdata " (week runs from Monday to Sunday)"];
 						li [a ~service:user_data_service [pcdata "Change your name or password"] ()]
