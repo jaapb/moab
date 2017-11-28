@@ -154,12 +154,12 @@ ALTER SEQUENCE presentation_criteria_id_seq OWNED BY presentation_criteria.id;
 --
 
 CREATE TABLE presentation_scores (
-    presenter_id character varying(9) NOT NULL,
+    presenter_id character varying(16) NOT NULL,
     term smallint NOT NULL,
     criterion_id integer NOT NULL,
     score smallint NOT NULL,
     comment text,
-    scorer_id character varying(9) NOT NULL
+    scorer_id character varying(16) NOT NULL
 );
 
 
