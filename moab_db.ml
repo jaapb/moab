@@ -105,7 +105,8 @@ let register_attendance ?(need_confirmation=false) session_id user_id week =
 let log user_id ip_address thing =
 	let str = match thing with
 	| `No_session_found -> "S"
-	| `External_address -> "X" in
+	| `External_address -> "X"
+	| `Logged_in -> "L" in
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"INSERT INTO log (user_id, ip_address, time, action) \
 		VALUES \

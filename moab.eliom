@@ -78,7 +78,8 @@ let login_page () () =
 		begin
 			Lwt.catch (fun () ->
 				let%lwt (user_id, fname, lname, is_admin) = Moab_db.find_user name !term in
-				Eliom_reference.set user (Some (user_id, fname, lname, is_admin))
+				Eliom_reference.set user (Some (user_id, fname, lname, is_admin)) >>=
+				fun () -> Moab_db.log user_id (Eliom_request_info.get_remote_ip ()) `Logged_in
 			)
 			(function
 			| Not_found -> Eliom_reference.set login_err (Some "Not registered for this module")
@@ -86,7 +87,6 @@ let login_page () () =
 			| e -> Eliom_reference.set login_err (Some (Printexc.to_string e))
 			)
 		end in
-		Ocsigen_messages.console (fun () -> Printf.sprintf "[%s] login attempt" name);
 		match !ldap_urls with
 		| [] -> let%lwt e = Moab_db.check_password name password in
 			(match e with
@@ -234,7 +234,6 @@ let main_page () () =
 		match u with
 		| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 		| Some (user_id, _, _, is_admin) ->
-			Ocsigen_messages.console (fun () -> Printf.sprintf "[%s] %s" user_id (if is_admin then "admin_page" else "main_page"));
 			if is_admin then
 				admin_page ()
 			else
