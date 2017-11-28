@@ -54,3 +54,60 @@ form#logout_form
 	float: right;
 	padding: 10px;
 }
+
+table.feedback_table th
+{
+	text-align: left;
+}
+
+table.feedback_table tr.grade_descriptions td
+{
+	font-size: small;
+}
+
+table.feedback_table tr.grades th
+{
+	text-align: center;
+}
+
+table.feedback_table tr .grade_button
+{
+	text-align: center;
+	width: 50px;
+}
+
+table.feedback_table tr th.description
+{
+	font-size: small;
+	font-style: italic;
+}
+
+table.feedback_table tr td.grade0
+{
+	background-color: red;
+}
+
+table.feedback_table tr td.grade1
+{
+	background-color: orangered;
+}
+
+table.feedback_table tr td.grade2
+{
+	background-color: orange;
+}
+
+table.feedback_table tr td.grade3
+{
+	background-color: lightgreen;
+}
+
+table.feedback_table tr td.grade4
+{
+	background-color: green;
+}
+
+table.feedback_table tr td.grade5
+{
+	background-color: darkgreen;
+}

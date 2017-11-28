@@ -385,3 +385,18 @@ let get_group_info group_number term =
 	| [wd] -> Lwt.return wd
 	| _ -> Lwt.fail_with "multiple timetables for group found"
 ;;
+
+let get_criteria term =
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
+		"SELECT id, criterion, description \
+			FROM presentation_criteria \
+			WHERE term = $term")
+;;
+
+let set_presentation_score pres_id scorer_id term crit_id score comment =
+	Lwt_pool.use db_pool (fun dbh -> 
+		PGSQL(dbh) "INSERT INTO presentation_scores (presenter_id, scorer_id, term, criterion_id, score, comment) \
+			VALUES \
+			($pres_id, $scorer_id, $term, $crit_id, $score, $comment) \
+			ON CONFLICT (presenter_id, scorer_id, term, criterion_id) DO UPDATE SET score = EXCLUDED.score, comment = EXCLUDED.comment")
+;;
