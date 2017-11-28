@@ -119,6 +119,51 @@ CREATE TABLE optional_sessions (
 
 
 --
+-- Name: presentation_criteria; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE presentation_criteria (
+    term smallint NOT NULL,
+    id integer NOT NULL,
+    criterion text NOT NULL,
+    description text
+);
+
+
+--
+-- Name: presentation_criteria_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE presentation_criteria_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: presentation_criteria_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE presentation_criteria_id_seq OWNED BY presentation_criteria.id;
+
+
+--
+-- Name: presentation_scores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE presentation_scores (
+    presenter_id character varying(9) NOT NULL,
+    term smallint NOT NULL,
+    criterion_id integer NOT NULL,
+    score smallint NOT NULL,
+    comment text,
+    scorer_id character varying(9) NOT NULL
+);
+
+
+--
 -- Name: schedule; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -228,6 +273,13 @@ CREATE TABLE users (
 
 
 --
+-- Name: presentation_criteria id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_criteria ALTER COLUMN id SET DEFAULT nextval('presentation_criteria_id_seq'::regclass);
+
+
+--
 -- Name: sessions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -279,6 +331,22 @@ ALTER TABLE ONLY feedback
 
 ALTER TABLE ONLY optional_sessions
     ADD CONSTRAINT optional_sessions_pkey PRIMARY KEY (timetable_id, week);
+
+
+--
+-- Name: presentation_criteria presentation_criteria_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_criteria
+    ADD CONSTRAINT presentation_criteria_pkey PRIMARY KEY (term, id);
+
+
+--
+-- Name: presentation_scores presentation_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_pkey PRIMARY KEY (presenter_id, scorer_id, term, criterion_id);
 
 
 --
@@ -375,6 +443,46 @@ ALTER TABLE ONLY log
 
 ALTER TABLE ONLY optional_sessions
     ADD CONSTRAINT optional_sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
+
+
+--
+-- Name: presentation_scores presentation_scores_scorer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_scorer_id_fkey FOREIGN KEY (scorer_id) REFERENCES users(id);
+
+
+--
+-- Name: presentation_scores presentation_scores_scorer_id_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_scorer_id_fkey1 FOREIGN KEY (scorer_id, term) REFERENCES students(user_id, term);
+
+
+--
+-- Name: presentation_scores presentation_scores_term_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_term_fkey FOREIGN KEY (term, criterion_id) REFERENCES presentation_criteria(term, id);
+
+
+--
+-- Name: presentation_scores presentation_scores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_user_id_fkey FOREIGN KEY (presenter_id, term) REFERENCES students(user_id, term);
+
+
+--
+-- Name: presentation_scores presentation_scores_user_id_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_user_id_fkey1 FOREIGN KEY (presenter_id) REFERENCES users(id);
 
 
 --
