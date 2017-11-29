@@ -111,3 +111,10 @@ table.feedback_table tr td.grade5
 {
 	background-color: darkgreen;
 }
+
+.error
+{
+	background-color: pink;
+	color: red;
+	border: solid 1px red;
+} 

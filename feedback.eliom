@@ -13,9 +13,9 @@
 ]
 
 let feedback_values = Eliom_reference.eref ~scope:Eliom_common.request_scope None;;
-(*let feedback_err = Eliom_reference.eref ~scope:Eliom_common.request_scope None;;*)
+let feedback_err = Eliom_reference.eref ~scope:Eliom_common.request_scope None;;
 
-exception No_score
+exception No_score of int32
 
 let no_session_found uid =
 	Moab_db.log uid (Eliom_request_info.get_remote_ip ()) `No_session_found >>=
@@ -29,21 +29,25 @@ let do_feedback_page () (pres_id, scores) =
 	Eliom_reference.set feedback_values (Some (pres_id, scores)) >>=
 	fun () -> Eliom_reference.get user >>=
 	fun s -> match s with
-	| None -> Eliom_registration.Action.send ()
+	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 	| Some (s_id, _, _, _) -> begin
 		match pres_id with
-		| None -> Eliom_registration.Action.send ()
+		| None -> 
+				Eliom_reference.set feedback_err (Some "No presenter selected");
+				Eliom_registration.Action.send ()
 		| Some uid -> Lwt.catch (fun () ->
 				Lwt_list.iter_s (fun (c_id, (s, comment)) ->
 					match s with
-					| None -> Lwt.fail No_score
+					| None ->
+							Eliom_reference.set feedback_err (Some (Printf.sprintf "No score for criterion %ld\n" c_id));
+							Lwt.fail (No_score c_id)
 					| Some score -> Moab_db.set_presentation_score uid s_id !term c_id score comment
 				) scores >>=
 				fun () -> Eliom_reference.set feedback_values None >>=
 				fun () -> Eliom_registration.Redirection.send (Eliom_registration.Redirection main_service)
 			)
 			(function
-			| No_score -> Eliom_registration.Action.send ()
+			| No_score _ -> Eliom_registration.Action.send ()
 			| e -> Eliom_registration.Action.send ())
 		end
 ;;
@@ -82,7 +86,9 @@ let feedback_page () () =
 			| None -> None, []
 			| Some (None, l) -> None, l 
 			| Some (Some p, l) -> Some p, l  in
+			let%lwt err = Eliom_reference.get feedback_err in
 			Eliom_reference.set feedback_values None >>=
+			fun () -> Eliom_reference.set feedback_err None >>=
 			fun () -> let crits_plus_values = zip_crits crits set_scores in
 			match session_type with
 			| `No_session -> no_session_found uid
@@ -96,6 +102,7 @@ let feedback_page () () =
 				container
 				[
 					h1 [pcdata "Feedback"];
+					p ~a:[a_class ["error"]] (match err with None -> [] | Some e -> [pcdata e]);
 					Form.post_form ~service:do_feedback_service (fun (presenter_id, scores) -> [
 						table ~a:[a_class ["feedback_table"]] (
 							tr [
