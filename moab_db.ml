@@ -390,7 +390,8 @@ let get_criteria term =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"SELECT id, criterion, description \
 			FROM presentation_criteria \
-			WHERE term = $term")
+			WHERE term = $term \
+			ORDER BY id")
 ;;
 
 let set_presentation_score pres_id scorer_id term crit_id score comment =

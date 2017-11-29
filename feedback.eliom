@@ -48,7 +48,8 @@ let do_feedback_page () (pres_id, scores) =
 			)
 			(function
 			| No_score _ -> Eliom_registration.Action.send ()
-			| e -> Eliom_registration.Action.send ())
+			| e -> Eliom_reference.set feedback_err (Some (Printexc.to_string e));
+						 Eliom_registration.Action.send ())
 		end
 ;;
 
@@ -102,7 +103,9 @@ let feedback_page () () =
 				container
 				[
 					h1 [pcdata "Feedback"];
-					p ~a:[a_class ["error"]] (match err with None -> [] | Some e -> [pcdata e]);
+					(match err with
+					| None -> p []
+					| Some e -> p ~a:[a_class ["error"]] [pcdata e]);
 					Form.post_form ~service:do_feedback_service (fun (presenter_id, scores) -> [
 						table ~a:[a_class ["feedback_table"]] (
 							tr [
