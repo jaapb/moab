@@ -88,10 +88,15 @@ let login_page () () =
 			)
 		end in
 		match !ldap_urls with
-		| [] -> let%lwt e = Moab_db.check_password name password in
-			(match e with
-			| None -> do_login name
-			| Some e -> Eliom_reference.set login_err (Some e))
+		| [] -> Lwt.catch (fun () ->
+				let%lwt e = Moab_db.check_password name password in
+				match e with
+				| None -> do_login name
+				| Some e -> Eliom_reference.set login_err (Some e)
+			)
+			(function
+			| e -> Eliom_reference.set login_err (Some (Printexc.to_string e))
+			)
 		| l ->
 			if password = "" then
 				Eliom_reference.set login_err (Some "Empty password")
