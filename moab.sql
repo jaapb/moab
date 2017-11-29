@@ -454,14 +454,6 @@ ALTER TABLE ONLY presentation_scores
 
 
 --
--- Name: presentation_scores presentation_scores_scorer_id_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY presentation_scores
-    ADD CONSTRAINT presentation_scores_scorer_id_fkey1 FOREIGN KEY (scorer_id, term) REFERENCES students(user_id, term);
-
-
---
 -- Name: presentation_scores presentation_scores_term_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
