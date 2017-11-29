@@ -276,9 +276,9 @@ let get_feedback_given user_id term learning_week =
 		LEFT JOIN presentation_scores ps ON ps.presenter_id = sch.user_id AND ps.scorer_id = $user_id \
 		WHERE t.term = $term AND sch.user_id <> $user_id \
 		AND learning_week <= $learning_week") >>=
-	Lwt_list.map_s (fun (lw, p_id) -> match lw with
+	Lwt_list.map_s (fun (p_id, lw) -> match lw with
 	| None -> Lwt.fail_with "NULL value in learning weeks (get_feedback_given)"
-	| Some x -> Lwt.return (x, p_id))
+	| Some x -> Lwt.return (p_id, x))
 ;;
 
 let check_password user_id password =
