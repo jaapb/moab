@@ -288,7 +288,7 @@ let main_page () () =
 						];
 						li [
 							let fbp = List.length fb in
-							let fbg = List.length (List.filter (fun (_, x) -> x <> None) fb) in
+							let fbg = List.length (List.filter (fun (x, _) -> x <> None) fb) in
 							pcdata (Printf.sprintf "You have given feedback for %d out of %d presentations (%d%%) (this may be off by one or two if your session for this week has not yet taken place)." fbg fbp
 								(if fbp = 0 then 0 else (fbg / fbp * 100)));
 						]

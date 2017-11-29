@@ -85,18 +85,6 @@ CREATE TABLE eliom__persistent_refs (
 
 
 --
--- Name: feedback; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE feedback (
-    presenter_id character varying(16) NOT NULL,
-    user_id character varying(16) NOT NULL,
-    term smallint NOT NULL,
-    CONSTRAINT feedback_check CHECK (((presenter_id)::text <> (user_id)::text))
-);
-
-
---
 -- Name: log; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -155,11 +143,11 @@ ALTER SEQUENCE presentation_criteria_id_seq OWNED BY presentation_criteria.id;
 
 CREATE TABLE presentation_scores (
     presenter_id character varying(16) NOT NULL,
+    scorer_id character varying(16) NOT NULL,
     term smallint NOT NULL,
     criterion_id integer NOT NULL,
     score smallint NOT NULL,
-    comment text,
-    scorer_id character varying(16) NOT NULL
+    comment text
 );
 
 
@@ -318,14 +306,6 @@ ALTER TABLE ONLY eliom__persistent_refs
 
 
 --
--- Name: feedback feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY feedback
-    ADD CONSTRAINT feedback_pkey PRIMARY KEY (presenter_id, user_id, term);
-
-
---
 -- Name: optional_sessions optional_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -406,43 +386,27 @@ ALTER TABLE ONLY attendance
 
 
 --
--- Name: blogs blogs_uid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY blogs
-    ADD CONSTRAINT blogs_uid_fkey FOREIGN KEY (user_id) REFERENCES users(id);
-
-
---
--- Name: feedback feedback_presenter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY feedback
-    ADD CONSTRAINT feedback_presenter_id_fkey FOREIGN KEY (presenter_id) REFERENCES users(id);
-
-
---
--- Name: feedback feedback_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY feedback
-    ADD CONSTRAINT feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
-
-
---
--- Name: log log_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY log
-    ADD CONSTRAINT log_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
-
-
---
 -- Name: optional_sessions optional_sessions_timetable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY optional_sessions
     ADD CONSTRAINT optional_sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
+
+
+--
+-- Name: presentation_scores presentation_scores_presenter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_presenter_id_fkey FOREIGN KEY (presenter_id) REFERENCES users(id);
+
+
+--
+-- Name: presentation_scores presentation_scores_presenter_id_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_scores
+    ADD CONSTRAINT presentation_scores_presenter_id_fkey1 FOREIGN KEY (presenter_id, term) REFERENCES students(user_id, term);
 
 
 --
@@ -462,35 +426,11 @@ ALTER TABLE ONLY presentation_scores
 
 
 --
--- Name: presentation_scores presentation_scores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY presentation_scores
-    ADD CONSTRAINT presentation_scores_user_id_fkey FOREIGN KEY (presenter_id, term) REFERENCES students(user_id, term);
-
-
---
--- Name: presentation_scores presentation_scores_user_id_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY presentation_scores
-    ADD CONSTRAINT presentation_scores_user_id_fkey1 FOREIGN KEY (presenter_id) REFERENCES users(id);
-
-
---
 -- Name: schedule schedule_timetable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY schedule
     ADD CONSTRAINT schedule_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
-
-
---
--- Name: schedule schedule_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY schedule
-    ADD CONSTRAINT schedule_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
 
 
 --
