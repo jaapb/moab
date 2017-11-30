@@ -152,6 +152,21 @@ CREATE TABLE presentation_scores (
 
 
 --
+-- Name: presentation_tutor_feedback; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE presentation_tutor_feedback (
+    presenter_id character varying(16) NOT NULL,
+    scorer_id character varying(16) NOT NULL,
+    term smallint NOT NULL,
+    comments text NOT NULL,
+    duration smallint NOT NULL,
+    topic text NOT NULL,
+    grade character varying(16) NOT NULL
+);
+
+
+--
 -- Name: schedule; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -330,6 +345,14 @@ ALTER TABLE ONLY presentation_scores
 
 
 --
+-- Name: presentation_tutor_feedback presentation_tutor_feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_tutor_feedback
+    ADD CONSTRAINT presentation_tutor_feedback_pkey PRIMARY KEY (presenter_id, scorer_id, term);
+
+
+--
 -- Name: schedule schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -423,6 +446,22 @@ ALTER TABLE ONLY presentation_scores
 
 ALTER TABLE ONLY presentation_scores
     ADD CONSTRAINT presentation_scores_term_fkey FOREIGN KEY (term, criterion_id) REFERENCES presentation_criteria(term, id);
+
+
+--
+-- Name: presentation_tutor_feedback presentation_tutor_feedback_presenter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_tutor_feedback
+    ADD CONSTRAINT presentation_tutor_feedback_presenter_id_fkey FOREIGN KEY (presenter_id, term) REFERENCES students(user_id, term);
+
+
+--
+-- Name: presentation_tutor_feedback presentation_tutor_feedback_scorer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY presentation_tutor_feedback
+    ADD CONSTRAINT presentation_tutor_feedback_scorer_id_fkey FOREIGN KEY (scorer_id) REFERENCES users(id);
 
 
 --

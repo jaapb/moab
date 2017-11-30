@@ -175,6 +175,8 @@ let main_page () () =
 					]
 				) att)
 			);
+			h2 [pcdata "Feedback"];
+			p [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
 			h2 [pcdata "Schedule"];
 			Form.get_form ~service:generate_schedule_service (fun (group) -> [
 				table [

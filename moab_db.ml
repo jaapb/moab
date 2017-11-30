@@ -401,3 +401,12 @@ let set_presentation_score pres_id scorer_id term crit_id score comment =
 			($pres_id, $scorer_id, $term, $crit_id, $score, $comment) \
 			ON CONFLICT (presenter_id, scorer_id, term, criterion_id) DO UPDATE SET score = EXCLUDED.score, comment = EXCLUDED.comment")
 ;;
+
+let set_presentation_tutor_feedback pres_id scorer_id term topic duration grade comments =
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "INSERT INTO presentation_tutor_feedback (presenter_id, scorer_id, term, topic, duration, grade, comments) \
+			VALUES \
+			($pres_id, $scorer_id, $term, $topic, $duration, $grade, $comments) \
+			ON CONFLICT (presenter_id, scorer_id, term) DO UPDATE SET topic = EXCLUDED.topic, \
+				duration = EXCLUDED.duration, grade = EXCLUDED.grade, comments = EXCLUDED.comments")
+;;
