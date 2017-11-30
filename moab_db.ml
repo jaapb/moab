@@ -99,7 +99,8 @@ let register_attendance ?(need_confirmation=false) session_id user_id week =
 	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh)
 		"INSERT INTO attendance (session_id, user_id, learning_week, confirmed) \
 		VALUES \
-		($session_id, $user_id, $week, $?confirmed)")
+		($session_id, $user_id, $week, $?confirmed)
+		ON CONFLICT DO NOTHING")
 ;;
 
 let log user_id ip_address thing =

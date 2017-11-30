@@ -26,7 +26,17 @@ let no_session_found uid =
 	]
 ;;
 
-let do_feedback_page () (pres_id, (scores, (topic, (duration, (grade, comment))))) =
+let given_feedback_page () () =
+	container [
+		h1 [pcdata "Feedback submitted"];
+		p [pcdata "Your feedback has been submitted and your attendance for this session has been registered."]
+	]
+;;
+
+let do_feedback_page () (pres_id, (scores, (topic, (duration, (grade, (comment, (session, lw))))))) =
+	let given_feedback_service = create ~path:No_path ~meth:(Get unit) () in
+	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
+		~service:given_feedback_service given_feedback_page;
 	let error e =
 		Eliom_reference.set feedback_err (Some e) >>=
 		fun () -> Eliom_registration.Action.send () in	
@@ -55,8 +65,9 @@ let do_feedback_page () (pres_id, (scores, (topic, (duration, (grade, comment)))
 					| _, _, _, None -> Lwt.fail (Admin_error "comment")
 				else
 					Lwt.return ()) >>=
+				fun () -> Moab_db.register_attendance session s_id lw >>=
 				fun () -> Eliom_reference.set feedback_values None >>=
-				fun () -> Eliom_registration.Redirection.send (Eliom_registration.Redirection main_service)
+				fun () -> Eliom_registration.Redirection.send (Eliom_registration.Redirection given_feedback_service)
 			)
 			(function
 			| No_score c -> error (Printf.sprintf "No score for criterion %ld" c)
@@ -80,7 +91,7 @@ let feedback_page () () =
 			) (List.sort (fun (i1, _, _) (i2, _, _) -> compare i1 i2) c') (List.sort (fun (i1, (_, _)) (i2, (_, _)) -> compare i1 i2) s')
 	in
 	let do_feedback_service = create_attached_post ~fallback:feedback_service
-		~post_params:(radio string "presenter" ** list "scores" (int32 "criterion_id" ** radio int "score" ** string "comment") ** opt (string "topic") ** opt (string "duration") ** opt (string "grade") ** opt (string "tutor_comment")) () in
+		~post_params:(radio string "presenter" ** list "scores" (int32 "criterion_id" ** radio int "score" ** string "comment") ** opt (string "topic") ** opt (string "duration") ** opt (string "grade") ** opt (string "tutor_comment") ** int32 "session_id" ** int "learning_week") () in
 	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
 		~service:do_feedback_service do_feedback_page;
 	let%lwt u = Eliom_reference.get user in
@@ -127,7 +138,9 @@ let feedback_page () () =
 					(match err with
 					| None -> p []
 					| Some e -> p ~a:[a_class ["error"]] [pcdata e]);
-					Form.post_form ~service:do_feedback_service (fun (presenter_id, (scores, (topic, (duration, (grade, comment))))) -> [
+					Form.post_form ~service:do_feedback_service (fun (presenter_id, (scores, (topic, (duration, (grade, (comment, (session, lw))))))) -> [
+						Form.input ~input_type:`Hidden ~name:session ~value:session_id Form.int32;
+						Form.input ~input_type:`Hidden ~name:lw ~value:(Moab_utils.default 0 this_lw) Form.int;
 						table ~a:[a_class ["feedback_table"]] (
 							tr [
 								th [pcdata "Presenter: "];
