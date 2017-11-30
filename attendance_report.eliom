@@ -27,8 +27,8 @@ let do_generate_report () (from_week, to_week) =
 						let (sw, _) = Date.week_first_last wk y in
 						let%lwt	users = Moab_db.get_user_attendance !Moab.term lw in 	
 						Lwt_list.map_s (fun (uid, fn, ln, p, x, vs) ->
-							let student_id = match p with None -> "" | Some q -> q in
-							let nr_sessions = match x with None -> 0L | Some y -> y in
+							let student_id = Moab_utils.default "" p in
+							let nr_sessions = Moab_utils.default 0L x in
 							Lwt.return [string_of_int lw;
 							Int64.to_string s;
 							student_id;
