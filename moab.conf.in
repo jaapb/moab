@@ -29,6 +29,7 @@
 					<server>%%PGHOST%%</server>
 					<name>%%PGDATABASE%%</name>
 					<user>%%PGUSER%%</user>
+					<password>%%PGPASSWORD%%</password>
 				</database>
 			</eliommodule>
       <eliom/>
