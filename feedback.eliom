@@ -64,8 +64,7 @@ let do_feedback_page () (pres_id, (scores, (topic, (duration, (grade, (comment, 
 					| _, _, None, _ -> Lwt.fail (Admin_error "grade")
 					| _, _, _, None -> Lwt.fail (Admin_error "comment")
 				else
-					Lwt.return ()) >>=
-				fun () -> Moab_db.register_attendance session s_id lw >>=
+					Moab_db.register_attendance session s_id lw) >>=
 				fun () -> Eliom_reference.set feedback_values None >>=
 				fun () -> Eliom_registration.Redirection.send (Eliom_registration.Redirection given_feedback_service)
 			)
