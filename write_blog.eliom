@@ -12,9 +12,9 @@
 	open CalendarLib
 ]
 
-let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
+let do_write_blog_page () (user_id, (week, (term, (title, text)))) =
 	Lwt.catch (fun () ->
-		let%lwt () = Moab_db.update_blog user_id week year title text in
+		let%lwt () = Moab_db.update_blog user_id week term title text in
 		container [
 			h1 [pcdata "Blog saved"];
 			p [pcdata (Printf.sprintf "Your entry for week %d has been saved. " week); pcdata "You will be able to update it until the end of the week."]
@@ -27,7 +27,7 @@ let do_write_blog_page () (user_id, (week, (year, (title, text)))) =
 
 let write_blog_page () () =
 	let do_write_blog_service = create_attached_post ~fallback:write_blog_service
-		~post_params:(string "user_id" ** int "week" ** int "year" ** string "title" ** string "text") () in
+		~post_params:(string "user_id" ** int "week" ** int "term" ** string "title" ** string "text") () in
 		Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
 			~service:do_write_blog_service do_write_blog_page;
 	let%lwt u = Eliom_reference.get user in
@@ -60,10 +60,10 @@ let write_blog_page () () =
 						li [pcdata "What obstacles can I see to successfully complete my project?"]
 					];
 					Form.post_form ~service:do_write_blog_service
-					(fun (user_id, (wk, (yr, (title, text)))) -> [
+					(fun (user_id, (wk, (tm, (title, text)))) -> [
 						Form.input ~input_type:`Hidden ~name:user_id ~value:uid Form.string;
 						Form.input ~input_type:`Hidden ~name:wk ~value:lw Form.int;
-						Form.input ~input_type:`Hidden ~name:yr ~value:(Date.year (Date.today ())) Form.int; 
+						Form.input ~input_type:`Hidden ~name:tm ~value:term Form.int; 
 						table [
 							tr [
 								td [pcdata "Title: "];
