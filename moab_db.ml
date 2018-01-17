@@ -271,15 +271,24 @@ let last_learning_week group term =
 	| e -> Lwt.fail e)
 
 let get_feedback_given user_id term learning_week =
-	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh) "nullable-results"
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh) 
 	"SELECT DISTINCT(presenter_id), learning_week \
-		FROM schedule sch JOIN timetable t ON sch.timetable_id = t.id \
-		LEFT JOIN presentation_scores ps ON ps.presenter_id = sch.user_id AND ps.scorer_id = $user_id \
-		WHERE t.term = $term AND sch.user_id <> $user_id \
-		AND learning_week <= $learning_week") >>=
-	Lwt_list.map_s (fun (p_id, lw) -> match lw with
-	| None -> Lwt.fail_with "NULL value in learning weeks (get_feedback_given)"
-	| Some x -> Lwt.return (p_id, x))
+		FROM presentation_scores ps JOIN schedule sch ON ps.presenter_id = sch.user_id \
+		JOIN students st ON ps.scorer_id = st.user_id \
+		WHERE ps.term = $term AND scorer_id = $user_id \
+		AND (learning_week BETWEEN st.joined_week AND st.left_week OR \
+				(learning_week >= st.joined_week AND st.left_week IS NULL)) \
+		AND	learning_week <= $learning_week")
+;;
+
+let get_feedback_possible user_id term learning_week =
+	Lwt_pool.use db_pool (fun dbh -> PGSQL(dbh) 
+		"SELECT DISTINCT(presenter_id), learning_week \
+			FROM presentation_scores ps JOIN schedule sch ON ps.presenter_id = sch.user_id \
+			JOIN timetable t ON sch.timetable_id = t.id \
+			WHERE group_number = (SELECT group_number FROM students WHERE user_id = $user_id) \
+			AND presenter_id <> $user_id \
+			AND ps.term = $term AND learning_week <= $learning_week")
 ;;
 
 let check_password user_id password =
