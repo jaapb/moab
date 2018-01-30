@@ -164,7 +164,7 @@ let main_page () () =
 				]::
 				(List.map (fun (fn, ln, lw, wd, st, et) ->
 					let start_time = Time.from_gmt st in
-					let end_time = Time.from_gmt st in
+					let end_time = Time.from_gmt et in
 					tr [
 						td [pcdata (Printf.sprintf "%s %s" fn ln)];
 						td [pcdata (Printf.sprintf "%s %s-%s" (Printer.name_of_day (Date.day_of_int wd))
