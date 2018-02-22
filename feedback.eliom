@@ -35,14 +35,6 @@ let given_feedback_page () () =
 ;;
 
 let do_feedback_page () (pres_id, (scores, (topic, (dstr, (grade, (comment, (session, lw))))))) =
-	Ocsigen_messages.console (fun () -> "do_feedback_page");
-	Ocsigen_messages.console (fun () -> Printf.sprintf "presenter_id: %s" (Moab_utils.default "<none>" pres_id));
-	Ocsigen_messages.console (fun () -> Printf.sprintf "topic: %s" (Moab_utils.default "<none>" topic));
-	Ocsigen_messages.console (fun () -> Printf.sprintf "duration: %s" (Moab_utils.default "<none>" dstr));
-	Ocsigen_messages.console (fun () -> Printf.sprintf "grade: %s" (Moab_utils.default "<none>" grade));
-	Ocsigen_messages.console (fun () -> Printf.sprintf "comment: %s" (Moab_utils.default "<none>" comment));
-	Ocsigen_messages.console (fun () -> Printf.sprintf "session: %ld" (Moab_utils.default 0l session));
-	Ocsigen_messages.console (fun () -> Printf.sprintf "lw: %d" (Moab_utils.default 0 lw));
 	let given_feedback_service = create ~path:No_path ~meth:(Get unit) () in
 	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
 		~service:given_feedback_service given_feedback_page;
