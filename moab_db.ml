@@ -433,11 +433,11 @@ let get_presentation_scores pres_id scorer_id term =
 	)
 ;;
 
-let get_presentation_tutor_feedback pres_id scorer_id term =
+let get_presentation_tutor_feedback pres_id term =
 	Lwt_pool.use db_pool (fun dbh ->
 		PGSQL(dbh) "SELECT topic, duration, grade, comments \
 			FROM presentation_tutor_feedback \
-			WHERE presenter_id = $pres_id AND scorer_id = $scorer_id \
+			WHERE presenter_id = $pres_id \
 				AND term = $term") >>=
 	function
 	| [] -> Lwt.fail Not_found

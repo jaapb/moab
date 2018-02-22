@@ -170,7 +170,7 @@ let admin_feedback_page (pres_id: string option) () =
 			| None -> Lwt.return ([], None, None, None, None)
 			| Some p -> Lwt.catch
 					(fun () -> Moab_db.get_presentation_scores p uid !term >>=
-						fun ps -> Moab_db.get_presentation_tutor_feedback p uid !term >>=
+						fun ps -> Moab_db.get_presentation_tutor_feedback p !term >>=
 						fun (t, d, g, c) -> Lwt.return (ps, t, d, g, c))
 					(function	
 					| Not_found -> Lwt.return ([], None, None, None, None)
