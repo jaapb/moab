@@ -444,3 +444,36 @@ let get_presentation_tutor_feedback pres_id term =
   | [tf] -> Lwt.return tf
 	| _ -> Lwt.fail_with "multiple feedback instances found"
 ;;
+
+let get_presentation_averages pres_id term =
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "SELECT ps.criterion_id, MAX(criterion), ROUND(AVG(score),1) \
+			FROM presentation_scores ps \
+			JOIN presentation_criteria pc ON ps.criterion_id = pc.id AND ps.term = pc.term \
+			WHERE presenter_id = $pres_id AND ps.term = $term \
+			GROUP BY ps.criterion_id \
+			ORDER BY 1") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| x -> Lwt.return x
+;;
+
+let get_presentation_comments pres_id term =
+	let rec zip_comments id cname l ccl res =
+		match l with
+		| [] -> (cname,ccl)::res
+		|	(i,c,cm)::t -> 
+			if i = id then zip_comments id cname t (cm::ccl) res 
+			else zip_comments i c t [cm] ((cname, ccl)::res) in
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "SELECT criterion_id, criterion, comment \
+			FROM presentation_scores ps \
+			JOIN presentation_criteria pc ON ps.criterion_id = pc.id AND ps.term = pc.term \
+			WHERE presenter_id = $pres_id AND ps.term = $term \
+			AND NOT (comment IS NULL OR comment = '') \
+			ORDER BY 1"
+	) >>= 
+	function
+	| [] -> Lwt.return []
+	| (i, c, cm)::t -> Lwt.return (zip_comments i c t [cm] [])
+;;
