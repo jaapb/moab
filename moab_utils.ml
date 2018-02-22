@@ -3,3 +3,9 @@ let default d opt =
 	| None -> d
 	| Some x -> x
 ;;
+
+let optmap f opt =
+	match opt with
+	| None -> None
+	| Some x -> Some (f x)
+;;

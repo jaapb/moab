@@ -420,3 +420,27 @@ let set_presentation_tutor_feedback pres_id scorer_id term topic duration grade 
 			ON CONFLICT (presenter_id, scorer_id, term) DO UPDATE SET topic = EXCLUDED.topic, \
 				duration = EXCLUDED.duration, grade = EXCLUDED.grade, comments = EXCLUDED.comments")
 ;;
+
+let get_presentation_scores pres_id scorer_id term =
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "SELECT criterion_id, score, comment \
+			FROM presentation_scores \
+			WHERE presenter_id = $pres_id AND scorer_id = $scorer_id \
+				AND term = $term") >>=
+	Lwt_list.map_s (function
+	| (c, s, Some cm) -> Lwt.return (c, (Some s, cm))
+	| (c, s, None) -> Lwt.return (c, (Some s, ""))
+	)
+;;
+
+let get_presentation_tutor_feedback pres_id scorer_id term =
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "SELECT topic, duration, grade, comments \
+			FROM presentation_tutor_feedback \
+			WHERE presenter_id = $pres_id AND scorer_id = $scorer_id \
+				AND term = $term") >>=
+	function
+	| [] -> Lwt.fail Not_found
+  | [tf] -> Lwt.return tf
+	| _ -> Lwt.fail_with "multiple feedback instances found"
+;;

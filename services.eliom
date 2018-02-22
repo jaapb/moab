@@ -3,6 +3,7 @@
 	open Eliom_service
 ]
 
+let admin_feedback_service = create ~path:(Path ["admin_feedback"]) ~meth:(Get (suffix (opt (string "presenter_id")))) ();;
 let attendance_service = create ~path:(Path ["attendance"]) ~meth:(Get unit) ();;
 let attendance_report_service = create ~path:(Path ["attendance_report"]) ~meth:(Get unit) ();;
 let feedback_service = create ~path:(Path ["feedback"]) ~meth:(Get unit) ();;
