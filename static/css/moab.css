@@ -118,3 +118,9 @@ table.feedback_table tr td.grade5
 	color: red;
 	border: solid 1px red;
 } 
+
+table.peer_comments th
+{
+	vertical-align: top;
+	background-color: lightgray;
+}

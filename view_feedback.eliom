@@ -44,7 +44,7 @@ let view_feedback_page () () =
 					) scores)
 				);
 				h3 [pcdata "Peer comments"];
-				table	(
+				table	~a:[a_class ["peer_comments"]] (
 					List.flatten (List.map (fun (cname, ccl) ->
 						match ccl with
 						| [] -> [tr [th [pcdata cname]; td [pcdata "no comments"]]]
