@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.6
--- Dumped by pg_dump version 9.6.6
+-- Dumped from database version 9.6.7
+-- Dumped by pg_dump version 9.6.7
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -147,7 +147,7 @@ CREATE TABLE presentation_scores (
     term smallint NOT NULL,
     criterion_id integer NOT NULL,
     score smallint NOT NULL,
-    comment text
+    comment text NOT NULL
 );
 
 
@@ -175,7 +175,7 @@ CREATE TABLE schedule (
     first boolean NOT NULL,
     learning_week smallint NOT NULL,
     timetable_id integer NOT NULL,
-    self_set boolean NOT NULL
+    set character(1) NOT NULL
 );
 
 
