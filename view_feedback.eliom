@@ -21,10 +21,11 @@ let view_feedback_page () () =
 			let%lwt scores = Moab_db.get_presentation_averages uid !term in
 			let total = List.fold_left (fun acc (_, _, s) -> acc +. (float_of_string (Moab_utils.default "" s))) 0.0 scores in
 			let%lwt comments = Moab_db.get_presentation_comments uid !term in
-			(* let%lwt tutor_fb = Moab_db.get_presentation_tutor_feedback uid !term in *)
+			let%lwt (topic, duration, pgrade, tutor_comments) = Moab_db.get_presentation_tutor_feedback uid !term in
 			container
 			[
 				h1 [pcdata "View presentation feedback"];	
+				p [pcdata "Your topic: "; pcdata (Moab_utils.default "<not recorded>" topic)];
 				h2 [pcdata "Peer mark"];
 				p [pcdata "This is the average of all scores given by your fellow students, plus the tutor. Each score counts equally. Scores range from 0 to 5; the five averages are added together to give a final presentation score from 0 to 25."];
 				table (
@@ -51,11 +52,28 @@ let view_feedback_page () () =
 						| h::t -> 
 								tr [
 									th ~a:[a_rowspan (List.length ccl)] [pcdata cname];
-									td [pcdata (Moab_utils.default "" h)]
+									td [pcdata h]
 								]::
-								List.map (fun x -> tr [td [pcdata (Moab_utils.default "" x)]]) t
+								List.map (fun x -> tr [td [pcdata x]]) t
 					) (List.rev comments))
-				)
+				);
+				h2 [pcdata "Tutor mark"];
+				p [strong [pcdata "Please note"]; pcdata " that these marks are provisional and should only be taken as an indication. Final marks will only be awarded after all presentations have been given (to ensure fairness)."];
+				table [
+					tr [
+						th [pcdata "Provisional grade: "];
+						td [pcdata (Moab_utils.default "<not recorded>" pgrade)]
+					];
+					tr [
+						th [pcdata "Duration: "];
+						td [pcdata (match duration with | None -> "<not recorded>" | Some d -> Printf.sprintf "%d minutes" d)]
+					];
+					tr [
+						th [pcdata "Tutor comments: "];
+						td [pcdata tutor_comments]
+					];
+				]
+
 			]
 		)
 		(function

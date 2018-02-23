@@ -426,11 +426,7 @@ let get_presentation_scores pres_id scorer_id term =
 		PGSQL(dbh) "SELECT criterion_id, score, comment \
 			FROM presentation_scores \
 			WHERE presenter_id = $pres_id AND scorer_id = $scorer_id \
-				AND term = $term") >>=
-	Lwt_list.map_s (function
-	| (c, s, Some cm) -> Lwt.return (c, (Some s, cm))
-	| (c, s, None) -> Lwt.return (c, (Some s, ""))
-	)
+				AND term = $term")
 ;;
 
 let get_presentation_tutor_feedback pres_id term =
@@ -470,7 +466,7 @@ let get_presentation_comments pres_id term =
 			FROM presentation_scores ps \
 			JOIN presentation_criteria pc ON ps.criterion_id = pc.id AND ps.term = pc.term \
 			WHERE presenter_id = $pres_id AND ps.term = $term \
-			AND NOT (comment IS NULL OR comment = '') \
+			AND comment <> '' \
 			ORDER BY 1"
 	) >>= 
 	function
