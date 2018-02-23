@@ -25,7 +25,7 @@ let view_feedback_page () () =
 			container
 			[
 				h1 [pcdata "View presentation feedback"];	
-				p [pcdata "Your topic: "; pcdata (Moab_utils.default "<not recorded>" topic)];
+				p [pcdata "Your topic: "; pcdata topic];
 				h2 [pcdata "Peer mark"];
 				p [pcdata "This is the average of all scores given by your fellow students, plus the tutor. Each score counts equally. Scores range from 0 to 5; the five averages are added together to give a final presentation score from 0 to 25."];
 				table (
@@ -59,18 +59,35 @@ let view_feedback_page () () =
 				);
 				h2 [pcdata "Tutor mark"];
 				p [strong [pcdata "Please note"]; pcdata " that these marks are provisional and should only be taken as an indication. Final marks will only be awarded after all presentations have been given (to ensure fairness)."];
-				table [
+				p [pcdata "Grade bands:"];
+				ul [
+					li [pcdata "1: 70-100%, 17.5-25 points"];
+					li [pcdata "U2: 60-70%, 15-17.5 points"];
+					li [pcdata "L2: 50-60%, 12.5-15 points"];
+					li [pcdata "3: 40-50%, 10-12.5 points"];
+					li [pcdata "F: 0-40%, 0-10 points"]
+				];
+				p [pcdata "For duration, the deduction (which is from the tutor mark only) is as follows:"];
+				ul [
+					li [pcdata "25 minutes or more: no deduction"];
+					li [pcdata "20-24 minutes: 10% deduction"];
+					li [pcdata "15-19 minutes: 20% deduction"];
+					li [pcdata "10-14 minutes: 30% deduction"];
+					li [pcdata "5-9 minutes: 40% deduction"];
+					li [pcdata "0-4 minutes: 50% deduction"]
+				];
+				table ~a:[a_class ["tutor_comments"]] [
 					tr [
 						th [pcdata "Provisional grade: "];
-						td [pcdata (Moab_utils.default "<not recorded>" pgrade)]
+						td [pcdata pgrade]
 					];
 					tr [
 						th [pcdata "Duration: "];
-						td [pcdata (match duration with | None -> "<not recorded>" | Some d -> Printf.sprintf "%d minutes" d)]
+						td [pcdata (Printf.sprintf "%d minutes" duration)]
 					];
 					tr [
 						th [pcdata "Tutor comments: "];
-						td [pcdata tutor_comments]
+						td [pre [pcdata tutor_comments]]
 					];
 				]
 

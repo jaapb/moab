@@ -121,6 +121,14 @@ table.feedback_table tr td.grade5
 
 table.peer_comments th
 {
+	text-align: left;
+	vertical-align: top;
+	background-color: lightgray;
+}
+
+table.tutor_comments th
+{
+	text-align: left;
 	vertical-align: top;
 	background-color: lightgray;
 }

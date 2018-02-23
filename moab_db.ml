@@ -426,7 +426,8 @@ let get_presentation_scores pres_id scorer_id term =
 		PGSQL(dbh) "SELECT criterion_id, score, comment \
 			FROM presentation_scores \
 			WHERE presenter_id = $pres_id AND scorer_id = $scorer_id \
-				AND term = $term")
+			AND term = $term") >>=
+	Lwt_list.map_s (fun (c, s, cm) -> Lwt.return (c, (Some s, cm)))
 ;;
 
 let get_presentation_tutor_feedback pres_id term =

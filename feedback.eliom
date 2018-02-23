@@ -41,8 +41,7 @@ let do_feedback_page () (pres_id, (scores, (topic, (dstr, (grade, (comment, (ses
 	let error e =
 		Eliom_reference.set feedback_err (Some e) >>=
 		fun () -> Eliom_registration.Action.send () in	
-	let duration = Moab_utils.optmap int_of_string dstr in
-	Eliom_reference.set feedback_values (Some (pres_id, scores, topic, duration, grade, comment)) >>=
+	Eliom_reference.set feedback_values (Some (pres_id, scores, topic, dstr, grade, comment)) >>=
 	fun () -> Eliom_reference.get user >>=
 	fun s -> match s with
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
@@ -58,13 +57,13 @@ let do_feedback_page () (pres_id, (scores, (topic, (dstr, (grade, (comment, (ses
 						Moab_db.set_presentation_score uid s_id !term c_id score comment
 				) scores >>=
 				fun () -> (if is_admin then
-					match	topic, duration, grade, comment with
-					| Some t, Some d, Some g, Some c ->
-							Moab_db.set_presentation_tutor_feedback uid s_id !term t d g c
-					| None, _, _, _ -> Lwt.fail (Admin_error "topic")
-					| _, None, _, _ -> Lwt.fail (Admin_error "duration")
-					| _, _, None, _ -> Lwt.fail (Admin_error "grade")
-					| _, _, _, None -> Lwt.fail (Admin_error "comment")
+				begin
+					if topic = "" then Lwt.fail (Admin_error "topic")	
+					else if dstr = "" then Lwt.fail (Admin_error "duration")	
+					else if grade = "" then Lwt.fail (Admin_error "grade")	
+					else if comment = "" then Lwt.fail (Admin_error "comment")	
+					else Moab_db.set_presentation_tutor_feedback uid s_id !term topic (int_of_string dstr) grade comment
+				end
 				else
 					match session, lw with
 					| Some s, Some l -> Moab_db.register_attendance s s_id l
@@ -94,7 +93,7 @@ let zip_crits c s =
 
 let create_do_feedback_service () =
 	let do_feedback_service = create_attached_post ~fallback:feedback_service
-		~post_params:(radio string "presenter" ** list "scores" (int32 "criterion_id" ** radio int "score" ** string "comment") ** opt (string "topic") ** opt (string "duration") ** opt (string "grade") ** opt (string "tutor_comment") ** opt (int32 "session_id") ** opt (int "learning_week")) () in
+		~post_params:(radio string "presenter" ** list "scores" (int32 "criterion_id" ** radio int "score" ** string "comment") ** (string "topic") ** (string "duration") ** (string "grade") ** (string "tutor_comment") ** opt (int32 "session_id") ** opt (int "learning_week")) () in
 begin
 	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
 		~service:do_feedback_service do_feedback_page;
@@ -167,13 +166,13 @@ let admin_feedback_page (pres_id: string option) () =
 			let%lwt users = Moab_db.get_students !term in
 			let%lwt crits = Moab_db.get_criteria !term in
 			let%lwt (db_scores, db_topic, db_duration, db_grade, db_comment) = match pres_id with
-			| None -> Lwt.return ([], None, None, None, None)
+			| None -> Lwt.return ([], "", "", "", "")
 			| Some p -> Lwt.catch
 					(fun () -> Moab_db.get_presentation_scores p uid !term >>=
 						fun ps -> Moab_db.get_presentation_tutor_feedback p !term >>=
-						fun (t, d, g, c) -> Lwt.return (ps, t, d, g, c))
+						fun (t, d, g, c) -> Lwt.return (ps, t, string_of_int d, g, c))
 					(function	
-					| Not_found -> Lwt.return ([], None, None, None, None)
+					| Not_found -> Lwt.return ([], "", "", "", "")
 					| e -> Lwt.fail e) in
 			let%lwt x = Eliom_reference.get feedback_values in
 			let (set_scores, set_topic, set_duration, set_grade, set_comment) = match x with
@@ -211,21 +210,21 @@ let admin_feedback_page (pres_id: string option) () =
 						[
 							tr [
 								th [pcdata "Topic:"];
-								td ~a:[a_colspan 7] [Form.input ~input_type:`Text ~name:topic ~value:(Moab_utils.default "" set_topic) Form.string]
+								td ~a:[a_colspan 7] [Form.input ~input_type:`Text ~name:topic ~value:set_topic Form.string]
 							];
 							tr [
 								th [pcdata "Duration:"];
-								td ~a:[a_colspan 7] [Form.input ~input_type:`Text ~name:duration ~value:(match set_duration with None -> "" | Some d -> string_of_int d)Form.string]
+								td ~a:[a_colspan 7] [Form.input ~input_type:`Text ~name:duration ~value:set_duration Form.string]
 							];
 							tr [
 								th [pcdata "Putative grade:"];
-								td ~a:[a_colspan 7] [Form.input ~input_type:`Text ~name:grade ~value:(Moab_utils.default "" set_grade) Form.string]
+								td ~a:[a_colspan 7] [Form.input ~input_type:`Text ~name:grade ~value:set_grade Form.string]
 							];
 							tr [
 								th ~a:[a_colspan 9] [pcdata "Tutor comments:"];
 							];
 							tr [
-								th ~a:[a_colspan 8] [Form.textarea ~a:[a_cols 80; a_rows 10] ~name:comment ~value:(Moab_utils.default "" set_comment) ()]
+								th ~a:[a_colspan 8] [Form.textarea ~a:[a_cols 80; a_rows 10] ~name:comment ~value:set_comment ()]
 							];
 							tr [
 								td ~a:[a_colspan 8] [
@@ -271,7 +270,7 @@ let feedback_page () () =
 			let%lwt crits = Moab_db.get_criteria !term in
 			let%lwt x = Eliom_reference.get feedback_values in
 			let (set_pres_id, set_scores, set_topic, set_duration, set_grade, set_comment) = match x with
-			| None -> None, [], None, None, None, None
+			| None -> None, [], "", "", "", ""
 			| Some (None, l, t, d, g, c) -> None, l, t, d, g, c
 			| Some (Some p, l, t, d, g, c) -> Some p, l, t, d, g, c  in
 			let%lwt err = Eliom_reference.get feedback_err in
