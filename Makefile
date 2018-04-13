@@ -18,6 +18,9 @@ JS_OF_ELIOM       := js_of_eliom
 ELIOMDEP          := eliomdep
 OCSIGENSERVER     := ocsigenserver
 OCSIGENSERVER.OPT := ocsigenserver.opt
+OCAMLC						:= ocamlfind ocamlc
+OCAMLOPT					:= ocamlfind ocamlopt
+OCAMLDEP					:= ocamlfind ocamldep
 
 ## Where to put intermediate object files.
 ## - ELIOM_{SERVER,CLIENT}_DIR must be distinct
@@ -157,7 +160,7 @@ $(TEST_PREFIX)${ETCDIR}/${PROJECT_NAME}-test.conf: ${PROJECT_NAME}.conf.in Makef
 ## Server side compilation
 
 SERVER_INC  := ${addprefix -package ,${SERVER_PACKAGES}}
-SERVER_DB_INC := ${addprefix -package ,${SERVER_PACKAGES} ${SERVER_DB_PACKAGES}}
+SERVER_DB_INC := ${addprefix -package ,${SERVER_DB_PACKAGES}}
 
 ${ELIOM_TYPE_DIR}/%.type_mli: %.eliom
 	${ELIOMC} -ppx -infer ${SERVER_INC} $<
@@ -174,24 +177,24 @@ $(TEST_PREFIX)$(LIBDIR)/$(PROJECT_NAME).cmxa: $(call objs,$(ELIOM_SERVER_DIR),cm
 	$(ELIOMOPT) -shared -linkall -o $@ $(GENERATE_DEBUG) $<
 
 ${ELIOM_SERVER_DIR}/%_db.cmi: %_db.mli
-	${ELIOMC} -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
+	${OCAMLC} -o $@ -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmi: %.mli
-	${ELIOMC} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
+	${OCAMLC} -o $@ -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
 ${ELIOM_SERVER_DIR}/%.cmi: %.eliomi
 	${ELIOMC} -ppx -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
 ${ELIOM_SERVER_DIR}/%_db.cmo: %_db.ml
-	PGHOST=${PGHOST} PGDATABASE=${PGDATABASE} PGUSER=${PGUSER} PGPASSWORD=${PGPASSWORD} ${ELIOMC} -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
+	PGHOST=${PGHOST} PGDATABASE=${PGDATABASE} PGUSER=${PGUSER} PGPASSWORD=${PGPASSWORD} ${OCAMLC} -syntax camlp4o -thread -o $@ -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmo: %.ml
-	${ELIOMC} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
+	${OCAMLC} -o $@ -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmo: %.eliom
 	${ELIOMC} -ppx -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
 ${ELIOM_SERVER_DIR}/%_db.cmx: %_db.ml
-	PGHOST=${PGHOST} PGDATABASE=${PGDATABASE} PGUSER=${PGUSER} PGPASSWORD=${PGPASSWORD} ${ELIOMOPT} -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
+	PGHOST=${PGHOST} PGDATABASE=${PGDATABASE} PGUSER=${PGUSER} PGPASSWORD=${PGPASSWORD} ${OCAMLOPT} -syntax camlp4o -thread -o $@ -c ${SERVER_DB_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmx: %.ml
-	${ELIOMOPT} -c ${SERVER_INC} $(GENERATE_DEBUG) $<
+	${OCAMLOPT} -o $@ -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 ${ELIOM_SERVER_DIR}/%.cmx: %.eliom
 	${ELIOMOPT} -ppx -c ${SERVER_INC} $(GENERATE_DEBUG) $<
 
@@ -230,7 +233,7 @@ include .depend
 	cat $^ > $@
 
 $(DEPSDIR)/%_db.ml.server: %_db.ml | $(DEPSDIR)
-	$(ELIOMDEP) -server $(SERVER_DB_INC) $< > $@
+	$(OCAMLDEP) $(SERVER_DB_INC) $< > $@
 
 $(DEPSDIR)/%.server: % | $(DEPSDIR)
 	$(ELIOMDEP) -server -ppx $(SERVER_INC) $< > $@
