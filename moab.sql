@@ -161,7 +161,8 @@ CREATE TABLE public.presentation_tutor_feedback (
     comments text NOT NULL,
     duration smallint NOT NULL,
     topic text NOT NULL,
-    grade character varying(16) NOT NULL
+    provisional_grade character varying(16) NOT NULL,
+    final_grade double precision
 );
 
 

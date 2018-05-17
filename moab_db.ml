@@ -414,11 +414,11 @@ let set_presentation_score pres_id scorer_id term crit_id score comment =
 
 let set_presentation_tutor_feedback pres_id scorer_id term topic duration grade comments =
 	Lwt_pool.use db_pool (fun dbh ->
-		PGSQL(dbh) "INSERT INTO presentation_tutor_feedback (presenter_id, scorer_id, term, topic, duration, grade, comments) \
+		PGSQL(dbh) "INSERT INTO presentation_tutor_feedback (presenter_id, scorer_id, term, topic, duration, provisional_grade, comments) \
 			VALUES \
 			($pres_id, $scorer_id, $term, $topic, $duration, $grade, $comments) \
 			ON CONFLICT (presenter_id, scorer_id, term) DO UPDATE SET topic = EXCLUDED.topic, \
-				duration = EXCLUDED.duration, grade = EXCLUDED.grade, comments = EXCLUDED.comments")
+				duration = EXCLUDED.duration, provisional_grade = EXCLUDED.provisional_grade, comments = EXCLUDED.comments")
 ;;
 
 let get_presentation_scores pres_id scorer_id term =
@@ -432,7 +432,7 @@ let get_presentation_scores pres_id scorer_id term =
 
 let get_presentation_tutor_feedback pres_id term =
 	Lwt_pool.use db_pool (fun dbh ->
-		PGSQL(dbh) "SELECT topic, duration, grade, comments \
+		PGSQL(dbh) "SELECT topic, duration, provisional_grade, final_grade, comments \
 			FROM presentation_tutor_feedback \
 			WHERE presenter_id = $pres_id \
 				AND term = $term") >>=
