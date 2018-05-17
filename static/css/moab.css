@@ -132,3 +132,8 @@ table.tutor_comments th
 	vertical-align: top;
 	background-color: lightgray;
 }
+
+table.report_table th
+{
+	text-align: left;
+}

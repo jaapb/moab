@@ -474,3 +474,31 @@ let get_presentation_comments pres_id term =
 	| [] -> Lwt.return []
 	| (i, c, cm)::t -> Lwt.return (zip_comments i c t [cm] [])
 ;;
+
+let get_report_scores user_id term =
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "SELECT quality_score, quality_feedback, independence_score, independence_feedback, communication_score, communication_feedback \
+			FROM report_scores \
+			WHERE user_id = $user_id AND term = $term"
+	) >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [x] -> Lwt.return x
+	| _ -> Lwt.fail_with "multiple feedback instances found"
+;;
+
+let set_report_scores user_id term qs qf ids idf cs cf =
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "INSERT INTO report_scores \
+			(user_id, term, quality_score, quality_feedback, independence_score, independence_feedback, communication_score, communication_feedback) \
+			VALUES
+			($user_id, $term, $qs, $qf, $ids, $idf, $cs, $cf) \
+			ON CONFLICT (user_id, term) DO UPDATE \
+				SET quality_score = EXCLUDED.quality_score, \
+				quality_feedback = EXCLUDED.quality_feedback, \
+				independence_score = EXCLUDED.independence_score, \
+				independence_feedback = EXCLUDED.independence_feedback, \
+				communication_score = EXCLUDED.communication_score, \
+				communication_feedback = EXCLUDED.communication_feedback"
+	)
+;;

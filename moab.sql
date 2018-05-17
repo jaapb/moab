@@ -2,14 +2,15 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.7
--- Dumped by pg_dump version 9.6.7
+-- Dumped from database version 10.3
+-- Dumped by pg_dump version 10.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'SQL_ASCII';
 SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
@@ -42,8 +43,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
-SET search_path = public, pg_catalog;
-
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -52,7 +51,7 @@ SET default_with_oids = false;
 -- Name: attendance; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE attendance (
+CREATE TABLE public.attendance (
     session_id integer NOT NULL,
     user_id character varying(16) NOT NULL,
     learning_week smallint NOT NULL,
@@ -64,7 +63,7 @@ CREATE TABLE attendance (
 -- Name: blogs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE blogs (
+CREATE TABLE public.blogs (
     user_id character varying(16) NOT NULL,
     learning_week smallint NOT NULL,
     term smallint NOT NULL,
@@ -78,7 +77,7 @@ CREATE TABLE blogs (
 -- Name: eliom__persistent_refs; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE eliom__persistent_refs (
+CREATE TABLE public.eliom__persistent_refs (
     key text NOT NULL,
     value bytea
 );
@@ -88,7 +87,7 @@ CREATE TABLE eliom__persistent_refs (
 -- Name: log; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE log (
+CREATE TABLE public.log (
     "time" timestamp without time zone NOT NULL,
     user_id character varying(8) NOT NULL,
     ip_address text NOT NULL,
@@ -100,7 +99,7 @@ CREATE TABLE log (
 -- Name: optional_sessions; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE optional_sessions (
+CREATE TABLE public.optional_sessions (
     timetable_id smallint NOT NULL,
     week smallint NOT NULL
 );
@@ -110,7 +109,7 @@ CREATE TABLE optional_sessions (
 -- Name: presentation_criteria; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE presentation_criteria (
+CREATE TABLE public.presentation_criteria (
     term smallint NOT NULL,
     id integer NOT NULL,
     criterion text NOT NULL,
@@ -122,7 +121,7 @@ CREATE TABLE presentation_criteria (
 -- Name: presentation_criteria_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE presentation_criteria_id_seq
+CREATE SEQUENCE public.presentation_criteria_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -134,14 +133,14 @@ CREATE SEQUENCE presentation_criteria_id_seq
 -- Name: presentation_criteria_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE presentation_criteria_id_seq OWNED BY presentation_criteria.id;
+ALTER SEQUENCE public.presentation_criteria_id_seq OWNED BY public.presentation_criteria.id;
 
 
 --
 -- Name: presentation_scores; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE presentation_scores (
+CREATE TABLE public.presentation_scores (
     presenter_id character varying(16) NOT NULL,
     scorer_id character varying(16) NOT NULL,
     term smallint NOT NULL,
@@ -155,7 +154,7 @@ CREATE TABLE presentation_scores (
 -- Name: presentation_tutor_feedback; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE presentation_tutor_feedback (
+CREATE TABLE public.presentation_tutor_feedback (
     presenter_id character varying(16) NOT NULL,
     scorer_id character varying(16) NOT NULL,
     term smallint NOT NULL,
@@ -167,10 +166,26 @@ CREATE TABLE presentation_tutor_feedback (
 
 
 --
+-- Name: report_scores; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.report_scores (
+    user_id character varying(16) NOT NULL,
+    term smallint NOT NULL,
+    quality_score integer NOT NULL,
+    quality_feedback text NOT NULL,
+    independence_score integer NOT NULL,
+    independence_feedback text NOT NULL,
+    communication_score integer NOT NULL,
+    communication_feedback text NOT NULL
+);
+
+
+--
 -- Name: schedule; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE schedule (
+CREATE TABLE public.schedule (
     user_id character varying(16) NOT NULL,
     first boolean NOT NULL,
     learning_week smallint NOT NULL,
@@ -183,7 +198,7 @@ CREATE TABLE schedule (
 -- Name: sessions; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE sessions (
+CREATE TABLE public.sessions (
     year smallint NOT NULL,
     start_week smallint NOT NULL,
     end_week smallint NOT NULL,
@@ -196,7 +211,7 @@ CREATE TABLE sessions (
 -- Name: sessions_session_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE sessions_session_id_seq
+CREATE SEQUENCE public.sessions_session_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -208,14 +223,14 @@ CREATE SEQUENCE sessions_session_id_seq
 -- Name: sessions_session_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE sessions_session_id_seq OWNED BY sessions.id;
+ALTER SEQUENCE public.sessions_session_id_seq OWNED BY public.sessions.id;
 
 
 --
 -- Name: students; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE students (
+CREATE TABLE public.students (
     user_id character varying(16) NOT NULL,
     group_number smallint NOT NULL,
     student_id character(9) NOT NULL,
@@ -230,7 +245,7 @@ CREATE TABLE students (
 -- Name: timetable; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE timetable (
+CREATE TABLE public.timetable (
     weekday smallint NOT NULL,
     start_time time without time zone NOT NULL,
     end_time time without time zone NOT NULL,
@@ -247,7 +262,7 @@ CREATE TABLE timetable (
 -- Name: timetable_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE timetable_id_seq
+CREATE SEQUENCE public.timetable_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -259,14 +274,14 @@ CREATE SEQUENCE timetable_id_seq
 -- Name: timetable_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE timetable_id_seq OWNED BY timetable.id;
+ALTER SEQUENCE public.timetable_id_seq OWNED BY public.timetable.id;
 
 
 --
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE users (
+CREATE TABLE public.users (
     id character varying(16) NOT NULL,
     is_admin boolean DEFAULT false NOT NULL,
     password text NOT NULL,
@@ -279,28 +294,28 @@ CREATE TABLE users (
 -- Name: presentation_criteria id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_criteria ALTER COLUMN id SET DEFAULT nextval('presentation_criteria_id_seq'::regclass);
+ALTER TABLE ONLY public.presentation_criteria ALTER COLUMN id SET DEFAULT nextval('public.presentation_criteria_id_seq'::regclass);
 
 
 --
 -- Name: sessions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY sessions ALTER COLUMN id SET DEFAULT nextval('sessions_session_id_seq'::regclass);
+ALTER TABLE ONLY public.sessions ALTER COLUMN id SET DEFAULT nextval('public.sessions_session_id_seq'::regclass);
 
 
 --
 -- Name: timetable id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY timetable ALTER COLUMN id SET DEFAULT nextval('timetable_id_seq'::regclass);
+ALTER TABLE ONLY public.timetable ALTER COLUMN id SET DEFAULT nextval('public.timetable_id_seq'::regclass);
 
 
 --
 -- Name: attendance attendance_session_id_user_id_week_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY attendance
+ALTER TABLE ONLY public.attendance
     ADD CONSTRAINT attendance_session_id_user_id_week_key UNIQUE (session_id, user_id, learning_week);
 
 
@@ -308,7 +323,7 @@ ALTER TABLE ONLY attendance
 -- Name: blogs blogs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY blogs
+ALTER TABLE ONLY public.blogs
     ADD CONSTRAINT blogs_pkey PRIMARY KEY (user_id, learning_week, term);
 
 
@@ -316,7 +331,7 @@ ALTER TABLE ONLY blogs
 -- Name: eliom__persistent_refs eliom__persistent_refs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY eliom__persistent_refs
+ALTER TABLE ONLY public.eliom__persistent_refs
     ADD CONSTRAINT eliom__persistent_refs_pkey PRIMARY KEY (key);
 
 
@@ -324,7 +339,7 @@ ALTER TABLE ONLY eliom__persistent_refs
 -- Name: optional_sessions optional_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY optional_sessions
+ALTER TABLE ONLY public.optional_sessions
     ADD CONSTRAINT optional_sessions_pkey PRIMARY KEY (timetable_id, week);
 
 
@@ -332,7 +347,7 @@ ALTER TABLE ONLY optional_sessions
 -- Name: presentation_criteria presentation_criteria_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_criteria
+ALTER TABLE ONLY public.presentation_criteria
     ADD CONSTRAINT presentation_criteria_pkey PRIMARY KEY (term, id);
 
 
@@ -340,7 +355,7 @@ ALTER TABLE ONLY presentation_criteria
 -- Name: presentation_scores presentation_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_scores
+ALTER TABLE ONLY public.presentation_scores
     ADD CONSTRAINT presentation_scores_pkey PRIMARY KEY (presenter_id, scorer_id, term, criterion_id);
 
 
@@ -348,15 +363,23 @@ ALTER TABLE ONLY presentation_scores
 -- Name: presentation_tutor_feedback presentation_tutor_feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_tutor_feedback
+ALTER TABLE ONLY public.presentation_tutor_feedback
     ADD CONSTRAINT presentation_tutor_feedback_pkey PRIMARY KEY (presenter_id, scorer_id, term);
+
+
+--
+-- Name: report_scores report_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.report_scores
+    ADD CONSTRAINT report_scores_pkey PRIMARY KEY (user_id, term);
 
 
 --
 -- Name: schedule schedule_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY schedule
+ALTER TABLE ONLY public.schedule
     ADD CONSTRAINT schedule_pkey PRIMARY KEY (user_id, timetable_id);
 
 
@@ -364,7 +387,7 @@ ALTER TABLE ONLY schedule
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY sessions
+ALTER TABLE ONLY public.sessions
     ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
 
 
@@ -372,7 +395,7 @@ ALTER TABLE ONLY sessions
 -- Name: students students_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY students
+ALTER TABLE ONLY public.students
     ADD CONSTRAINT students_pkey PRIMARY KEY (user_id, term);
 
 
@@ -380,7 +403,7 @@ ALTER TABLE ONLY students
 -- Name: timetable timetable_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY timetable
+ALTER TABLE ONLY public.timetable
     ADD CONSTRAINT timetable_pkey PRIMARY KEY (id);
 
 
@@ -388,7 +411,7 @@ ALTER TABLE ONLY timetable
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY users
+ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
 
@@ -396,96 +419,104 @@ ALTER TABLE ONLY users
 -- Name: attendance attendance_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY attendance
-    ADD CONSTRAINT attendance_session_id_fkey FOREIGN KEY (session_id) REFERENCES sessions(id);
+ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id);
 
 
 --
 -- Name: attendance attendance_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY attendance
-    ADD CONSTRAINT attendance_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
 -- Name: optional_sessions optional_sessions_timetable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY optional_sessions
-    ADD CONSTRAINT optional_sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
+ALTER TABLE ONLY public.optional_sessions
+    ADD CONSTRAINT optional_sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES public.timetable(id);
 
 
 --
 -- Name: presentation_scores presentation_scores_presenter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_scores
-    ADD CONSTRAINT presentation_scores_presenter_id_fkey FOREIGN KEY (presenter_id) REFERENCES users(id);
+ALTER TABLE ONLY public.presentation_scores
+    ADD CONSTRAINT presentation_scores_presenter_id_fkey FOREIGN KEY (presenter_id) REFERENCES public.users(id);
 
 
 --
 -- Name: presentation_scores presentation_scores_presenter_id_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_scores
-    ADD CONSTRAINT presentation_scores_presenter_id_fkey1 FOREIGN KEY (presenter_id, term) REFERENCES students(user_id, term);
+ALTER TABLE ONLY public.presentation_scores
+    ADD CONSTRAINT presentation_scores_presenter_id_fkey1 FOREIGN KEY (presenter_id, term) REFERENCES public.students(user_id, term);
 
 
 --
 -- Name: presentation_scores presentation_scores_scorer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_scores
-    ADD CONSTRAINT presentation_scores_scorer_id_fkey FOREIGN KEY (scorer_id) REFERENCES users(id);
+ALTER TABLE ONLY public.presentation_scores
+    ADD CONSTRAINT presentation_scores_scorer_id_fkey FOREIGN KEY (scorer_id) REFERENCES public.users(id);
 
 
 --
 -- Name: presentation_scores presentation_scores_term_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_scores
-    ADD CONSTRAINT presentation_scores_term_fkey FOREIGN KEY (term, criterion_id) REFERENCES presentation_criteria(term, id);
+ALTER TABLE ONLY public.presentation_scores
+    ADD CONSTRAINT presentation_scores_term_fkey FOREIGN KEY (term, criterion_id) REFERENCES public.presentation_criteria(term, id);
 
 
 --
 -- Name: presentation_tutor_feedback presentation_tutor_feedback_presenter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_tutor_feedback
-    ADD CONSTRAINT presentation_tutor_feedback_presenter_id_fkey FOREIGN KEY (presenter_id, term) REFERENCES students(user_id, term);
+ALTER TABLE ONLY public.presentation_tutor_feedback
+    ADD CONSTRAINT presentation_tutor_feedback_presenter_id_fkey FOREIGN KEY (presenter_id, term) REFERENCES public.students(user_id, term);
 
 
 --
 -- Name: presentation_tutor_feedback presentation_tutor_feedback_scorer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY presentation_tutor_feedback
-    ADD CONSTRAINT presentation_tutor_feedback_scorer_id_fkey FOREIGN KEY (scorer_id) REFERENCES users(id);
+ALTER TABLE ONLY public.presentation_tutor_feedback
+    ADD CONSTRAINT presentation_tutor_feedback_scorer_id_fkey FOREIGN KEY (scorer_id) REFERENCES public.users(id);
+
+
+--
+-- Name: report_scores report_scores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.report_scores
+    ADD CONSTRAINT report_scores_user_id_fkey FOREIGN KEY (user_id, term) REFERENCES public.students(user_id, term);
 
 
 --
 -- Name: schedule schedule_timetable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY schedule
-    ADD CONSTRAINT schedule_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
+ALTER TABLE ONLY public.schedule
+    ADD CONSTRAINT schedule_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES public.timetable(id);
 
 
 --
 -- Name: sessions sessions_timetable_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY sessions
-    ADD CONSTRAINT sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES timetable(id);
+ALTER TABLE ONLY public.sessions
+    ADD CONSTRAINT sessions_timetable_id_fkey FOREIGN KEY (timetable_id) REFERENCES public.timetable(id);
 
 
 --
 -- Name: students students_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY students
-    ADD CONSTRAINT students_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id);
+ALTER TABLE ONLY public.students
+    ADD CONSTRAINT students_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --

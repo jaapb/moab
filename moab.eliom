@@ -177,6 +177,24 @@ let main_page () () =
 			);
 			h2 [pcdata "Feedback"];
 			p [a ~service:feedback_service [pcdata "Presentation feedback"] ()];
+			Form.get_form ~service:grade_report_service (fun (student_id) -> [
+				table [
+					tr [
+						th [pcdata "Student: "];
+						td [match users with
+						| [] -> pcdata "no registered students"
+						| (id, fn, ln)::t -> Form.select ~name:student_id Form.string
+								(Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false))
+								(List.map (fun (id, fn, ln) ->
+									Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false)
+								) t)
+						]
+					];
+					tr [
+						td ~a:[a_colspan 2] [Form.input ~input_type:`Submit ~value:"Grade report" Form.string]
+					]	
+				]
+			]);	
 			h2 [pcdata "Schedule"];
 			Form.get_form ~service:generate_schedule_service (fun (group) -> [
 				table [
