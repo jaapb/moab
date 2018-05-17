@@ -286,7 +286,7 @@ let main_page () () =
 						li [a ~service:feedback_service [pcdata "Presentation feedback"] (); pcdata " (also registers attendance)"];
 						li [a ~service:schedule_service [pcdata "Presentation schedule"] (None)];
 						li [a ~service:write_blog_service [pcdata "Write blog"] (); pcdata " (week runs from Monday to Sunday)"];
-						li [a ~service:view_feedback_service [pcdata "View presentation feedback"] (); pcdata " (if you have already given your presentation)"];
+						li [a ~service:view_feedback_service [pcdata "View feedback"] (); pcdata " (for project and presentation, if available)"];
 						li [a ~service:user_data_service [pcdata "Change your name or password"] ()]
 					];
 					h2 [pcdata "Status"];
