@@ -475,11 +475,16 @@ let get_presentation_comments pres_id term =
 	| (i, c, cm)::t -> Lwt.return (zip_comments i c t [cm] [])
 ;;
 
-let get_report_scores user_id term =
+let get_report_scores ?(unpublished=false) user_id term =
 	Lwt_pool.use db_pool (fun dbh ->
-		PGSQL(dbh) "SELECT quality_score, quality_feedback, independence_score, independence_feedback, communication_score, communication_feedback \
-			FROM report_scores \
-			WHERE user_id = $user_id AND term = $term"
+		if unpublished then
+			PGSQL(dbh) "SELECT published, quality_score, quality_feedback, independence_score, independence_feedback, communication_score, communication_feedback \
+				FROM report_scores \
+				WHERE user_id = $user_id AND term = $term"
+		else
+			PGSQL(dbh) "SELECT published, quality_score, quality_feedback, independence_score, independence_feedback, communication_score, communication_feedback \
+				FROM report_scores \
+				WHERE user_id = $user_id AND term = $term AND published"
 	) >>=
 	function
 	| [] -> Lwt.fail Not_found
@@ -487,14 +492,15 @@ let get_report_scores user_id term =
 	| _ -> Lwt.fail_with "multiple feedback instances found"
 ;;
 
-let set_report_scores user_id term qs qf ids idf cs cf =
+let set_report_scores user_id term pub qs qf ids idf cs cf =
 	Lwt_pool.use db_pool (fun dbh ->
 		PGSQL(dbh) "INSERT INTO report_scores \
-			(user_id, term, quality_score, quality_feedback, independence_score, independence_feedback, communication_score, communication_feedback) \
+			(user_id, term, published, quality_score, quality_feedback, independence_score, independence_feedback, communication_score, communication_feedback) \
 			VALUES
-			($user_id, $term, $qs, $qf, $ids, $idf, $cs, $cf) \
+			($user_id, $term, $pub, $qs, $qf, $ids, $idf, $cs, $cf) \
 			ON CONFLICT (user_id, term) DO UPDATE \
-				SET quality_score = EXCLUDED.quality_score, \
+				SET published = EXCLUDED.published, \
+				quality_score = EXCLUDED.quality_score, \
 				quality_feedback = EXCLUDED.quality_feedback, \
 				independence_score = EXCLUDED.independence_score, \
 				independence_feedback = EXCLUDED.independence_feedback, \

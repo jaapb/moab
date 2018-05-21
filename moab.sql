@@ -178,7 +178,8 @@ CREATE TABLE public.report_scores (
     independence_score integer NOT NULL,
     independence_feedback text NOT NULL,
     communication_score integer NOT NULL,
-    communication_feedback text NOT NULL
+    communication_feedback text NOT NULL,
+    published boolean DEFAULT false NOT NULL
 );
 
 

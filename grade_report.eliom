@@ -12,12 +12,12 @@
 	open CalendarLib
 ]
 
-let do_grade_report_page student_id (qg, (qf, (idg, (idf, (cg, cf))))) =
+let do_grade_report_page student_id (pub, (qg, (qf, (idg, (idf, (cg, cf)))))) =
 	Lwt.catch (fun () ->
-		let%lwt () = Moab_db.set_report_scores student_id !Moab.term qg qf idg idf cg cf in
+		let%lwt () = Moab_db.set_report_scores student_id !Moab.term pub qg qf idg idf cg cf in
 		container [
 			h1 [pcdata "Done"];
-			p [pcdata "Report graded."]
+			p [pcdata (if pub then "Report graded and published." else "Report graded.")]
 		]
 	)
 	(function
@@ -27,7 +27,8 @@ let do_grade_report_page student_id (qg, (qf, (idg, (idf, (cg, cf))))) =
 
 let grade_report_page student_id () =
 	let do_grade_report_service = create_attached_post ~fallback:grade_report_service
-		~post_params:(int32 "quality_grade" ** string "quality_feedback" **
+		~post_params:(bool "published" **
+									int32 "quality_grade" ** string "quality_feedback" **
                   int32 "independence_grade" ** string "independence_feedback" ** 
 									int32 "communication_grade" ** string "communication_feedback") () in
 	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
@@ -44,17 +45,23 @@ let grade_report_page student_id () =
 					p [pcdata "You must be an administrator to access this page"];
 				]
 			else
-				let%lwt (vqg, vqf, vig, vif, vcg, vcf) = Lwt.catch (fun () ->
-				  Moab_db.get_report_scores student_id !Moab.term
+				let%lwt (is_pub, vqg, vqf, vig, vif, vcg, vcf) = Lwt.catch (fun () ->
+				  Moab_db.get_report_scores ~unpublished:true student_id !Moab.term
 				)
 				(function
-				| Not_found -> Lwt.return (0l, "", 0l, "", 0l, "")
+				| Not_found -> Lwt.return (false, 0l, "", 0l, "", 0l, "")
 				| e -> Lwt.fail e) in
 				container
 				[
 					h1 [pcdata "Report feedback"];
-					Form.post_form ~service:do_grade_report_service (fun (qg, (qf, (idg, (idf, (cg, cf))))) -> [
+					Form.post_form ~service:do_grade_report_service (fun (pub, (qg, (qf, (idg, (idf, (cg, cf)))))) -> [
 						table ~a:[a_class ["report_table"]] [
+							tr [
+								td ~a:[a_colspan 2] [
+									Form.bool_checkbox_one ~checked:is_pub ~name:pub ();
+									pcdata " Publish scores"
+								]
+							];
 							tr [
 								th [pcdata "Quality grade (max 10):"];
 								td [Form.input ~input_type:`Number ~name:qg ~value:vqg Form.int32];

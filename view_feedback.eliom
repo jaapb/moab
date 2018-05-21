@@ -107,7 +107,7 @@ let generate_presentation uid =
 
 let generate_project uid =
 	Lwt.catch (fun () ->
-		let%lwt (qg, qf, idg, idf, cg, cf) = Moab_db.get_report_scores uid !Moab.term in
+		let%lwt (_, qg, qf, idg, idf, cg, cf) = Moab_db.get_report_scores uid !Moab.term in
 		project_grade := Some (Int32.add qg (Int32.add idg cg));
 		Lwt.return [
 			h4 [pcdata "Quality"];
