@@ -233,7 +233,7 @@ include .depend
 	cat $^ > $@
 
 $(DEPSDIR)/%_db.ml.server: %_db.ml | $(DEPSDIR)
-	$(OCAMLDEP) $(SERVER_DB_INC) $< > $@
+	$(OCAMLDEP) -syntax camlp4o $(SERVER_DB_INC) $< > $@
 
 $(DEPSDIR)/%.server: % | $(DEPSDIR)
 	$(ELIOMDEP) -server -ppx $(SERVER_INC) $< > $@
