@@ -15,6 +15,41 @@
 let pres_grade = ref None;;
 let project_grade = ref None;;
 
+let compute_with_deduction fg d =
+	if d >= 25 then fg
+	else if d >= 20 then fg *. 0.9
+	else if d >= 15 then fg *. 0.8
+	else if d >= 10 then fg *. 0.7
+	else if d >= 5 then fg *. 0.6
+	else fg *. 0.5
+;;
+
+let twenty_point_grade x =
+	match x with
+	| None -> 20
+	| Some y -> begin 
+			if y >= 79.0 then 1
+			else if y >= 76.0 then 2
+			else if y >= 73.0 then 3
+			else if y >= 70.0 then 4
+			else if y >= 67.0 then 5
+			else if y >= 65.0 then 6
+			else if y >= 62.0 then 7
+			else if y >= 60.0 then 8
+			else if y >= 57.0 then 9
+			else if y >= 55.0 then 10
+			else if y >= 52.0 then 11
+			else if y >= 50.0 then 12
+			else if y >= 47.0 then 13
+			else if y >= 45.0 then 14
+			else if y >= 42.0 then 15
+			else if y >= 40.0 then 16
+			else if y >= 35.0 then 17
+			else if y >= 30.0 then 18
+			else 19
+		end
+;;
+
 let generate_presentation uid =
 	Lwt.catch (fun () ->
 		let%lwt scores = Moab_db.get_presentation_averages uid !term in
@@ -23,7 +58,7 @@ let generate_presentation uid =
 		let%lwt (topic, duration, pgrade, fgrade, tutor_comments) = Moab_db.get_presentation_tutor_feedback uid !term in
 		pres_grade := (match fgrade with
 		| None -> None
-		| Some f -> Some (total +. f));
+		| Some f -> Some (total +. compute_with_deduction f duration));
 		Lwt.return [
 			p [pcdata "Your topic: "; pcdata topic];
 			h3 [pcdata "Peer mark"];
@@ -81,13 +116,6 @@ let generate_presentation uid =
 					th [pcdata "Provisional grade: "];
 					td [pcdata pgrade; pcdata " (this does not include the time deduction)"]
 				];
-				(*tr [
-					th [pcdata "Final grade: "];
-					td [match fgrade with
-					| None -> pcdata "Not yet finalised"
-					| Some g -> pcdata (Printf.sprintf "%.1f" fgrade)
-					]
-				];*)
 				tr [
 					th [pcdata "Duration: "];
 					td [pcdata (Printf.sprintf "%d minutes" duration)]
@@ -95,6 +123,13 @@ let generate_presentation uid =
 				tr [
 					th [pcdata "Tutor comments: "];
 					td [pre [pcdata tutor_comments]]
+				];
+				tr [
+					th [pcdata "Final grade: "];
+					td [match fgrade with
+					| None -> pcdata "Pending"
+					| Some g -> pcdata (Printf.sprintf "%.1f (this includes the time deduction)" (compute_with_deduction g duration))
+					]
 				];
 			]
 		]
@@ -138,6 +173,13 @@ let view_feedback_page () () =
 			let%lwt blog = Moab_db.get_user_blogs uid !Moab.term in
 			let nr = List.length (List.filter (fun (_, a) -> a) blog) in
 			let blog_grade = max 0 (nr - 14) in
+			let proj_grade = match !project_grade with
+				| None -> None
+				| Some p -> Some (Int32.to_int p + blog_grade) in
+			let perc_grade = match !pres_grade, proj_grade with
+				| Some s, Some j -> Some (s +. (float_of_int j))
+				| _, _ -> None in
+			let tpg = twenty_point_grade perc_grade in
 			container
 			(List.flatten [
 				[h1 [pcdata "Your coursework feedback"];	
@@ -162,13 +204,32 @@ let view_feedback_page () () =
 					];
 					tr [
 						th [pcdata "Project"];
-						td [match !project_grade with
+						td [match proj_grade with
 							| None -> pcdata "<unknown>"
-							| Some p -> pcdata (Printf.sprintf "%d" (Int32.to_int p + blog_grade))
+							| Some p -> pcdata (Printf.sprintf "%d (includes blog)" p)
 						]
+					];
+					tr [
+						th [pcdata "Total percentage grade"];
+						td [match perc_grade with
+							| None -> pcdata "<unknonw>"
+							| Some x -> pcdata (Printf.sprintf "%.1f" x)
+						]
+					];
+					tr [
+						th [pcdata "Final 20-point grade"];
+						td [pcdata (Printf.sprintf "%d (%s)" tpg
+							(if tpg == 20 then "non-participation or grades still pending"
+							else if tpg == 19 then "non-compensatable fail"
+							else if tpg == 18 || tpg == 17 then "compensatable fail"
+							else if tpg >= 13 && tpg <= 16 then "third"
+							else if tpg >= 9 && tpg <= 12 then "lower second"
+							else if tpg >= 5 && tpg <= 8 then "upper second"
+							else if tpg >= 1 && tpg <= 4 then "first"
+							else "unknown grade" 
+						))]
 					]
-				]	
-				]
+				]]
 			])
 		)
 		(function
