@@ -21,7 +21,9 @@ let generate_presentation uid =
 		let total = List.fold_left (fun acc (_, _, s) -> acc +. (float_of_string (Moab_utils.default "" s))) 0.0 scores in
 		let%lwt comments = Moab_db.get_presentation_comments uid !term in
 		let%lwt (topic, duration, pgrade, fgrade, tutor_comments) = Moab_db.get_presentation_tutor_feedback uid !term in
-		pres_grade := Some total;
+		pres_grade := (match fgrade with
+		| None -> None
+		| Some f -> Some (total +. f));
 		Lwt.return [
 			p [pcdata "Your topic: "; pcdata topic];
 			h3 [pcdata "Peer mark"];
