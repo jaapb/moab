@@ -508,3 +508,15 @@ let set_report_scores user_id term pub qs qf ids idf cs cf =
 				communication_feedback = EXCLUDED.communication_feedback"
 	)
 ;;
+
+let get_student_info user_id term =
+	Lwt_pool.use db_pool (fun dbh ->
+		PGSQL(dbh) "SELECT student_id \
+			FROM students \
+			WHERE user_id = $user_id AND term = $term"
+	) >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [id] -> Lwt.return id
+	| _ -> Lwt.fail_with "multiple students found"
+;;

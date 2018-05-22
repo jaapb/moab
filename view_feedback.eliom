@@ -15,50 +15,13 @@
 let pres_grade = ref None;;
 let project_grade = ref None;;
 
-let compute_with_deduction fg d =
-	if d >= 25 then fg
-	else if d >= 20 then fg *. 0.9
-	else if d >= 15 then fg *. 0.8
-	else if d >= 10 then fg *. 0.7
-	else if d >= 5 then fg *. 0.6
-	else fg *. 0.5
-;;
-
-let twenty_point_grade x =
-	match x with
-	| None -> 20
-	| Some y -> begin 
-			if y >= 79.0 then 1
-			else if y >= 76.0 then 2
-			else if y >= 73.0 then 3
-			else if y >= 70.0 then 4
-			else if y >= 67.0 then 5
-			else if y >= 65.0 then 6
-			else if y >= 62.0 then 7
-			else if y >= 60.0 then 8
-			else if y >= 57.0 then 9
-			else if y >= 55.0 then 10
-			else if y >= 52.0 then 11
-			else if y >= 50.0 then 12
-			else if y >= 47.0 then 13
-			else if y >= 45.0 then 14
-			else if y >= 42.0 then 15
-			else if y >= 40.0 then 16
-			else if y >= 35.0 then 17
-			else if y >= 30.0 then 18
-			else 19
-		end
-;;
-
 let generate_presentation uid =
 	Lwt.catch (fun () ->
 		let%lwt scores = Moab_db.get_presentation_averages uid !term in
 		let total = List.fold_left (fun acc (_, _, s) -> acc +. (float_of_string (Moab_utils.default "" s))) 0.0 scores in
 		let%lwt comments = Moab_db.get_presentation_comments uid !term in
 		let%lwt (topic, duration, pgrade, fgrade, tutor_comments) = Moab_db.get_presentation_tutor_feedback uid !term in
-		pres_grade := (match fgrade with
-		| None -> None
-		| Some f -> Some (total +. compute_with_deduction f duration));
+		pres_grade := Moab_utils.calculate_pres (Some total) fgrade duration 100 true; 
 		Lwt.return [
 			p [pcdata "Your topic: "; pcdata topic];
 			h3 [pcdata "Peer mark"];
@@ -128,7 +91,7 @@ let generate_presentation uid =
 					th [pcdata "Final grade: "];
 					td [match fgrade with
 					| None -> pcdata "Pending"
-					| Some g -> pcdata (Printf.sprintf "%.1f (this includes the time deduction)" (compute_with_deduction g duration))
+					| Some g -> pcdata (Printf.sprintf "%.1f (this does not include the time deduction)" g)
 					]
 				];
 			]
@@ -143,7 +106,7 @@ let generate_presentation uid =
 let generate_project uid =
 	Lwt.catch (fun () ->
 		let%lwt (_, qg, qf, idg, idf, cg, cf) = Moab_db.get_report_scores uid !Moab.term in
-		project_grade := Some (Int32.add qg (Int32.add idg cg));
+		project_grade := Moab_utils.calculate_project (Some qg) (Some idg) (Some cg);
 		Lwt.return [
 			h4 [pcdata "Quality"];
 			pre [pcdata qf];
@@ -179,7 +142,7 @@ let view_feedback_page () () =
 			let perc_grade = match !pres_grade, proj_grade with
 				| Some s, Some j -> Some (s +. (float_of_int j))
 				| _, _ -> None in
-			let tpg = twenty_point_grade perc_grade in
+			let tpg = Moab_utils.twenty_point_grade perc_grade in
 			container
 			(List.flatten [
 				[h1 [pcdata "Your coursework feedback"];	
