@@ -14,7 +14,7 @@
 
 let make_row id fn ln =
 	Lwt.catch (fun () ->
-		let%lwt student_id = Moab_db.get_student_info id !Moab.term in
+		let%lwt (student_id, fbe) = Moab_db.get_student_info id !Moab.term in
 		let%lwt (pres_peer, pres_tutor, pres_dur) = Lwt.catch (fun () ->
 			let%lwt pres_sc = Moab_db.get_presentation_averages id !Moab.term in
 			let%lwt (_, duration, _, fgrade, _) = Moab_db.get_presentation_tutor_feedback id !term in
@@ -27,7 +27,7 @@ let make_row id fn ln =
 		let%lwt fg = Moab_db.get_feedback_given id !Moab.term 24 in
 		let%lwt fp = Moab_db.get_feedback_possible id !Moab.term 24 in
 		let fb_perc = List.length fg * 100 / List.length fp in
-		let pres = Moab_utils.calculate_pres pres_peer pres_tutor pres_dur fb_perc false in
+		let pres = Moab_utils.calculate_pres pres_peer pres_tutor pres_dur fb_perc fbe in
 		let%lwt blog_grade = Lwt.catch (fun () ->
 			let%lwt blog = Moab_db.get_user_blogs id !Moab.term in
     	let nr = List.length (List.filter (fun (_, a) -> a) blog) in
@@ -54,7 +54,7 @@ let make_row id fn ln =
 				td [match pres_tutor with | None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
 				td [pcdata (Printf.sprintf "%d" pres_dur)];
 				td [pcdata (Printf.sprintf "%d" fb_perc)];
-				td [pcdata ""];
+				td [pcdata (if fbe then "YES" else "")];
 				td [match pres with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
 				td [pcdata (Printf.sprintf "%d" blog_grade)]; 
 				td [match qg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];

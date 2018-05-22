@@ -239,7 +239,8 @@ CREATE TABLE public.students (
     joined_week smallint NOT NULL,
     left_week smallint,
     visa boolean DEFAULT false NOT NULL,
-    term smallint NOT NULL
+    term smallint NOT NULL,
+    feedback_exemption boolean DEFAULT false NOT NULL
 );
 
 
