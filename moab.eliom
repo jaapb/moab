@@ -246,6 +246,8 @@ let main_page () () =
 					]
 				) blogs)
 			);
+			h2 [pcdata "Grade table"];
+			p [a ~service:grade_table_service [pcdata "Show grade table"] ()];
 			h2 [pcdata "Sessions"];
 			(match t with
 			| `No_session -> p [pcdata "no sessions currently running"]
