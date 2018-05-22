@@ -87,7 +87,7 @@ let grade_report_page student_id () =
 								]
 							];
 							tr [
-								th [pcdata "Communicaiton grade (max 20):"];
+								th [pcdata "Communication grade (max 20):"];
 								td [Form.input ~input_type:`Number ~name:cg ~value:vcg Form.int32];
 							];
 							tr [
