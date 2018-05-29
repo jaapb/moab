@@ -164,6 +164,13 @@ let admin_feedback_page pres_id () =
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
 	| Some (uid, _, _, is_admin) -> 
 		Lwt.catch (fun () ->
+			if not is_admin then
+				container
+				[
+					h1 [pcdata "Error"];
+					p [pcdata "You must be an administrator to access this page"];
+				]
+			else
 			let%lwt users = Moab_db.get_students !term in
 			let%lwt crits = Moab_db.get_criteria !term in
 			let%lwt (db_scores, db_topic, db_duration, db_grade, db_comment) = match pres_id with
