@@ -137,3 +137,63 @@ table.report_table th
 {
 	text-align: left;
 }
+
+table.grade_table th
+{
+	text-align: left;
+}
+
+table.grade_table tr:nth-child(even)
+{
+	background-color: lightgray;
+}
+
+table.grade_table tr:nth-child(even) td.presentation
+{
+	background-color: dodgerblue; 
+}
+
+table.grade_table tr:nth-child(odd) td.presentation
+{
+	background-color: lightblue;
+}
+
+table.grade_table tr:nth-child(even) td.blog
+{
+	background-color: lightgreen; 
+}
+
+table.grade_table tr:nth-child(odd) td.blog
+{
+	background-color: palegreen;
+}
+
+table.grade_table tr:nth-child(even) td.project
+{
+	background-color: indianred;
+}
+
+table.grade_table tr:nth-child(odd) td.project
+{
+	background-color: pink;
+}
+
+table.grade_table tr:nth-child(even) td.total
+{
+	background-color: yellow;
+}
+
+table.grade_table tr:nth-child(odd) td.total
+{
+	background-color: lightyellow;
+}
+
+table.grade_table tr:nth-child(even) td.twenty
+{
+	background-color: yellow;
+}
+
+table.grade_table tr:nth-child(odd) td.twenty
+{
+	background-color: lightyellow;
+}

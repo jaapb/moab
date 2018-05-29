@@ -55,14 +55,14 @@ let make_row id fn ln =
 				td [pcdata (Printf.sprintf "%d" pres_dur)];
 				td [pcdata (Printf.sprintf "%d" fb_perc)];
 				td [pcdata (if fbe then "YES" else "")];
-				td [match pres with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
-				td [pcdata (Printf.sprintf "%d" blog_grade)]; 
+				td ~a:[a_class ["presentation"]] [match pres with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
+				td ~a:[a_class ["blog"]] [pcdata (Printf.sprintf "%d" blog_grade)]; 
 				td [match qg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
 				td [match idg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
 				td [match cg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
-				td [match project_grade with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
-				td [match total with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
-				td [pcdata (Printf.sprintf "%d" tp)]
+				td ~a:[a_class ["project"]] [match project_grade with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
+				td ~a:[a_class ["total"]] [match total with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
+				td ~a:[a_class ["twenty"]] [pcdata (Printf.sprintf "%d" tp)]
 			])
 	)
 	(function
@@ -92,7 +92,7 @@ let grade_table_page () () =
 			container
 			[
 				h1 [pcdata "Grade table"];
-				table 
+				table ~a:[a_class ["grade_table"]] 
 				(tr [	
 					th [pcdata "Name"];
 					th [pcdata "User ID"];
