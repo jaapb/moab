@@ -48,7 +48,7 @@ let make_row id fn ln =
 		let tp = Moab_utils.twenty_point_grade total in
 			Lwt.return (tr [
 				td [pcdata (Printf.sprintf "%s %s" fn ln)];
-				td [pcdata id];
+				td [a ~service:view_feedback_service [pcdata id] (Some id)];
 				td [pcdata student_id];
 				td [match pres_peer with | None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
 				td [match pres_tutor with | None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];

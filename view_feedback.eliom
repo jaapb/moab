@@ -128,12 +128,19 @@ let generate_project uid =
 	)
 ;;
  
-let view_feedback_page () () =
+let view_feedback_page user_id () =
 	let%lwt u = Eliom_reference.get user in
 	match u with
 	| None -> Eliom_registration.Redirection.send (Eliom_registration.Redirection login_service)
-	| Some (uid, _, _, is_admin) -> 
+	| Some (x, _, _, is_admin) ->
 		Lwt.catch (fun () ->
+			let uid = if is_admin then
+				match user_id with
+				| None -> x
+				| Some u -> u
+			else
+				x 
+			in
 			let%lwt pres = generate_presentation uid in 
 			let%lwt proj = generate_project uid in
 			let%lwt blog = Moab_db.get_user_blogs uid !Moab.term in
