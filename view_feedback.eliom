@@ -144,8 +144,9 @@ let view_feedback_page user_id () =
 			let%lwt pres = generate_presentation uid in 
 			let%lwt proj = generate_project uid in
 			let%lwt blog = Moab_db.get_user_blogs uid !Moab.term in
+			let%lwt (jw, _) = Moab_db.get_user_weeks uid !Moab.term in
 			let nr = List.length (List.filter (fun (_, a) -> a) blog) in
-			let blog_grade = max 0 (nr - 14) in
+			let blog_grade = max 0 (nr - 14 + jw - 1) in
 			let proj_grade = match !project_grade with
 				| None -> None
 				| Some p -> Some (Int32.to_int p + blog_grade) in
