@@ -30,8 +30,9 @@ let make_row id fn ln =
 		let pres = Moab_utils.calculate_pres pres_peer pres_tutor pres_dur fb_perc fbe in
 		let%lwt blog_grade = Lwt.catch (fun () ->
 			let%lwt blog = Moab_db.get_user_blogs id !Moab.term in
+			let%lwt (jw, _) = Moab_db.get_user_weeks id !Moab.term in
     	let nr = List.length (List.filter (fun (_, a) -> a) blog) in
-    	Lwt.return (max 0 (nr - 14))
+    	Lwt.return (max 0 (nr - 14 + jw - 1))
 		) 
 		(function
 		| Not_found -> Lwt.return 0
