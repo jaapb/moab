@@ -47,33 +47,69 @@ let make_row id fn ln =
 		let project_grade = Moab_utils.calculate_project qg idg cg in
 		let total = Moab_utils.calculate_total pres blog_grade project_grade in
 		let tp = Moab_utils.twenty_point_grade total in
-			Lwt.return (tr [
-				td [pcdata (Printf.sprintf "%s %s" fn ln)];
-				td [a ~service:view_feedback_service [pcdata id] (Some id)];
-				td [pcdata student_id];
-				td [match pres_peer with | None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
-				td [match pres_tutor with | None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
-				td [pcdata (Printf.sprintf "%d" pres_dur)];
-				td [pcdata (Printf.sprintf "%d" fb_perc)];
-				td [pcdata (if fbe then "YES" else "")];
-				td ~a:[a_class ["presentation"]] [match pres with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
-				td ~a:[a_class ["blog"]] [pcdata (Printf.sprintf "%d" blog_grade)]; 
-				td [match qg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
-				td [match idg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
-				td [match cg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
-				td ~a:[a_class ["project"]] [match project_grade with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
-				td ~a:[a_class ["total"]] [match total with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
-				td ~a:[a_class ["twenty"]] [pcdata (Printf.sprintf "%d" tp)]
-			])
+			Lwt.return ( 
+				Printf.sprintf "%s %s" fn ln,
+				id,
+				Some (student_id,
+				pres_peer,
+				pres_tutor,
+				pres_dur,
+				fb_perc,
+				fbe,
+				pres,
+				blog_grade,
+				qg,
+				idg,
+				cg,	
+				project_grade,
+				total,
+				tp
+			))
 	)
 	(function
-	| Not_found -> Lwt.return (tr [
-			td [pcdata (Printf.sprintf "%s %s" fn ln)];
-			td [pcdata id];
-			td ~a:[a_colspan 14] [i [pcdata "Data missing"]]
-		])
+	| Not_found -> Lwt.return (
+			Printf.sprintf "%s %s" fn ln,
+			id,
+			None
+		)
 	| e -> Lwt.fail e
 	)
+;;
+
+let display_row tc =
+	let tcs = List.sort (fun (_, _, x) (_, _, y) -> match x, y with
+		| None, None -> 0
+		| _, None -> 2
+		| None, _ -> -1
+		| Some (_, _, _, _, _, _, _, _, _, _, _, _, _, x'), Some (_, _, _, _, _, _, _, _, _, _, _, _, _, y') -> compare x' y') tc in
+	List.map (fun (name, id, x) ->
+		match x with
+		| None ->
+				tr [
+					td [pcdata "name"];
+					td [pcdata id];
+					td ~a:[a_colspan 14] [pcdata "Data missing"]
+				]
+		| Some (student_id, pres_peer, pres_tutor, pres_dur, fb_perc, fbe, pres, blog_grade, qg, idg, cg, project_grade, total, tp) ->
+				tr [
+					td [pcdata name];
+					td [a ~service:view_feedback_service [pcdata id] (Some id)];
+					td [pcdata student_id];
+					td [match pres_peer with | None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
+					td [match pres_tutor with | None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
+					td [pcdata (Printf.sprintf "%d" pres_dur)];
+					td [pcdata (Printf.sprintf "%d" fb_perc)];
+					td [pcdata (if fbe then "YES" else "")];
+					td ~a:[a_class ["presentation"]] [match pres with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
+					td ~a:[a_class ["blog"]] [pcdata (Printf.sprintf "%d" blog_grade)]; 
+					td [match qg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
+					td [match idg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
+					td [match cg with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
+					td ~a:[a_class ["project"]] [match project_grade with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%ld" x)];
+					td ~a:[a_class ["total"]] [match total with None -> b [pcdata "NONE"] | Some x -> pcdata (Printf.sprintf "%.1f" x)];
+					td ~a:[a_class ["twenty"]] [pcdata (Printf.sprintf "%d" tp)]
+				]
+	) tcs
 ;;
 
 let grade_table_page () () =
@@ -112,7 +148,7 @@ let grade_table_page () () =
 					th [pcdata "Total"];
 					th [pcdata "20-point"]
          ]::
-				 table_contents
+				 display_row table_contents
 				)
 			]
 		)
