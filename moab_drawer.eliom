@@ -33,7 +33,7 @@ let%shared make ?user () =
   let contents = match user with
     | None -> [ menu ]
     | Some user ->
-      let user_box = Os_user_view.connected_user_box ~user in
+      let user_box = Moab_user.connected_user_box user in
       [ user_box ; menu ]
   in
   let drawer, _, _ = Ot_drawer.drawer contents in

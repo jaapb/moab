@@ -9,6 +9,7 @@ password	{{{capitalize?P||p}}}assword	{{{capitalize?M||m}}}ot de passe
 retype_password	retype your password	retapez votre mot de passe
 your_email	{{{capitalize?Y||y}}}our email	{{{capitalize?V||v}}}otre e-mail
 your_password	{{{capitalize?Y||y}}}our password	{{{capitalize?V||v}}}otre mot de passe
+your_login	{{{capitalize?Y||y}}}our login	{{{capitalize?V||v}}}otre identifiant
 keep_logged_in	keep me logged in	rester connecté
 sign_in	{{{capitalize?S||s}}}ign in	{{{capitalize?S||s}}}e connecter
 forgot_your_password_q	{{{capitalize?F||f}}}orgot your password?	{{{capitalize?M||m}}}ot de passe oublié ?
