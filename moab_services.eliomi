@@ -3,9 +3,6 @@
 
 [%%shared.start]
 
-val upload_user_avatar_service :
-  (unit, unit) Ot_picture_uploader.service
-
 val settings_service :
   (
     unit,
@@ -50,3 +47,21 @@ val ocsigen_service :
     unit,
     Eliom_service.non_ocaml
   ) Eliom_service.t
+
+val connect_service:
+	(
+		unit,
+		(string * string) * bool,
+    Eliom_service.post,
+    Eliom_service.non_att,
+    Eliom_service.co,
+    Eliom_service.non_ext,
+    Eliom_service.reg,
+    [ `WithoutSuffix ],
+    unit,
+    ([ `One of string ] Eliom_parameter.param_name *
+			[ `One of string ] Eliom_parameter.param_name) *
+			[ `One of bool ] Eliom_parameter.param_name,
+    Eliom_service.non_ocaml
+  ) Eliom_service.t
+

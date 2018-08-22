@@ -14,10 +14,10 @@ val os_header :
 (** [os_footer ()] defines a footer for the page. *)
 val os_footer : unit -> [> `Footer ] Eliom_content.Html.F.elt
 
-val connected_welcome_box :
-  unit -> [> Html_types.div ] Eliom_content.Html.F.elt Lwt.t
+(*val connected_welcome_box :
+  unit -> [> Html_types.div ] Eliom_content.Html.F.elt Lwt.t *)
 
-val get_user_data : Os_types.User.id option -> Os_types.User.t option Lwt.t
+(*val get_user_data : Os_types.User.id option -> Os_types.User.t option Lwt.t*)
 
 (** [page userid_o content] returns a page personalized for the user
     with id [myid_o] and with the content [content]. It adds a header,

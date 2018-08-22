@@ -7,17 +7,6 @@
     handlers from OS (see {!Os_handlers}), it overrides some of them
     for the purposes of this template. *)
 
-[%%server.start]
-
-(** Update new user avatar with cropping option. The new avatar is saved
-    and the old one is removed. *)
-val upload_user_avatar_handler :
-  Os_types.User.id ->
-  unit ->
-  unit *
-    ((float * float * float * float) option * Ocsigen_extensions.file_info) ->
-  unit Lwt.t
-
 [%%shared.start]
 
 (** Update personal data. It uses the default OS handler
@@ -72,3 +61,8 @@ val update_language_handler :
   unit ->
   string ->
   Eliom_registration.Action.page Lwt.t
+
+val connect_handler :
+	unit ->
+	(string * string) * bool ->
+	Eliom_registration.Action.page Lwt.t

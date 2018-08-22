@@ -13,9 +13,9 @@ let%shared item text service =
 let%shared user_menu () =
   [ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
   ; Eliom_content.Html.F.li
-      [ Os_user_view.disconnect_link
+      [ (* Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]
-          ~a:[ a_class ["os-drawer-item"] ] ()
+          ~a:[ a_class ["os-drawer-item"] ] () *)
       ]
   ]
 

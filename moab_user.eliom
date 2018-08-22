@@ -3,8 +3,11 @@
 	open Eliom_content.Html.F
 ]
 
+let verify_password userid password =
+	Moab_user_db.verify_password userid password
+
 let%shared connect_form () =
-	D.Form.post_form ~service:Os_services.connect_service
+	D.Form.post_form ~service:Moab_services.connect_service
 		(fun ((login, password), keepmeloggedin) ->
 		[
 			Form.input ~a:[a_placeholder [%i18n S.your_login]]

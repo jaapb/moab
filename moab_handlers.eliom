@@ -5,22 +5,6 @@
   open Eliom_content.Html.F
 ]
 
-(* Upload user avatar *)
-let upload_user_avatar_handler myid () ((), (cropping, photo)) =
-  let avatar_dir =
-    List.fold_left Filename.concat
-      (List.hd !Moab_config.avatar_dir)
-      (List.tl !Moab_config.avatar_dir) in
-  let%lwt avatar =
-    Os_uploader.record_image avatar_dir ~ratio:1. ?cropping photo in
-  let%lwt user = Os_user.user_of_userid myid in
-  let old_avatar = Os_user.avatar_of_user user in
-  let%lwt () = Os_user.update_avatar ~userid:myid ~avatar in
-  match old_avatar with
-  | None -> Lwt.return_unit
-  | Some old_avatar ->
-    Lwt_unix.unlink (Filename.concat avatar_dir old_avatar )
-
 (* Set personal data *)
 
 let%server set_personal_data_handler =
@@ -84,7 +68,7 @@ let%shared action_link_handler myid_o akey () =
 
        Perhaps personalise the intended behavior for when you meet
        [Account_already_activated_unconnected].  *)
-    if myid_o = None (* Not currently connected, and no autoconnect *)
+    (* if myid_o = None (* Not currently connected, and no autoconnect *)
     then
       if phantom_user
       then
@@ -116,7 +100,7 @@ let%shared action_link_handler myid_o akey () =
           (Moab_page.make_page (Os_page.content page))
     else (*VVV In that case we must do something more complex. Check
                whether myid = userid and ask the user what he wants to
-               do. *)
+               do. *) *)
       Eliom_registration.
         (appl_self_redirect
            Redirection.send
@@ -169,3 +153,27 @@ let%server update_language_handler () language =
 let%client update_language_handler () language =
   Moab_i18n.(set_language (language_of_string language));
   Os_current_user.update_language language
+
+(* Connection *)
+
+let connect_handler () ((login, pwd), keepmeloggedin) =
+	Ocsigen_messages.console (fun () -> "[connect_handler]");
+	try%lwt
+		let%lwt userid = Moab_user.verify_password login pwd in
+		let%lwt () = Os_handlers.disconnect_handler () () in
+		Os_session.connect ~expire:(not keepmeloggedin) userid
+	with
+	| Os_db.No_such_resource ->
+		Eliom_reference.Volatile.set Os_user.wrong_password true;
+		Os_msg.msg ~level:`Err ~onload:true "Account not activated";
+		Lwt.return_unit
+
+let%server connect_handler_rpc v = connect_handler () v
+
+let%client connect_handler_rpc =
+	~%(Eliom_client.server_function
+			~name:"Moab_handlers.connect_handler"
+			[%derive.json: (string * string) * bool]
+			connect_handler_rpc)
+
+let%client connect_handler () v = connect_handler_rpc v

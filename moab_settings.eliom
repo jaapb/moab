@@ -146,11 +146,6 @@ let%shared settings_content () =
           ~text_send_button:[%i18n S.send]
           ~service:Os_services.set_password_service ();
         br ();
-        Os_user_view.upload_pic_link
-          ~submit:([a_class ["button"]], [pcdata "Submit"])
-          ~content:[%i18n change_profile_picture]
-          Moab_services.upload_user_avatar_service;
-        br ();
         Os_user_view.reset_tips_link
           ~text_link:[%i18n S.see_help_again_from_beginning]
           ();
