@@ -1,25 +1,16 @@
 CREATE DATABASE ocsipersist_moab;
 
 CREATE EXTENSION citext;
+CREATE EXTENSION pgcrypto;
 
-CREATE SCHEMA moab
+CREATE SCHEMA ocsigen_start
   CREATE TABLE users (
-         userid varchar(16) primary key,
+         userid bigserial primary key,
          firstname text NOT NULL,
          lastname text NOT NULL,
-         email citext,
+         main_email citext,
          password text,
+				 avatar text,
          language text,
-				 is_admin boolean NOT NULL DEFAULT(false)
-  )
-
-  CREATE TABLE activation (
-         activationkey text primary key,
-         userid varchar(16) NOT NULL references users(userid), -- DEFAULT
-         email citext NOT NULL,
-         autoconnect boolean NOT NULL,
-         validity bigint NOT NULL,
-         action text NOT NULL,
-         data text NOT NULL,
-         creationdate timestamptz NOT NULL default now()
+				 usertype char(1) NOT NULL DEFAULT('S')
   )

@@ -161,11 +161,12 @@ let connect_handler () ((login, pwd), keepmeloggedin) =
 	try%lwt
 		let%lwt userid = Moab_user.verify_password login pwd in
 		let%lwt () = Os_handlers.disconnect_handler () () in
+		Ocsigen_messages.console (fun () -> "- connecting...");
 		Os_session.connect ~expire:(not keepmeloggedin) userid
 	with
 	| Os_db.No_such_resource ->
 		Eliom_reference.Volatile.set Os_user.wrong_password true;
-		Os_msg.msg ~level:`Err ~onload:true "Account not activated";
+		Os_msg.msg ~level:`Err ~onload:true "Wrong password";
 		Lwt.return_unit
 
 let%server connect_handler_rpc v = connect_handler () v
