@@ -97,13 +97,21 @@ let%shared user_box user =
 
 type%shared user_type = Admin | Examiner | Student
 
-let%server get_user_type (u: int64): user_type Lwt.t =
+let%server get_user_type u =
 	let%lwt t = Moab_user_db.get_user_type u in
 	if t = "A" then Lwt.return Admin
 	else if t = "E" then Lwt.return Examiner
 	else if t = "S" then Lwt.return Student
 	else Lwt.fail (Invalid_argument "unknown user type in database")
 
-let%client get_user_type: int64 -> user_type Lwt.t =
+let%client get_user_type =
 	~%(Eliom_client.server_function [%derive.json : int64]
 			(Os_session.connected_wrapper get_user_type))
+
+let%server add_student (fn, ln, mdx_id) =
+	let%lwt id = Moab_user_db.add_student fn ln in
+	Moab_student_db.add_student_info id mdx_id
+
+let%client add_student =
+	~%(Eliom_client.server_function [%derive.json : string * string * string]
+			(Os_session.connected_wrapper add_student))

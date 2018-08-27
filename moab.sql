@@ -20,3 +20,18 @@ CREATE SCHEMA ocsigen_start
 		userid bigint NOT NULL references users(userid),
 		validated boolean NOT NULL DEFAULT(false)
 	)
+
+CREATE SCHEMA moab
+	CREATE TABLE term_sessions (
+		term varchar(8) not null,
+		session_id bigint not null,
+		year smallint not null,
+		start_week smallint not null,
+		end_week smallint not null,
+		primary key (term, session_id)
+	)
+
+	CREATE TABLE students (
+		userid bigint primary key references ocsigen_start.users(userid),
+		student_id varchar(9) not null
+	)

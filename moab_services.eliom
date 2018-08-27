@@ -32,6 +32,18 @@ let%server connect_service =
 		~meth:(Post (unit, ((string "username" ** string "password") ** bool "keepmeloggedin")))
 		()
 
+let%server add_students_service =
+	create
+		~path:(Path ["add-students"])
+		~meth:(Get unit)
+		()
+
+let%server setup_terms_service =
+	create
+		~path:(Path ["setup-terms"])
+		~meth:(Get unit)
+		()
+
 let%client settings_service =
   ~%settings_service
 
@@ -43,6 +55,12 @@ let%client os_github_service =
 
 let%client connect_service =
 	~%connect_service
+
+let%client add_students_service =
+	~%add_students_service
+
+let%client setup_terms_service =
+	~%setup_terms_service
 
 (* The OS lib needs access to the settings service to perform
    redirections to it. We need to register it *)

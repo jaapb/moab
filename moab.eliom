@@ -53,8 +53,15 @@ let%shared () =
 
   Moab_base.App.register
     ~service:Moab_services.settings_service
-    (Moab_page.Opt.connected_page Moab_handlers.settings_handler)
+    (Moab_page.Opt.connected_page Moab_handlers.settings_handler);
 
+	Moab_base.App.register
+		~service:Moab_services.add_students_service
+		(Moab_page.connected_page Moab_students.add_students_handler);
+
+	Moab_base.App.register
+		~service:Moab_services.setup_terms_service
+		(Moab_page.connected_page Moab_terms.setup_terms_handler)
 
 (* Print more debugging information when <debugmode/> is in config file
    (DEBUG = yes in Makefile.options).

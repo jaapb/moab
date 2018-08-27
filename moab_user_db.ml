@@ -31,3 +31,6 @@ let get_user_type userid =
 	function
 	| [x] -> return x
 	| _ -> fail No_such_resource
+
+let add_student fn ln =
+	Lwt.return 0L

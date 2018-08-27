@@ -25,7 +25,11 @@ SERVER_FILES          := moab.eliom \
 	moab_settings.eliom \
 	moab_user.eliom moab_user.eliomi \
 	moab_i18n.eliom \
-	moab_user_db.ml
+	moab_user_db.ml \
+	moab_students.eliom \
+	moab_terms.eliom \
+	moab_term_db.ml \
+	moab_student_db.ml
 
 # Source files for the client. By default, it's all eliom and eliomi files
 # in the project root directory.
@@ -41,13 +45,15 @@ CLIENT_FILES          := moab.eliom \
 	moab_services.eliom moab_services.eliomi \
 	moab_settings.eliom \
 	moab_user.eliom moab_user.eliomi \
-	moab_i18n.eliom
+	moab_i18n.eliom \
+	moab_students.eliom \
+	moab_terms.eliom
 
 # OCamlfind packages for the server (for modules which defines services)
 SERVER_ELIOM_PACKAGES := ocsigen-start.server
 
 # OCamlfind packages for the server
-SERVER_PACKAGES       := lwt_ppx js_of_ocaml-ppx.deriving ppx_deriving.std
+SERVER_PACKAGES       := lwt_ppx js_of_ocaml-ppx.deriving ppx_deriving.std csv-lwt
 
 # OCamlfind packages for database access
 SERVER_DB_PACKAGES    := pgocaml.syntax
@@ -154,7 +160,8 @@ EXTERNAL_CSS_FILES    := $(SHAREDIR_OT_CSS)/ot_buttons.css \
 # files.
 CSS_FILES             := $(LOCAL_STATIC_CSS)/font-awesome.min.css \
                          $(EXTERNAL_CSS_FILES) \
-                         $(LOCAL_STATIC_DEFAULTCSS)/os.css
+                         $(LOCAL_STATIC_DEFAULTCSS)/os.css \
+												 $(LOCAL_STATIC_CSS)/main.css 
 # CSS destination
 CSSDIR                := $(TEST_PREFIX)$(ELIOMSTATICDIR)/css
 CSS_PREFIX            := $(CSSDIR)/$(PROJECT_NAME)

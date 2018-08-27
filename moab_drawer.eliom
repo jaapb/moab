@@ -13,6 +13,8 @@ let%shared item text service =
 let%shared admin_menu () =
   Lwt.return @@
 	[ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
+	; item [%i18n S.setup_terms ~capitalize:true] Moab_services.setup_terms_service
+	; item [%i18n S.add_students ~capitalize:true] Moab_services.add_students_service
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]

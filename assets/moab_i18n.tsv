@@ -53,3 +53,5 @@ you_click_on_date	You clicked on {{y}}/{{m}}/{{d}}	Vous avez cliqué sur {{d}}/{
 you_click_on_time	You clicked on {{h}}:{{m}}	Vous avez cliqué sur {{h}}:{{m}}
 change_language	Change language	Changer la langue
 change_profile_picture	Change profile picture	Changer votre photo de profil
+add_students	{{{capitalize?A||a}}}dd students	{{{capitalize?A||a}}}jouter des étudiants
+setup_terms	{{{capitalize?S||s}}}etup terms	{{{capitalize?R||r}}}églage des trimestres
