@@ -23,7 +23,7 @@ SERVER_FILES          := moab.eliom \
 	moab_page.eliom moab_page.eliomi \
 	moab_services.eliom moab_services.eliomi \
 	moab_settings.eliom \
-	moab_user.eliom \
+	moab_user.eliom moab_user.eliomi \
 	moab_i18n.eliom \
 	moab_user_db.ml
 
@@ -40,7 +40,7 @@ CLIENT_FILES          := moab.eliom \
 	moab_page.eliom moab_page.eliomi \
 	moab_services.eliom moab_services.eliomi \
 	moab_settings.eliom \
-	moab_user.eliom \
+	moab_user.eliom moab_user.eliomi \
 	moab_i18n.eliom
 
 # OCamlfind packages for the server (for modules which defines services)

@@ -2,7 +2,6 @@ open Os_db
 open Lwt
 
 let update_password userid password =
-	Ocsigen_messages.console (fun () -> "[update_password]");
 	if password = "" then fail_with "empty password"
 	else
 		full_transaction_block (fun dbh ->
@@ -12,7 +11,6 @@ let update_password userid password =
 		)
 
 let verify_password email password =
-	Ocsigen_messages.console (fun () -> "[verify_password]");
 	if password = ""
 	then fail No_such_resource
 	else
@@ -25,3 +23,11 @@ let verify_password email password =
 		| [uid] -> return uid
 		| _ -> fail No_such_resource
 
+let get_user_type userid =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT usertype \
+			FROM ocsigen_start.users \
+			WHERE userid = $userid") >>=
+	function
+	| [x] -> return x
+	| _ -> fail No_such_resource

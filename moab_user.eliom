@@ -3,8 +3,8 @@
 	open Eliom_content.Html.F
 ]
 
-let verify_password userid password =
-	Moab_user_db.verify_password userid password
+let%server verify_password email password =
+	Moab_user_db.verify_password email password
 
 let%shared connect_form () =
 	D.Form.post_form ~service:Moab_services.connect_service
@@ -94,3 +94,16 @@ let%shared user_box user =
 	match user with
 	| None -> connection_box ()
 	| Some user -> Lwt.return (connected_user_box user)
+
+type%shared user_type = Admin | Examiner | Student
+
+let%server get_user_type (u: int64): user_type Lwt.t =
+	let%lwt t = Moab_user_db.get_user_type u in
+	if t = "A" then Lwt.return Admin
+	else if t = "E" then Lwt.return Examiner
+	else if t = "S" then Lwt.return Student
+	else Lwt.fail (Invalid_argument "unknown user type in database")
+
+let%client get_user_type: int64 -> user_type Lwt.t =
+	~%(Eliom_client.server_function [%derive.json : int64]
+			(Os_session.connected_wrapper get_user_type))

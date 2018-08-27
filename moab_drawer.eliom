@@ -10,20 +10,48 @@
 let%shared item text service =
   li [ a ~a:[ a_class ["os-drawer-item"] ] ~service [pcdata text] () ]
 
-let%shared user_menu () =
-  [ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
+let%shared admin_menu () =
+  Lwt.return @@
+	[ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
   ; Eliom_content.Html.F.li
-      [ (* Os_user_view.disconnect_link
+      [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]
-          ~a:[ a_class ["os-drawer-item"] ] () *)
+          ~a:[ a_class ["os-drawer-item"] ] ()
       ]
   ]
 
-let%shared make ?user () =
-  let items =
-    if user = None
-    then []
-    else user_menu ()
+let%shared examiner_menu () =
+  Lwt.return @@
+	[ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
+  ; Eliom_content.Html.F.li
+      [ Os_user_view.disconnect_link
+          ~text_logout:[%i18n S.logout ~capitalize:true]
+          ~a:[ a_class ["os-drawer-item"] ] ()
+      ]
+  ]
+
+let%shared student_menu () =
+	Lwt.return @@
+  [ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
+  ; Eliom_content.Html.F.li
+      [ Os_user_view.disconnect_link
+          ~text_logout:[%i18n S.logout ~capitalize:true]
+          ~a:[ a_class ["os-drawer-item"] ] ()
+      ]
+  ]
+
+let%shared make ?(user: Os_types.User.t option) () =
+  let%lwt items =
+		match user with
+		| None -> Lwt.return []
+		| Some u ->
+			begin
+				let%lwt tp = Moab_user.get_user_type (Os_user.userid_of_user u) in
+				match tp with
+				| Moab_user.Admin -> admin_menu ()
+				| Moab_user.Examiner -> examiner_menu ()
+				| Moab_user.Student -> student_menu ()
+			end
   in
   let items =
     item [%i18n S.home ~capitalize:true] Os_services.main_service
@@ -37,4 +65,4 @@ let%shared make ?user () =
       [ user_box ; menu ]
   in
   let drawer, _, _ = Ot_drawer.drawer contents in
-  drawer
+  Lwt.return drawer
