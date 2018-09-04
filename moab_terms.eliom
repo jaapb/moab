@@ -33,8 +33,6 @@ let%server do_setup_terms () (new_term, (s1, (e1, (s2, (e2, (s3, e3)))))) =
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared real_setup_terms_handler myid () () =
-	let term_opt t =
-		Form.Option ([], t, None, false) in
 	let%lwt terms = get_terms () in
 	Moab_container.page (Some myid)
 	[

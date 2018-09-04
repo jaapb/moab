@@ -3,6 +3,40 @@
 	open Eliom_content.Html.F
 ]
 
+let%shared find_user e =
+	Moab_user_db.find_user e
+
+let%client find_user =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper find_user))
+
+[%%shared
+	type user_type = Admin | Examiner | Student
+	[@@deriving json]
+]
+
+let%server get_user_type u =
+	let%lwt t = Moab_user_db.get_user_type u in
+	if t = "A" then Lwt.return Admin
+	else if t = "E" then Lwt.return Examiner
+	else if t = "S" then Lwt.return Student
+	else Lwt.fail (Invalid_argument "unknown user type in database")
+
+let%client get_user_type =
+	~%(Eliom_client.server_function [%derive.json : int64]
+			(Os_session.connected_wrapper get_user_type))
+
+let%server add_user (t, fn, ln, email) =
+	let ut = match t with
+	| Admin -> "A"
+	| Examiner -> "E"
+	| Student -> "S" in
+	Moab_user_db.add_user ut fn ln email
+
+let%client add_user =
+	~%(Eliom_client.server_function [%derive.json : user_type * string * string * string]
+			(Os_session.connected_wrapper add_user))
+
 let%server verify_password email password =
 	Moab_user_db.verify_password email password
 
@@ -94,24 +128,3 @@ let%shared user_box user =
 	match user with
 	| None -> connection_box ()
 	| Some user -> Lwt.return (connected_user_box user)
-
-type%shared user_type = Admin | Examiner | Student
-
-let%server get_user_type u =
-	let%lwt t = Moab_user_db.get_user_type u in
-	if t = "A" then Lwt.return Admin
-	else if t = "E" then Lwt.return Examiner
-	else if t = "S" then Lwt.return Student
-	else Lwt.fail (Invalid_argument "unknown user type in database")
-
-let%client get_user_type =
-	~%(Eliom_client.server_function [%derive.json : int64]
-			(Os_session.connected_wrapper get_user_type))
-
-let%server add_student (fn, ln, mdx_id) =
-	let%lwt id = Moab_user_db.add_student fn ln in
-	Moab_student_db.add_student_info id mdx_id
-
-let%client add_student =
-	~%(Eliom_client.server_function [%derive.json : string * string * string]
-			(Os_session.connected_wrapper add_student))

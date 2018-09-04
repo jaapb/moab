@@ -23,6 +23,16 @@ let verify_password email password =
 		| [uid] -> return uid
 		| _ -> fail No_such_resource
 
+let find_user email =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT userid \
+			FROM ocsigen_start.users \
+			WHERE main_email = $email") >>=
+	function
+	| [x] -> return x
+	| [] -> fail Not_found
+	| _ -> fail (Invalid_argument "find_user found multiple users")
+
 let get_user_type userid =
 	full_transaction_block (fun dbh ->
 		PGSQL(dbh) "SELECT usertype \
@@ -32,5 +42,13 @@ let get_user_type userid =
 	| [x] -> return x
 	| _ -> fail No_such_resource
 
-let add_student fn ln =
-	Lwt.return 0L
+let add_user user_type fn ln email =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "INSERT INTO ocsigen_start.users \
+			(firstname, lastname, main_email, usertype) \
+			VALUES \
+			($fn, $ln, $email, $user_type) \
+			RETURNING userid") >>=
+	function
+	| [x] -> return x
+	| _ -> fail (Invalid_argument "add_user returned no rows")

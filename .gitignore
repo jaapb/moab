@@ -1,3 +1,5 @@
+*.swp
+
 # Database
 local_db
 
@@ -23,4 +25,4 @@ cordova
 moab_i18n.eliom
 
 static/css/moab.css.map
-static/css/moab.css
+static/defaultcss/moab.css
