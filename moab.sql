@@ -24,7 +24,7 @@ CREATE SCHEMA ocsigen_start
 CREATE SCHEMA moab
 	CREATE TABLE term_sessions (
 		term varchar(8) not null,
-		session_id bigint not null,
+		session_id bigserial not null,
 		year smallint not null,
 		start_week smallint not null,
 		end_week smallint not null,

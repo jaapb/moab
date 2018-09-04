@@ -44,32 +44,29 @@ let%shared real_setup_terms_handler myid () () =
 			Form.post_form ~service:setup_terms_action (fun (new_term, (s1, (e1, (s2, (e2, (s3, e3)))))) -> [
 				table [
 					tr [
-						th ~a:[a_colspan 3] [pcdata "Select term"];
-					];
-					tr [
-						td ~a:[a_colspan 3] [Form.input ~name:new_term ~input_type:`Text Form.string]
+						th ~a:[a_colspan 2] [
+							pcdata "Add term ";
+							Form.input ~name:new_term ~input_type:`Text Form.string
+						]
 					];
 					tr
 					[
 						td [pcdata "From "; Form.input ~name:s1 ~input_type:`Date Form.string];
-						td [];
 						td [pcdata "To "; Form.input ~name:e1 ~input_type:`Date Form.string]
 					];
 					tr
 					[
 						td [pcdata "From "; Form.input ~name:s2 ~input_type:`Date Form.string];
-						td [];
 						td [pcdata "To "; Form.input ~name:e2 ~input_type:`Date Form.string]
 					];
 					tr
 					[
 						td [pcdata "From "; Form.input ~name:s3 ~input_type:`Date Form.string];
-						td [];
 						td [pcdata "To "; Form.input ~name:e3 ~input_type:`Date Form.string]
 					];
 					tr
 					[ 
-						td ~a:[a_colspan 3] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Save" Form.string]
+						td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Save" Form.string]
 					]
 				]
 			]) ()
