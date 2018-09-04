@@ -19,7 +19,7 @@ CREATE SCHEMA ocsigen_start
 		email citext primary key,
 		userid bigint NOT NULL references users(userid),
 		validated boolean NOT NULL DEFAULT(false)
-	)
+	);
 
 CREATE SCHEMA moab
 	CREATE TABLE term_sessions (
@@ -34,4 +34,4 @@ CREATE SCHEMA moab
 	CREATE TABLE students (
 		userid bigint primary key references ocsigen_start.users(userid),
 		student_id varchar(9) not null
-	)
+	);
