@@ -3,6 +3,7 @@ div.content-box
 	background-color: lightgrey;
 	box-shadow: 3px 3px 5px 5px rgba(0, 0, 0, 0.28);
 	border-radius: 5px;
+	overflow-y: auto;
 }
 
 div.content-box h1
@@ -10,4 +11,6 @@ div.content-box h1
 	background-color: #25a;
 	color: white;
 	text-align: center;
+	margin: 0;
+	padding: 0;
 }

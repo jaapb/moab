@@ -3,29 +3,57 @@
 	open Eliom_parameter
 ]
 
+let%server set_student_info (uid, mdx_id) =
+	Moab_student_db.set_student_info uid mdx_id
+
+let%client set_student_info =
+	~%(Eliom_client.server_function [%derive.json : int64 * string]
+		(Os_session.connected_wrapper set_student_info))
+
 let%server add_students_action =
 	Eliom_service.create_attached_post
 		~fallback:Moab_services.add_students_service
 		~post_params:(string "term" ** string "group" ** file "csv")
 		()
 
-let%client add_students_action =
+let%client add_students_action = 
 	~%add_students_action
 
+let%server add_students_action2 =
+	Eliom_service.create_attached_post
+		~fallback:Moab_services.add_students_service
+		~post_params:(list "changes" (bool "do" ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
+		()
+
+let%client add_students_action2 = 
+	~%add_students_action2
+
+let%server do_add_students2 myid () (changes_list) =
+	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students2] new: %d" (List.length changes_list));
+	let%lwt () = Lwt_list.iter_s (fun (do_b, (fn, (ln, (mdx_id, email)))) ->
+		if do_b then
+			let%lwt uid = Moab_user.add_user (Student, fn, ln, email) in
+			let%lwt () = set_student_info (uid, mdx_id) in
+			Lwt.return_unit	
+		else
+			Lwt.return_unit
+	) changes_list	in
+	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
+			
 let%server do_add_students myid () (term, (group, csv)) =
 	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students] t: %s g: %s csv: %s" term group csv.Ocsigen_extensions.tmp_filename);
 	let%lwt f = Lwt_io.open_file ~mode:Lwt_io.Input csv.Ocsigen_extensions.tmp_filename in
 	let%lwt c = Csv_lwt.of_channel f in
-	let%lwt rows = Csv_lwt.fold_left (fun acc l ->
-		let _::name::id::_::_::_::_::_::_::_::mail::[] = l in
+	let%lwt act_list = Csv_lwt.fold_left (fun acc l ->
+		let _::name::mdx_id::_::_::_::_::_::_::_::mail::[] = l in
 		Scanf.sscanf name "%s@, %s" (fun ln fn ->
 			let name = Printf.sprintf "%s %s" fn ln in
 			Scanf.sscanf mail "mailto:%s" (fun e ->
 				try%lwt
-					let%lwt id = Moab_user.find_user e in
-					Lwt.return @@ tr [td [pcdata name]; td [pcdata (Printf.sprintf "userid %Ld" id)]]::acc
+					let%lwt uid = Moab_user.find_user e in
+					Lwt.return @@ (`Existing uid, fn, ln, mdx_id, e)::acc
 				with
-				| Not_found -> Lwt.return @@ tr [td [pcdata name]; td [pcdata "new user"]]::acc
+				| Not_found -> Lwt.return @@ (`New, fn, ln, mdx_id, e)::acc
 			)
 		)
 	) [] c in
@@ -35,10 +63,34 @@ let%server do_add_students myid () (term, (group, csv)) =
 		div ~a:[a_class ["content-box"]]
 		[
 			h1 [pcdata "Changes to be made"];
-			table (
-				tr [th [pcdata "Name"]; th [pcdata "Action"]]::
-				rows
-			)	
+			Form.post_form ~service:add_students_action2 (fun (changes_list) ->
+				[table (
+					tr [th []; th [pcdata "Action"]; th [pcdata "Name"]; th [pcdata "Student ID"]; th [pcdata "E-mail"]]::
+					changes_list.it (fun (do_b, (fn, (ln, (mdx_id, email)))) (act_v, fn_v, ln_v, mdx_id_v, email_v) init ->
+						tr [
+							td [Form.bool_checkbox_one ~checked:true ~name:do_b ()];
+							td [match act_v with
+							| `New -> pcdata "New student"
+							| `Existing uid -> pcdata "Existing student"
+							];
+							td [pcdata fn_v; pcdata " "; pcdata ln_v;
+								Form.input ~input_type:`Hidden ~name:fn ~value:fn_v Form.string;
+								Form.input ~input_type:`Hidden ~name:ln ~value:ln_v Form.string	
+							];
+							td [pcdata mdx_id_v;
+								Form.input ~input_type:`Hidden ~name:mdx_id ~value:mdx_id_v Form.string
+							];
+							td [pcdata email_v;
+								Form.input ~input_type:`Hidden ~name:email ~value:email_v Form.string
+							]
+						]::
+						init	
+					) act_list
+					[
+						tr [td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Save" Form.string]]
+					]
+				)]
+			) ()
 		]
 	]
 
@@ -85,6 +137,8 @@ let%shared real_add_students_handler myid () () =
 let%server add_students_handler myid () () =
 	Moab_base.App.register ~scope:Eliom_common.default_session_scope
 		~service:add_students_action (Moab_page.connected_page do_add_students);
+	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
+		~service:add_students_action2 (Os_session.connected_fun do_add_students2);
 	real_add_students_handler myid () ()
 
 let%client add_students_handler =
