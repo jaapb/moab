@@ -35,6 +35,7 @@ let%shared examiner_menu () =
 let%shared student_menu () =
 	Lwt.return @@
   [ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
+	; item [%i18n S.write_blog ~capitalize:true] Moab_services.edit_blog_service
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]

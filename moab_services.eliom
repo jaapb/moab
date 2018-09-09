@@ -44,6 +44,12 @@ let%server setup_terms_service =
 		~meth:(Get unit)
 		()
 
+let%server edit_blog_service =
+	create
+		~path:(Path ["edit-blog"])
+		~meth:(Get unit)
+		()
+
 let%client settings_service =
   ~%settings_service
 
@@ -61,6 +67,9 @@ let%client add_students_service =
 
 let%client setup_terms_service =
 	~%setup_terms_service
+
+let%client edit_blog_service =
+	~%edit_blog_service
 
 (* The OS lib needs access to the settings service to perform
    redirections to it. We need to register it *)
