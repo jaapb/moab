@@ -11,6 +11,31 @@ let%client get_terms =
 	~%(Eliom_client.server_function [%derive.json : unit]
 			(Os_session.connected_wrapper get_terms))
 
+let%server get_learning_weeks term =
+	Moab_term_db.get_learning_weeks term
+
+let%client get_learning_weeks =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper get_learning_weeks))
+
+let%shared learning_week_of_date t d =
+	let res = ref None in
+	let%lwt l = get_learning_weeks t in	
+	let%lwt () = Lwt_list.iteri_s (fun i (w, y) ->
+		if w = (Int32.of_int (Date.week d)) && y = (Date.year d) then
+		begin
+			res := (Some i)
+		end;
+		Lwt.return_unit
+	) l in
+	Lwt.return !res
+
+let%shared date_of_learning_week t lw d =
+	let%lwt l = get_learning_weeks t in
+	let (w, y) = List.nth l (lw - 1) in
+	let (s, e) = Date.week_first_last (Int32.to_int w) y in
+	Lwt.return (Date.add s (Date.Period.day (Date.int_of_day d - 1)))
+
 let%server setup_terms_action =
 	Eliom_service.create_attached_post
 		~fallback:Moab_services.setup_terms_service
