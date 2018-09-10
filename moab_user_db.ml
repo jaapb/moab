@@ -42,13 +42,16 @@ let get_user_type userid =
 	| [x] -> return x
 	| _ -> fail No_such_resource
 
-let add_user user_type fn ln email =
+let add_user user_type fn ln email password =
 	full_transaction_block (fun dbh ->
 		PGSQL(dbh) "INSERT INTO ocsigen_start.users \
 			(firstname, lastname, main_email, usertype) \
 			VALUES \
-			($fn, $ln, $email, $user_type) \
-			RETURNING userid") >>=
+			($fn, $ln, $email, $user_type)
+			RETURNING userid" >>=
 	function
-	| [x] -> return x
-	| _ -> fail (Invalid_argument "add_user returned no rows")
+	| [x] -> (match password with
+			| None -> Lwt.return_unit
+			| Some p ->	update_password x p) >>=
+		fun () -> Lwt.return x
+	| _ -> fail (Invalid_argument "add_user returned no rows"))

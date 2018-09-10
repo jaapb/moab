@@ -37,7 +37,7 @@ let%server do_add_students2 myid () (term, changes_list) =
 		| Some x -> x in
 	let%lwt () = Lwt_list.iter_s (fun (do_b, (fn, (ln, (mdx_id, email)))) ->
 		if do_b then
-			let%lwt uid = Moab_user.add_user (Student, fn, ln, email) in
+			let%lwt uid = Moab_user.add_user (Student, fn, ln, email, Some mdx_id) in
 			let%lwt () = set_student_info (uid, term, mdx_id, lw, None) in
 			Lwt.return_unit	
 		else

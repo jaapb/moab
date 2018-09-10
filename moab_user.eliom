@@ -26,15 +26,15 @@ let%client get_user_type =
 	~%(Eliom_client.server_function [%derive.json : int64]
 			(Os_session.connected_wrapper get_user_type))
 
-let%server add_user (t, fn, ln, email) =
+let%server add_user (t, fn, ln, email, password) =
 	let ut = match t with
 	| Admin -> "A"
 	| Examiner -> "E"
 	| Student -> "S" in
-	Moab_user_db.add_user ut fn ln email
+	Moab_user_db.add_user ut fn ln email password
 
 let%client add_user =
-	~%(Eliom_client.server_function [%derive.json : user_type * string * string * string]
+	~%(Eliom_client.server_function [%derive.json : user_type * string * string * string * string option]
 			(Os_session.connected_wrapper add_user))
 
 let%server verify_password email password =
