@@ -1,13 +1,14 @@
 [%%shared
 	open Eliom_content.Html.F
 	open Eliom_parameter
+	open CalendarLib
 ]
 
-let%server set_student_info (uid, mdx_id) =
-	Moab_student_db.set_student_info uid mdx_id
+let%server set_student_info (uid, term, mdx_id, joined_week, left_week) =
+	Moab_student_db.set_student_info uid term mdx_id joined_week left_week
 
 let%client set_student_info =
-	~%(Eliom_client.server_function [%derive.json : int64 * string]
+	~%(Eliom_client.server_function [%derive.json : int64 * string * string * int * int option]
 		(Os_session.connected_wrapper set_student_info))
 
 let%server add_students_action =
@@ -22,26 +23,34 @@ let%client add_students_action =
 let%server add_students_action2 =
 	Eliom_service.create_attached_post
 		~fallback:Moab_services.add_students_service
-		~post_params:(list "changes" (bool "do" ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
+		~post_params:(string "term" ** list "changes" (bool "do" ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
 		()
 
 let%client add_students_action2 = 
 	~%add_students_action2
 
-let%server do_add_students2 myid () (changes_list) =
+let%server do_add_students2 myid () (term, changes_list) =
 	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students2] new: %d" (List.length changes_list));
+	let%lwt lwo = Moab_terms.learning_week_of_date term (Date.today ()) in
+	let lw = match lwo with
+		| None -> 1
+		| Some x -> x in
 	let%lwt () = Lwt_list.iter_s (fun (do_b, (fn, (ln, (mdx_id, email)))) ->
 		if do_b then
 			let%lwt uid = Moab_user.add_user (Student, fn, ln, email) in
-			let%lwt () = set_student_info (uid, mdx_id) in
+			let%lwt () = set_student_info (uid, term, mdx_id, lw, None) in
 			Lwt.return_unit	
 		else
 			Lwt.return_unit
 	) changes_list	in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 			
-let%server do_add_students myid () (term, (group, csv)) =
-	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students] t: %s g: %s csv: %s" term group csv.Ocsigen_extensions.tmp_filename);
+let%server do_add_students myid () (term_v, (group, csv)) =
+	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students] t: %s g: %s csv: %s" term_v group csv.Ocsigen_extensions.tmp_filename);
+	let%lwt lwo = Moab_terms.learning_week_of_date term_v (Date.today ()) in
+	let lw = match lwo with
+		| None -> 1
+		| Some x -> x in
 	let%lwt f = Lwt_io.open_file ~mode:Lwt_io.Input csv.Ocsigen_extensions.tmp_filename in
 	let%lwt c = Csv_lwt.of_channel f in
 	let%lwt act_list = Csv_lwt.fold_left (fun acc l ->
@@ -51,9 +60,9 @@ let%server do_add_students myid () (term, (group, csv)) =
 			Scanf.sscanf mail "mailto:%s" (fun e ->
 				try%lwt
 					let%lwt uid = Moab_user.find_user e in
-					Lwt.return @@ (`Existing uid, fn, ln, mdx_id, e)::acc
+					Lwt.return @@ acc 
 				with
-				| Not_found -> Lwt.return @@ (`New, fn, ln, mdx_id, e)::acc
+				| Not_found -> Lwt.return @@ (`New lw, fn, ln, mdx_id, e)::acc
 			)
 		)
 	) [] c in
@@ -63,15 +72,15 @@ let%server do_add_students myid () (term, (group, csv)) =
 		div ~a:[a_class ["content-box"]]
 		[
 			h1 [pcdata "Changes to be made"];
-			Form.post_form ~service:add_students_action2 (fun (changes_list) ->
-				[table (
+			Form.post_form ~service:add_students_action2 (fun (term, changes_list) ->
+				[Form.input ~input_type:`Hidden ~name:term ~value:term_v Form.string;
+				table (
 					tr [th []; th [pcdata "Action"]; th [pcdata "Name"]; th [pcdata "Student ID"]; th [pcdata "E-mail"]]::
 					changes_list.it (fun (do_b, (fn, (ln, (mdx_id, email)))) (act_v, fn_v, ln_v, mdx_id_v, email_v) init ->
 						tr [
 							td [Form.bool_checkbox_one ~checked:true ~name:do_b ()];
 							td [match act_v with
-							| `New -> pcdata "New student"
-							| `Existing uid -> pcdata "Existing student"
+							| `New x -> pcdata (Printf.sprintf "Joining week %d" x)
 							];
 							td [pcdata fn_v; pcdata " "; pcdata ln_v;
 								Form.input ~input_type:`Hidden ~name:fn ~value:fn_v Form.string;

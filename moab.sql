@@ -32,8 +32,13 @@ CREATE SCHEMA moab
 	)
 
 	CREATE TABLE students (
-		userid bigint primary key references ocsigen_start.users(userid),
-		student_id varchar(9) not null
+		userid bigint references ocsigen_start.users(userid),
+		term varchar(8) not null,
+		student_id varchar(9) not null,
+		joined_week smallint not null,
+    left_week smallint,
+		primary key (userid, term),
+		unique (student_id, term)
 	);
 
 	CREATE TABLE blogs (
