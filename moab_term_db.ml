@@ -4,7 +4,8 @@ open Lwt
 let get_terms () =
 	full_transaction_block (fun dbh ->
 		PGSQL(dbh) "SELECT DISTINCT(term) \
-			FROM moab.term_sessions")
+			FROM moab.term_sessions \
+			ORDER BY 1 DESC")
 
 let add_term term year start_week end_week =
 	full_transaction_block (fun dbh ->
