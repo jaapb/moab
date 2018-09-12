@@ -44,6 +44,12 @@ let%server setup_terms_service =
 		~meth:(Get unit)
 		()
 
+let%server setup_sessions_service =
+	create
+		~path:(Path ["setup-sessions"])
+		~meth:(Get unit)
+		()
+
 let%server edit_blog_service =
 	create
 		~path:(Path ["edit-blog"])
@@ -67,6 +73,9 @@ let%client add_students_service =
 
 let%client setup_terms_service =
 	~%setup_terms_service
+
+let%client setup_sessions_service =
+	~%setup_sessions_service
 
 let%client edit_blog_service =
 	~%edit_blog_service

@@ -14,6 +14,7 @@ let%shared admin_menu () =
   Lwt.return @@
 	[ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
 	; item [%i18n S.setup_terms ~capitalize:true] Moab_services.setup_terms_service
+	; item [%i18n S.setup_sessions ~capitalize:true] Moab_services.setup_sessions_service
 	; item [%i18n S.add_students ~capitalize:true] Moab_services.add_students_service
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
@@ -49,11 +50,11 @@ let%shared make ?(user: Os_types.User.t option) () =
 		| None -> Lwt.return []
 		| Some u ->
 			begin
-				let%lwt tp = Moab_user.get_user_type (Os_user.userid_of_user u) in
+				let%lwt tp = Moab_users.get_user_type (Os_user.userid_of_user u) in
 				match tp with
-				| Moab_user.Admin -> admin_menu ()
-				| Moab_user.Examiner -> examiner_menu ()
-				| Moab_user.Student -> student_menu ()
+				| Moab_users.Admin -> admin_menu ()
+				| Moab_users.Examiner -> examiner_menu ()
+				| Moab_users.Student -> student_menu ()
 			end
   in
   let items =
@@ -64,7 +65,7 @@ let%shared make ?(user: Os_types.User.t option) () =
   let contents = match user with
     | None -> [ menu ]
     | Some user ->
-      let user_box = Moab_user.connected_user_box user in
+      let user_box = Moab_users.connected_user_box user in
       [ user_box ; menu ]
   in
   let drawer, _, _ = Ot_drawer.drawer contents in

@@ -56,3 +56,4 @@ change_profile_picture	Change profile picture	Changer votre photo de profil
 add_students	{{{capitalize?A||a}}}dd students	{{{capitalize?A||a}}}jouter des étudiants
 setup_terms	{{{capitalize?S||s}}}etup terms	{{{capitalize?R||r}}}églage des trimestres
 write_blog	{{{capitalize?W||w}}}rite blog	{{{capitalize?É||é}}}crire un blog
+setup_sessions	{{{capitalize?S||s}}}etup sessions	{{{capitalize?R||r}}}églage des séances
