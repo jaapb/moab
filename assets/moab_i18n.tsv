@@ -63,9 +63,10 @@ name	Name	Nom
 student_id	Student ID	ID étudiant
 joining_week	Joining in week	Rejoint en semaine
 term	Term	Trimestre
-no_terms_yet	No terms set up yet	Pas encore de trimestres entrés
+academic_year	Academic year	Année académique
+no_academic_years_yet	No academic years set up yet	Pas encore d'années académiques entrées
 group_number	Group number	Numéro de groupe
 csv_file_from_misis	CSV file from MISIS	Fichier CSV depuis MISIS
-add_term	Add term	Ajouter un trimestre
+add_academic_year	Add academic year	Ajouter une année académique
 from	From	Depuis
 until	Until	Jusqu'à

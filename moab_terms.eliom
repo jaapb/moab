@@ -1,22 +1,38 @@
 [%%shared
+	open Eliom_content.Html
 	open Eliom_content.Html.F
 	open Eliom_parameter
 	open CalendarLib
 ]
 
-let%server get_terms () =
-	Moab_term_db.get_terms ()
+(* Local services *)
 
-let%client get_terms =
+let%server setup_terms_action =
+	Eliom_service.create_attached_post
+		~fallback:Moab_services.setup_terms_service
+		~post_params:(string "new_ayear" ** string "start1" ** string "end1" ** string "start2" ** string "end2" ** string "start3" ** string "end3")
+		()
+
+let%client setup_terms_action =
+	~%setup_terms_action
+
+(* Database access *)
+
+let%server get_academic_years () =
+	Moab_term_db.get_academic_years ()
+
+let%client get_academic_years =
 	~%(Eliom_client.server_function [%derive.json : unit]
-			(Os_session.connected_wrapper get_terms))
+			(Os_session.connected_wrapper get_academic_years))
 
-let%server get_learning_weeks term =
-	Moab_term_db.get_learning_weeks term
+let%server get_learning_weeks ayear =
+	Moab_term_db.get_learning_weeks ayear
 
 let%client get_learning_weeks =
 	~%(Eliom_client.server_function [%derive.json : string]
 			(Os_session.connected_wrapper get_learning_weeks))
+
+(* Utility functions and widgets *)
 
 let%shared learning_week_of_date t d =
 	let res = ref None in
@@ -36,40 +52,41 @@ let%shared date_of_learning_week t lw d =
 	let (s, e) = Date.week_first_last (Int32.to_int w) y in
 	Lwt.return (Date.add s (Date.Period.day (Date.int_of_day d - 1)))
 
-let%server setup_terms_action =
-	Eliom_service.create_attached_post
-		~fallback:Moab_services.setup_terms_service
-		~post_params:(string "new_term" ** string "start1" ** string "end1" ** string "start2" ** string "end2" ** string "start3" ** string "end3")
-		()
+let%shared academic_year_select_widget param =
+	let ayear_opt t =
+		D.Form.Option ([], t, None, false) in
+	let%lwt ayears = get_academic_years () in
+	match ayears with
+	| [] -> Lwt.return (pcdata [%i18n S.no_academic_years_yet])
+	| h::t -> Lwt.return (D.Form.select ~name:param Form.string (ayear_opt h) (List.map ayear_opt t))
 
-let%client setup_terms_action =
-	~%setup_terms_action
+(* Handlers *)
 
-let%server do_setup_terms () (new_term, (s1, (e1, (s2, (e2, (s3, e3)))))) =
+let%server do_setup_terms () (new_ayear, (s1, (e1, (s2, (e2, (s3, e3)))))) =
 	(* date return: YYYY-MM-DD *)
 	let%lwt () = Lwt_list.iter_s (fun (s, e) ->
 		try
 			let sd = Printer.Date.from_fstring "%Y-%m-%d" s
 			and ed = Printer.Date.from_fstring "%Y-%m-%d" e in
-			Moab_term_db.add_term new_term (Date.year sd) (Date.week sd) (Date.week ed)
+			Moab_term_db.add_term new_ayear (Date.year sd) (Date.week sd) (Date.week ed)
 		with
 			Invalid_argument _ -> Lwt.return_unit)
 	[s1, e1; s2, e2; s3, e3] in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared real_setup_terms_handler myid () () =
-	let%lwt terms = get_terms () in
+	let%lwt ayears = get_academic_years () in
 	Moab_container.page (Some myid)
 	[
 		div ~a:[a_class ["content-box"]]
 		[
 			h1 [pcdata [%i18n S.setup_terms]];
-			Form.post_form ~service:setup_terms_action (fun (new_term, (s1, (e1, (s2, (e2, (s3, e3)))))) -> [
+			Form.post_form ~service:setup_terms_action (fun (new_ayear, (s1, (e1, (s2, (e2, (s3, e3)))))) -> [
 				table [
 					tr [
 						th ~a:[a_colspan 2] [
-							pcdata [%i18n S.add_term];
-							Form.input ~name:new_term ~input_type:`Text Form.string
+							pcdata [%i18n S.add_academic_year];
+							Form.input ~name:new_ayear ~input_type:`Text Form.string
 						]
 					];
 					tr

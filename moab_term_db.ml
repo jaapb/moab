@@ -1,25 +1,25 @@
 open Os_db
 open Lwt
 
-let get_terms () =
+let get_academic_years () =
 	full_transaction_block (fun dbh ->
-		PGSQL(dbh) "SELECT DISTINCT(term) \
-			FROM moab.term_sessions \
+		PGSQL(dbh) "SELECT DISTINCT(academic_year) \
+			FROM moab.terms \
 			ORDER BY 1 DESC")
 
-let add_term term year start_week end_week =
+let add_term ayear year start_week end_week =
 	full_transaction_block (fun dbh ->
-		PGSQL(dbh) "INSERT INTO moab.term_sessions \
-			(term, year, start_week, end_week) \
+		PGSQL(dbh) "INSERT INTO moab.terms \
+			(academic_year, year, start_week, end_week) \
 			VALUES
-			($term, $year, $start_week, $end_week)")
+			($ayear, $year, $start_week, $end_week)")
 
-let get_learning_weeks term =
+let get_learning_weeks ayear =
 	full_transaction_block (fun dbh ->
 		PGSQL(dbh) "SELECT week, year \
-			FROM moab.term_sessions t \
+			FROM moab.terms t \
 			JOIN generate_series(1,53) gs(week) ON gs.week BETWEEN start_week AND end_week \
-			WHERE term = $term \
+			WHERE academic_year = $ayear \
 			ORDER BY year ASC, week ASC") >>=
 	Lwt_list.map_s (function
 	| None, _ -> Lwt.fail (Invalid_argument "get_learning_weeks has a NULL value in generated series")

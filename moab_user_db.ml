@@ -35,7 +35,7 @@ let find_user email =
 
 let get_user_type userid =
 	full_transaction_block (fun dbh ->
-		PGSQL(dbh) "SELECT usertype \
+		PGSQL(dbh) "SELECT user_type \
 			FROM ocsigen_start.users \
 			WHERE userid = $userid") >>=
 	function
@@ -45,7 +45,7 @@ let get_user_type userid =
 let add_user user_type fn ln email password =
 	full_transaction_block (fun dbh ->
 		PGSQL(dbh) "INSERT INTO ocsigen_start.users \
-			(firstname, lastname, main_email, usertype) \
+			(firstname, lastname, main_email, user_type) \
 			VALUES \
 			($fn, $ln, $email, $user_type)
 			RETURNING userid" >>=

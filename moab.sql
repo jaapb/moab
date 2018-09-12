@@ -12,7 +12,7 @@ CREATE SCHEMA ocsigen_start
 		password text,
 		avatar text,
 		language text,
-		usertype char(1) NOT NULL DEFAULT('S')
+		user_type char(1) NOT NULL DEFAULT('S')
   )
 
 	CREATE TABLE emails (
@@ -22,30 +22,43 @@ CREATE SCHEMA ocsigen_start
 	);
 
 CREATE SCHEMA moab
-	CREATE TABLE term_sessions (
-		term varchar(8) not null,
-		session_id bigserial not null,
+	CREATE TABLE terms (
+		academic_year varchar(8) not null,
+		term_id bigserial not null,
 		year smallint not null,
 		start_week smallint not null,
 		end_week smallint not null,
-		primary key (term, session_id)
+		primary key (academic_year, term_id)
 	)
 
 	CREATE TABLE students (
 		userid bigint references ocsigen_start.users(userid),
-		term varchar(8) not null,
+		academic_year varchar(8) not null,
 		student_id varchar(9) not null,
 		joined_week smallint not null,
     left_week smallint,
-		primary key (userid, term),
-		unique (student_id, term)
+		primary key (userid, year),
+		unique (student_id, academic_year)
 	);
 
 	CREATE TABLE blogs (
 		userid bigint not null references ocsigen_start.users(userid),
-		term varchar(8) not null,
+		academic_year varchar(8) not null,
 		week smallint not null,
 		title text not null,
 		text text not null,
-		primary key (userid, term, week)
+		primary key (userid, academic_year, week)
+	);
+
+	CREATE TABLE sessions (
+		academic_year varchar(8) not null,
+		term_id bigint not null,
+		session_id bigserial not null,
+		session_type char(1) not null,
+		start_time time not null,
+		end_time time not null,	
+		room varchar(8),
+		weekday smallint not null,
+		primary key (academic_year, session_id),
+		foreign key (academic_year, term_id) references terms(academic_year, term_id) 
 	);

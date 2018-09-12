@@ -4,8 +4,8 @@
 	open CalendarLib
 ]
 
-let%server set_student_info (uid, term, mdx_id, joined_week, left_week) =
-	Moab_student_db.set_student_info uid term mdx_id joined_week left_week
+let%server set_student_info (uid, ayear, mdx_id, joined_week, left_week) =
+	Moab_student_db.set_student_info uid ayear mdx_id joined_week left_week
 
 let%client set_student_info =
 	~%(Eliom_client.server_function [%derive.json : int64 * string * string * int * int option]
@@ -14,7 +14,7 @@ let%client set_student_info =
 let%server add_students_action =
 	Eliom_service.create_attached_post
 		~fallback:Moab_services.add_students_service
-		~post_params:(string "term" ** string "group" ** file "csv")
+		~post_params:(string "academic_year" ** string "group" ** file "csv")
 		()
 
 let%client add_students_action = 
@@ -23,31 +23,31 @@ let%client add_students_action =
 let%server add_students_action2 =
 	Eliom_service.create_attached_post
 		~fallback:Moab_services.add_students_service
-		~post_params:(string "term" ** list "changes" (bool "do" ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
+		~post_params:(string "academic_year" ** list "changes" (bool "do" ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
 		()
 
 let%client add_students_action2 = 
 	~%add_students_action2
 
-let%server do_add_students2 myid () (term, changes_list) =
+let%server do_add_students2 myid () (ayear, changes_list) =
 	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students2] new: %d" (List.length changes_list));
-	let%lwt lwo = Moab_terms.learning_week_of_date term (Date.today ()) in
+	let%lwt lwo = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let lw = match lwo with
 		| None -> 1
 		| Some x -> x in
 	let%lwt () = Lwt_list.iter_s (fun (do_b, (fn, (ln, (mdx_id, email)))) ->
 		if do_b then
 			let%lwt uid = Moab_users.add_user (Student, fn, ln, email, Some mdx_id) in
-			let%lwt () = set_student_info (uid, term, mdx_id, lw, None) in
+			let%lwt () = set_student_info (uid, ayear, mdx_id, lw, None) in
 			Lwt.return_unit	
 		else
 			Lwt.return_unit
 	) changes_list	in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 			
-let%server do_add_students myid () (term_v, (group, csv)) =
-	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students] t: %s g: %s csv: %s" term_v group csv.Ocsigen_extensions.tmp_filename);
-	let%lwt lwo = Moab_terms.learning_week_of_date term_v (Date.today ()) in
+let%server do_add_students myid () (ayear_v, (group, csv)) =
+	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students] ay: %s g: %s csv: %s" ayear_v group csv.Ocsigen_extensions.tmp_filename);
+	let%lwt lwo = Moab_terms.learning_week_of_date ayear_v (Date.today ()) in
 	let lw = match lwo with
 		| None -> 1
 		| Some x -> x in
@@ -72,8 +72,8 @@ let%server do_add_students myid () (term_v, (group, csv)) =
 		div ~a:[a_class ["content-box"]]
 		[
 			h1 [pcdata [%i18n S.changes_to_be_made]];
-			Form.post_form ~service:add_students_action2 (fun (term, changes_list) ->
-				[Form.input ~input_type:`Hidden ~name:term ~value:term_v Form.string;
+			Form.post_form ~service:add_students_action2 (fun (ayear, changes_list) ->
+				[Form.input ~input_type:`Hidden ~name:ayear ~value:ayear_v Form.string;
 				table (
 					tr [th []; th [pcdata [%i18n S.action]]; th [pcdata [%i18n S.name]]; th [pcdata [%i18n S.student_id]]; th [pcdata [%i18n S.email_address]]]::
 					changes_list.it (fun (do_b, (fn, (ln, (mdx_id, email)))) (act_v, fn_v, ln_v, mdx_id_v, email_v) init ->
@@ -104,42 +104,38 @@ let%server do_add_students myid () (term_v, (group, csv)) =
 	]
 
 let%shared real_add_students_handler myid () () =
-	let term_opt t =
-		Form.Option ([], t, None, false) in
-	let%lwt terms = Moab_terms.get_terms () in
+	let%lwt student_form = Form.lwt_post_form ~service:add_students_action (fun (ayear, (group, csv)) ->
+		let%lwt ayear_widget = Moab_terms.academic_year_select_widget ayear in
+		Lwt.return [
+			table
+			[
+				tr
+				[
+					th [pcdata [%i18n S.academic_year]];
+					td [ayear_widget]
+				];
+				tr
+				[
+					th [pcdata [%i18n S.group_number]];
+					td [Form.input ~name:group ~input_type:`Text Form.string]
+				];
+				tr 
+				[
+					th [pcdata [%i18n S.csv_file_from_misis]];
+					td [Form.file_input ~name:csv ()]
+				];
+				tr
+				[ 
+					td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Save" Form.string]
+				]
+			]
+		]) () in
 	Moab_container.page (Some myid)
 	[
 		div ~a:[a_class ["content-box"]]
 		[
 			h1 [pcdata [%i18n S.add_students]];
-			Form.post_form ~service:add_students_action (fun (term, (group, csv)) ->
-			[
-				table
-				[
-					tr
-					[
-						th [pcdata [%i18n S.term]];
-						td [match terms with
-						| [] -> pcdata [%i18n S.no_terms_yet]
-						| h::t -> Form.select ~name:term Form.string (term_opt h) (List.map term_opt t)
-						]
-					];
-					tr
-					[
-						th [pcdata [%i18n S.group_number]];
-						td [Form.input ~name:group ~input_type:`Text Form.string]
-					];
-					tr 
-					[
-						th [pcdata [%i18n S.csv_file_from_misis]];
-						td [Form.file_input ~name:csv ()]
-					];
-					tr
-					[ 
-						td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Save" Form.string]
-					]
-				]
-			]) ()
+			student_form
 		]
 	]
 
