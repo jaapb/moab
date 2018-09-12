@@ -56,7 +56,7 @@ change_profile_picture	Change profile picture	Changer votre photo de profil
 add_students	{{{capitalize?A||a}}}dd students	{{{capitalize?A||a}}}jouter des étudiants
 setup_terms	{{{capitalize?S||s}}}etup terms	{{{capitalize?R||r}}}églage des trimestres
 write_blog	{{{capitalize?W||w}}}rite blog	{{{capitalize?É||é}}}crire un blog
-setup_sessions	{{{capitalize?S||s}}}etup sessions	{{{capitalize?R||r}}}églage des séances
+setup_sessions	{{{capitalize?S||s}}}etup sessions	{{{capitalize?R||r}}}églage des sessions
 changes_to_be_made	Changes to be made	Modifications à faire
 action	Action	Action
 name	Name	Nom
@@ -70,3 +70,9 @@ csv_file_from_misis	CSV file from MISIS	Fichier CSV depuis MISIS
 add_academic_year	Add academic year	Ajouter une année académique
 from	From	Depuis
 until	Until	Jusqu'à
+tbd	TBD	À déterminer
+session_type	Session type	Type de session
+weekday	Weekday	Jour de semaine
+start_time	Start time	Heure de début
+end_time	End time	Heure de fin
+room	Room	Salle
