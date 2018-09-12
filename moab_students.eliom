@@ -37,7 +37,7 @@ let%server do_add_students2 myid () (term, changes_list) =
 		| Some x -> x in
 	let%lwt () = Lwt_list.iter_s (fun (do_b, (fn, (ln, (mdx_id, email)))) ->
 		if do_b then
-			let%lwt uid = Moab_user.add_user (Student, fn, ln, email, Some mdx_id) in
+			let%lwt uid = Moab_users.add_user (Student, fn, ln, email, Some mdx_id) in
 			let%lwt () = set_student_info (uid, term, mdx_id, lw, None) in
 			Lwt.return_unit	
 		else
@@ -59,7 +59,7 @@ let%server do_add_students myid () (term_v, (group, csv)) =
 			let name = Printf.sprintf "%s %s" fn ln in
 			Scanf.sscanf mail "mailto:%s" (fun e ->
 				try%lwt
-					let%lwt uid = Moab_user.find_user e in
+					let%lwt uid = Moab_users.find_user e in
 					Lwt.return @@ acc 
 				with
 				| Not_found -> Lwt.return @@ (`New lw, fn, ln, mdx_id, e)::acc

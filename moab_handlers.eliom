@@ -159,7 +159,7 @@ let%client update_language_handler () language =
 let connect_handler () ((login, pwd), keepmeloggedin) =
 	Ocsigen_messages.console (fun () -> "[connect_handler]");
 	try%lwt
-		let%lwt userid = Moab_user.verify_password login pwd in
+		let%lwt userid = Moab_users.verify_password login pwd in
 		let%lwt () = Os_handlers.disconnect_handler () () in
 		Ocsigen_messages.console (fun () -> "- connecting...");
 		Os_session.connect ~expire:(not keepmeloggedin) userid

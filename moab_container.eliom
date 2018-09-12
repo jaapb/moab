@@ -3,7 +3,7 @@
 
 let%shared os_header ?user () = Eliom_content.Html.F.(
   let%lwt user_box =
-    Moab_user.user_box user
+    Moab_users.user_box user
   in
   Lwt.return (
     header ~a:[a_class ["os-page-header"]]
