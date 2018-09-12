@@ -57,3 +57,15 @@ add_students	{{{capitalize?A||a}}}dd students	{{{capitalize?A||a}}}jouter des é
 setup_terms	{{{capitalize?S||s}}}etup terms	{{{capitalize?R||r}}}églage des trimestres
 write_blog	{{{capitalize?W||w}}}rite blog	{{{capitalize?É||é}}}crire un blog
 setup_sessions	{{{capitalize?S||s}}}etup sessions	{{{capitalize?R||r}}}églage des séances
+changes_to_be_made	Changes to be made	Modifications à faire
+action	Action	Action
+name	Name	Nom
+student_id	Student ID	ID étudiant
+joining_week	Joining in week	Rejoint en semaine
+term	Term	Trimestre
+no_terms_yet	No terms set up yet	Pas encore de trimestres entrés
+group_number	Group number	Numéro de groupe
+csv_file_from_misis	CSV file from MISIS	Fichier CSV depuis MISIS
+add_term	Add term	Ajouter un trimestre
+from	From	Depuis
+until	Until	Jusqu'à

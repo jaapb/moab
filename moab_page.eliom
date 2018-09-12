@@ -59,13 +59,13 @@ let%shared the_local_css = [
       Moab_container.page None
         (if Ocsigen_config.get_debugmode ()
          then [p [pcdata (Printexc.to_string exn)]]
-         else [p [pcdata "Error"]])
+         else [p [pcdata [%i18n S.error ~capitalize:true]]])
 
     let default_connected_error_page myid_o _ _ exn =
       Moab_container.page myid_o
         (if Ocsigen_config.get_debugmode ()
          then [p [pcdata (Printexc.to_string exn)]]
-         else [p [pcdata "Error"]])
+         else [p [pcdata [%i18n S.error ~capitalize:true]]])
 
   end
 

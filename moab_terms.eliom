@@ -63,29 +63,29 @@ let%shared real_setup_terms_handler myid () () =
 	[
 		div ~a:[a_class ["content-box"]]
 		[
-			h1 [pcdata "Term setup"];
+			h1 [pcdata [%i18n S.setup_terms]];
 			Form.post_form ~service:setup_terms_action (fun (new_term, (s1, (e1, (s2, (e2, (s3, e3)))))) -> [
 				table [
 					tr [
 						th ~a:[a_colspan 2] [
-							pcdata "Add term ";
+							pcdata [%i18n S.add_term];
 							Form.input ~name:new_term ~input_type:`Text Form.string
 						]
 					];
 					tr
 					[
-						td [pcdata "From "; Form.input ~name:s1 ~input_type:`Date Form.string];
-						td [pcdata "To "; Form.input ~name:e1 ~input_type:`Date Form.string]
+						td [pcdata [%i18n S.from]; pcdata " "; Form.input ~name:s1 ~input_type:`Date Form.string];
+						td [pcdata [%i18n S.until]; pcdata " "; Form.input ~name:e1 ~input_type:`Date Form.string]
 					];
 					tr
 					[
-						td [pcdata "From "; Form.input ~name:s2 ~input_type:`Date Form.string];
-						td [pcdata "To "; Form.input ~name:e2 ~input_type:`Date Form.string]
+						td [pcdata [%i18n S.from]; pcdata " "; Form.input ~name:s2 ~input_type:`Date Form.string];
+						td [pcdata [%i18n S.until]; pcdata " "; Form.input ~name:e2 ~input_type:`Date Form.string]
 					];
 					tr
 					[
-						td [pcdata "From "; Form.input ~name:s3 ~input_type:`Date Form.string];
-						td [pcdata "To "; Form.input ~name:e3 ~input_type:`Date Form.string]
+						td [pcdata [%i18n S.from]; pcdata " "; Form.input ~name:s3 ~input_type:`Date Form.string];
+						td [pcdata [%i18n S.until]; pcdata " "; Form.input ~name:e3 ~input_type:`Date Form.string]
 					];
 					tr
 					[ 

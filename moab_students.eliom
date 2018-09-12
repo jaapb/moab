@@ -71,17 +71,17 @@ let%server do_add_students myid () (term_v, (group, csv)) =
 	[
 		div ~a:[a_class ["content-box"]]
 		[
-			h1 [pcdata "Changes to be made"];
+			h1 [pcdata [%i18n S.changes_to_be_made]];
 			Form.post_form ~service:add_students_action2 (fun (term, changes_list) ->
 				[Form.input ~input_type:`Hidden ~name:term ~value:term_v Form.string;
 				table (
-					tr [th []; th [pcdata "Action"]; th [pcdata "Name"]; th [pcdata "Student ID"]; th [pcdata "E-mail"]]::
+					tr [th []; th [pcdata [%i18n S.action]]; th [pcdata [%i18n S.name]]; th [pcdata [%i18n S.student_id]]; th [pcdata [%i18n S.email_address]]]::
 					changes_list.it (fun (do_b, (fn, (ln, (mdx_id, email)))) (act_v, fn_v, ln_v, mdx_id_v, email_v) init ->
 						tr [
 							td [Form.bool_checkbox_one ~checked:true ~name:do_b ()];
-							td [match act_v with
-							| `New x -> pcdata (Printf.sprintf "Joining week %d" x)
-							];
+							td (match act_v with
+							| `New x -> [pcdata [%i18n S.joining_week]; pcdata " "; pcdata (string_of_int lw)]
+							);
 							td [pcdata fn_v; pcdata " "; pcdata ln_v;
 								Form.input ~input_type:`Hidden ~name:fn ~value:fn_v Form.string;
 								Form.input ~input_type:`Hidden ~name:ln ~value:ln_v Form.string	
@@ -111,27 +111,27 @@ let%shared real_add_students_handler myid () () =
 	[
 		div ~a:[a_class ["content-box"]]
 		[
-			h1 [pcdata "Adding students"];
+			h1 [pcdata [%i18n S.add_students]];
 			Form.post_form ~service:add_students_action (fun (term, (group, csv)) ->
 			[
 				table
 				[
 					tr
 					[
-						th [pcdata "Term"];
+						th [pcdata [%i18n S.term]];
 						td [match terms with
-						| [] -> pcdata "no terms set up yet"
+						| [] -> pcdata [%i18n S.no_terms_yet]
 						| h::t -> Form.select ~name:term Form.string (term_opt h) (List.map term_opt t)
 						]
 					];
 					tr
 					[
-						th [pcdata "Group number"];
+						th [pcdata [%i18n S.group_number]];
 						td [Form.input ~name:group ~input_type:`Text Form.string]
 					];
 					tr 
 					[
-						th [pcdata "CSV file from MISIS"];
+						th [pcdata [%i18n S.csv_file_from_misis]];
 						td [Form.file_input ~name:csv ()]
 					];
 					tr
