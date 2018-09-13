@@ -24,3 +24,10 @@ let get_learning_weeks ayear =
 	Lwt_list.map_s (function
 	| None, _ -> Lwt.fail (Invalid_argument "get_learning_weeks has a NULL value in generated series")
 	| Some w, y -> Lwt.return (w, y))
+
+let get_term_ids ayear =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT term_id \
+			FROM moab.terms \
+			WHERE academic_year = $ayear \
+			ORDER BY 1 ASC")

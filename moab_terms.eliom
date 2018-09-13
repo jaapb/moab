@@ -32,6 +32,13 @@ let%client get_learning_weeks =
 	~%(Eliom_client.server_function [%derive.json : string]
 			(Os_session.connected_wrapper get_learning_weeks))
 
+let%server get_term_ids ayear =
+	Moab_term_db.get_term_ids ayear
+
+let%client get_term_ids =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper get_term_ids))
+
 (* Utility functions and widgets *)
 
 let%shared learning_week_of_date t d =
@@ -58,7 +65,11 @@ let%shared academic_year_select_widget param =
 	let%lwt ayears = get_academic_years () in
 	match ayears with
 	| [] -> Lwt.return (pcdata [%i18n S.no_academic_years_yet])
-	| h::t -> Lwt.return (D.Form.select ~name:param Form.string (ayear_opt h) (List.map ayear_opt t))
+	| h::t ->	begin
+		match param with
+		| `Param p ->  Lwt.return @@ D.Form.select ~name:p Form.string (ayear_opt h) (List.map ayear_opt t)
+		| `String s -> Lwt.return @@ D.Raw.select ~a:[a_name s] (List.map (fun x -> option (pcdata x)) (h::t))
+		end
 
 (* Handlers *)
 

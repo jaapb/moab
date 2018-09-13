@@ -161,7 +161,7 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 let%shared real_add_students_handler myid () () =
 	Ocsigen_messages.console (fun () -> "[add_students]");
 	let%lwt student_form = Form.lwt_post_form ~service:add_students_action (fun (ayear, (group, csv)) ->
-		let%lwt ayear_widget = Moab_terms.academic_year_select_widget ayear in
+		let%lwt ayear_widget = Moab_terms.academic_year_select_widget (`Param ayear) in
 		Lwt.return [
 			table
 			[

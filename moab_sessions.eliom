@@ -9,7 +9,7 @@
 
 let%server setup_sessions_action = Eliom_service.create_attached_post
 	~fallback:Moab_services.setup_sessions_service
-	~post_params:(string "term")
+	~post_params:(any)
 	()
 
 let%client setup_sessions_action = 
@@ -26,14 +26,19 @@ let%client get_sessions =
 
 (* Handlers *)
 
-let%server do_setup_sessions () (ayear) =
+let%server do_setup_sessions () params =
+	List.iter (fun (n, v) ->
+		Ocsigen_messages.console (fun () -> Printf.sprintf "%s = %s" n v)
+	) params;
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared real_setup_sessions_handler myid () () =
 	let%lwt ayears = Moab_terms.get_academic_years () in
 	let%lwt sessions = match ayears with
 	| [] -> Lwt.return []
-	| h::_ -> get_sessions h in
+	| h::_ -> let%lwt l = get_sessions h in
+			let%lwt t = Moab_terms.get_term_ids h in
+			Lwt.return @@ List.mapi (fun i (tid, sid, stype, w, st, et, r) -> (i, tid, sid, stype, w, st, et, r)) l in
 	let (session_l, session_h) = Eliom_shared.ReactiveData.RList.create sessions in
 	let ayear_change_function t =
 		ignore [%client ((Lwt.async @@ fun () ->
@@ -42,17 +47,19 @@ let%shared real_setup_sessions_handler myid () () =
 			Js.Opt.case (Dom_html.CoerceTo.select sel)
 				(fun () -> Lwt.return_unit)
 			  (fun s ->
-					let%lwt sessions = get_sessions (Js.to_string s##.value) in
-					Eliom_shared.ReactiveData.RList.set ~%session_h sessions;
+					let ayear = Js.to_string s##.value in
+					let%lwt sessions = get_sessions ayear in
+					Eliom_shared.ReactiveData.RList.set ~%session_h
+						(List.mapi (fun i (tid, sid, stype, w, st, et, r) -> (i, tid, sid, stype, w, st, et, r)) sessions);
 					Lwt.return_unit
 				)
 			) : unit)
 		] in
 	let display_session_rows (l, h) =
 		Eliom_shared.ReactiveData.RList.map 
-			[%shared ((fun (term_id, session_id, session_type, weekday, start_time, end_time, room) -> 
+			[%shared ((fun (nr, term_id, session_id, session_type, weekday, start_time, end_time, room) -> 
 				D.tr [
-					D.td [pcdata (Int64.to_string term_id)];
+					D.td [Raw.input ~a:[a_name (Printf.sprintf "term_id[%d]" nr); a_input_type `Text; a_value (Int64.to_string term_id)] ()];
 					D.td [pcdata session_type];
 					D.td [pcdata (Printer.name_of_day (Date.day_of_int weekday))];
 					D.td [pcdata (Printer.Time.sprint "%H:%M" start_time)];
@@ -60,8 +67,8 @@ let%shared real_setup_sessions_handler myid () () =
 					D.td [pcdata (match room with None -> [%i18n S.tbd] | Some x -> x)]
 				]
 			): _ -> _)] l in
-	let%lwt session_form = Form.lwt_post_form ~service:setup_sessions_action (fun ayear ->
-		let%lwt ayear_widget = Moab_terms.academic_year_select_widget ayear in
+	let%lwt session_form = Form.lwt_post_form ~service:setup_sessions_action (fun params ->
+		let%lwt ayear_widget = Moab_terms.academic_year_select_widget (`String "academic_year") in
 		let session_rows = display_session_rows (session_l, session_h) in
 		ayear_change_function ayear_widget;
 		Lwt.return [
@@ -78,7 +85,12 @@ let%shared real_setup_sessions_handler myid () () =
 					th [pcdata [%i18n S.end_time]];
 					th [pcdata [%i18n S.room]];
 				]
-			])) session_rows
+			])) ~tfoot:(Eliom_shared.React.S.const (tfoot [
+				tr [
+					td ~a:[a_colspan 6] [Raw.input ~a:[a_class ["button"]; a_input_type `Submit; a_value [%i18n S.save]] ()]
+				]
+			]))
+			 session_rows
 		]) () in
 	Moab_container.page (Some myid)
 	[
