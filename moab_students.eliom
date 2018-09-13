@@ -4,12 +4,7 @@
 	open CalendarLib
 ]
 
-let%server set_student_info (uid, ayear, mdx_id, joined_week, left_week) =
-	Moab_student_db.set_student_info uid ayear mdx_id joined_week left_week
-
-let%client set_student_info =
-	~%(Eliom_client.server_function [%derive.json : int64 * string * string * int * int option]
-		(Os_session.connected_wrapper set_student_info))
+(* Local services *)
 
 let%server add_students_action =
 	Eliom_service.create_attached_post
@@ -23,23 +18,55 @@ let%client add_students_action =
 let%server add_students_action2 =
 	Eliom_service.create_attached_post
 		~fallback:Moab_services.add_students_service
-		~post_params:(string "academic_year" ** list "changes" (bool "do" ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
+		~post_params:(string "academic_year" ** list "changes" (bool "do" ** string "action" ** opt (int64 "uid") ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
 		()
 
 let%client add_students_action2 = 
 	~%add_students_action2
 
+(* Database access *)
+
+let%server set_student_info (uid, ayear, mdx_id, joined_week) =
+	Moab_student_db.set_student_info uid ayear mdx_id joined_week
+
+let%client set_student_info =
+	~%(Eliom_client.server_function [%derive.json : int64 * string * string * int]
+		(Os_session.connected_wrapper set_student_info))
+
+let%server get_group_number uid =
+	Moab_student_db.get_group_number uid
+
+let%client get_group_number =
+	~%(Eliom_client.server_function [%derive.json : int64]
+		(Os_session.connected_wrapper get_group_number))
+
+let%server set_group_number (uid, gnr) =
+	Moab_student_db.set_group_number uid gnr
+
+let%client set_group_number =
+	~%(Eliom_client.server_function [%derive.json : int64 * int option]
+		(Os_session.connected_wrapper set_group_number))
+
+(* Handlers *)
+
 let%server do_add_students2 myid () (ayear, changes_list) =
-	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students2] new: %d" (List.length changes_list));
-	let%lwt lwo = Moab_terms.learning_week_of_date ayear (Date.today ()) in
-	let lw = match lwo with
-		| None -> 1
-		| Some x -> x in
-	let%lwt () = Lwt_list.iter_s (fun (do_b, (fn, (ln, (mdx_id, email)))) ->
+	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students2] ay: %s cl: %d" ayear (List.length changes_list));
+	let%lwt () = Lwt_list.iter_s (fun (do_b, (act, (uid, (fn, (ln, (mdx_id, email)))))) ->
 		if do_b then
-			let%lwt uid = Moab_users.add_user (Student, fn, ln, email, Some mdx_id) in
-			let%lwt () = set_student_info (uid, ayear, mdx_id, lw, None) in
-			Lwt.return_unit	
+		begin
+			try%lwt
+				Scanf.sscanf act "group_%s" (fun g ->
+					match uid with
+					| None -> Lwt.fail (Invalid_argument "group_<nr> action, but no uid")
+					| Some u -> let gp = if g = "none" then None else Some (int_of_string g) in
+							set_group_number (u, gp));
+				Scanf.sscanf act "join_%d" (fun w ->
+					let%lwt uid = Moab_users.add_user (Student, fn, ln, email, Some mdx_id) in
+					let%lwt () = set_student_info (uid, ayear, mdx_id, w) in
+					Lwt.return_unit)
+			with
+			| Scanf.Scan_failure _ -> Lwt.return_unit
+		end
 		else
 			Lwt.return_unit
 	) changes_list	in
@@ -60,9 +87,20 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 			Scanf.sscanf mail "mailto:%s" (fun e ->
 				try%lwt
 					let%lwt uid = Moab_users.find_user e in
-					Lwt.return @@ acc 
+					let%lwt st_group = get_group_number uid in
+					Ocsigen_messages.console (fun () -> Printf.sprintf "> [%s] sg: %s" mdx_id (match st_group with None -> "<none>" | Some x -> string_of_int x));
+					if group <> "" then
+						match st_group with
+						| Some sg when group <> string_of_int sg ->
+							Lwt.return @@ (`To_group (int_of_string group), Some uid, fn, ln, mdx_id, e)::acc
+						| None -> Lwt.return @@ (`To_group (int_of_string group), Some uid,  fn, ln, mdx_id, e)::acc
+						| _ -> Lwt.return @@ acc
+					else	
+						match st_group with
+						| Some _ -> Lwt.return @@ (`No_group, Some uid, fn, ln, mdx_id, e)::acc
+						| _ -> Lwt.return @@ acc
 				with
-				| Not_found -> Lwt.return @@ (`New lw, fn, ln, mdx_id, e)::acc
+				| Not_found -> Lwt.return @@ (`New lw, None, fn, ln, mdx_id, e)::acc
 			)
 		)
 	) [] c in
@@ -76,11 +114,28 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 				[Form.input ~input_type:`Hidden ~name:ayear ~value:ayear_v Form.string;
 				table (
 					tr [th []; th [pcdata [%i18n S.action]]; th [pcdata [%i18n S.name]]; th [pcdata [%i18n S.student_id]]; th [pcdata [%i18n S.email_address]]]::
-					changes_list.it (fun (do_b, (fn, (ln, (mdx_id, email)))) (act_v, fn_v, ln_v, mdx_id_v, email_v) init ->
+					changes_list.it (fun (do_b, (act, (uid, (fn, (ln, (mdx_id, email)))))) (act_v, uid_ov, fn_v, ln_v, mdx_id_v, email_v) init ->
 						tr [
 							td [Form.bool_checkbox_one ~checked:true ~name:do_b ()];
 							td (match act_v with
-							| `New x -> [pcdata [%i18n S.joining_week]; pcdata " "; pcdata (string_of_int lw)]
+							| `New x -> [
+									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "join_%d" x) Form.string;
+									pcdata [%i18n S.joining_week]; pcdata " "; pcdata (string_of_int x)
+								]
+							| `No_group -> (
+									pcdata [%i18n S.no_group]::
+									Form.input ~input_type:`Hidden ~name:act ~value:"group_none" Form.string::
+									(match uid_ov with
+									| None -> []
+									| Some u -> [Form.input ~input_type:`Hidden ~name:uid ~value:u Form.int64])
+								)
+							| `To_group x -> (
+									pcdata [%i18n S.to_group]::pcdata " "::pcdata (string_of_int x)::
+									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "group_%d" x) Form.string::
+									(match uid_ov with
+									| None -> []
+									| Some u -> [Form.input ~input_type:`Hidden ~name:uid ~value:u Form.int64])
+								)
 							);
 							td [pcdata fn_v; pcdata " "; pcdata ln_v;
 								Form.input ~input_type:`Hidden ~name:fn ~value:fn_v Form.string;
@@ -96,7 +151,7 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 						init	
 					) act_list
 					[
-						tr [td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Save" Form.string]]
+						tr [td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.save] Form.string]]
 					]
 				)]
 			) ()
@@ -104,6 +159,7 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 	]
 
 let%shared real_add_students_handler myid () () =
+	Ocsigen_messages.console (fun () -> "[add_students]");
 	let%lwt student_form = Form.lwt_post_form ~service:add_students_action (fun (ayear, (group, csv)) ->
 		let%lwt ayear_widget = Moab_terms.academic_year_select_widget ayear in
 		Lwt.return [
@@ -126,7 +182,7 @@ let%shared real_add_students_handler myid () () =
 				];
 				tr
 				[ 
-					td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Save" Form.string]
+					td ~a:[a_colspan 2] [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.process] Form.string]
 				]
 			]
 		]) () in

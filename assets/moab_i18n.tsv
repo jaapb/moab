@@ -76,3 +76,7 @@ weekday	Weekday	Jour de semaine
 start_time	Start time	Heure de début
 end_time	End time	Heure de fin
 room	Room	Salle
+process	Process	Traiter
+no_group	Remove group	Enlever groupe
+to_group	To group	En groupe
+save	Save	Sauvegarder

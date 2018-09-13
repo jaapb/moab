@@ -37,6 +37,7 @@ CREATE SCHEMA moab
 		student_id varchar(9) not null,
 		joined_week smallint not null,
     left_week smallint,
+		group_number smallint,
 		primary key (userid, year),
 		unique (student_id, academic_year)
 	);
@@ -59,6 +60,7 @@ CREATE SCHEMA moab
 		end_time time not null,	
 		room varchar(8),
 		weekday smallint not null,
+		group_number smallint,
 		primary key (academic_year, session_id),
 		foreign key (academic_year, term_id) references terms(academic_year, term_id) 
 	);
