@@ -126,7 +126,7 @@ ELIOMSTATICDIR        := var/www/${PROJECT_NAME}
 LOCAL_STATIC          := static
 LOCAL_STATIC_CSS      := $(LOCAL_STATIC)/css
 LOCAL_STATIC_IMAGES      := $(LOCAL_STATIC)/images
-LOCAL_STATIC_FONTS      := $(LOCAL_STATIC)/fonts
+LOCAL_STATIC_FONTS      := $(LOCAL_STATIC)/webfonts
 # Default CSS if not using SASS:
 LOCAL_STATIC_DEFAULTCSS      := $(LOCAL_STATIC)/defaultcss
 
