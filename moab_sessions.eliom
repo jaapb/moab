@@ -24,6 +24,13 @@ let%client get_sessions =
 	~%(Eliom_client.server_function [%derive.json : string]
 		(Os_session.connected_wrapper get_sessions))
 
+let%server get_fresh_session_id () =
+	Moab_session_db.get_fresh_session_id ()
+
+let%client get_fresh_session_id =
+	~%(Eliom_client.server_function [%derive.json : unit]
+		(Os_session.connected_wrapper get_fresh_session_id))
+
 (* Handlers *)
 
 let%server do_setup_sessions () params =
@@ -32,52 +39,91 @@ let%server do_setup_sessions () params =
 	) params;
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
+let%shared term_selector nr v terms =
+	R.select ~a:[a_name (Printf.sprintf "term_id[%Ld]" nr)]
+		(Eliom_shared.ReactiveData.RList.map 
+			[%shared ((fun x -> if x = ~%v
+			then option ~a:[a_selected ()] (pcdata (Int64.to_string x))
+			else option (pcdata (Int64.to_string x))): _ -> _)] terms)
+
+let%shared session_selector nr v =
+	Raw.select ~a:[a_name (Printf.sprintf "session_type[%Ld]" nr)] 
+		(List.map (fun x -> if x = v
+			then option ~a:[a_selected ()] (pcdata x)
+			else option (pcdata x)) ["L"; "S"])
+
+let%shared weekday_selector nr v =
+	Raw.select ~a:[a_name (Printf.sprintf "weekday[%Ld]" nr)]
+		(List.map (fun x -> if x = v
+			then option ~a:[a_selected ()] (pcdata (Printer.name_of_day (Date.day_of_int x)))
+			else option (pcdata (Printer.name_of_day (Date.day_of_int x)))) [1; 2; 3; 4; 5; 6; 7])
+
+let%shared sessions_aux terms (tid, sid, t, wd, st, et, rm) =
+ (term_selector sid tid terms, sid, t, wd, Some st, Some et, rm)
+
+let%shared time_or_empty = function
+| None -> ""
+| Some t -> Printer.Time.sprint "%H:%M" t
+	
 let%shared real_setup_sessions_handler myid () () =
 	let%lwt ayears = Moab_terms.get_academic_years () in
+	let%lwt terms = match ayears with
+	| [] -> Lwt.return []
+	| h::_ -> Moab_terms.get_term_ids h in
+	let (term_l, term_h) = Eliom_shared.ReactiveData.RList.create terms in
 	let%lwt sessions = match ayears with
 	| [] -> Lwt.return []
 	| h::_ -> let%lwt l = get_sessions h in
-			let%lwt t = Moab_terms.get_term_ids h in
-			Lwt.return @@ List.mapi (fun i (tid, sid, stype, w, st, et, r) -> (i, tid, sid, stype, w, st, et, r)) l in
+		Lwt.return @@ List.map (sessions_aux term_l) l in
 	let (session_l, session_h) = Eliom_shared.ReactiveData.RList.create sessions in
-	let ayear_change_function t =
+	let display_session_rows l =
+		Eliom_shared.ReactiveData.RList.Lwt.map_p 
+			[%shared ((fun (ts, session_id, session_type, weekday, start_time, end_time, room) -> 
+				Lwt.return @@ D.tr [
+					D.td [];
+					D.td [ts];
+					D.td [session_selector session_id session_type];
+					D.td [weekday_selector session_id weekday];
+					D.td [Raw.input ~a:[a_name (Printf.sprintf "start_time[%Ld]" session_id); a_input_type `Time; a_value (time_or_empty start_time)] ()];
+					D.td [Raw.input ~a:[a_name (Printf.sprintf "end_time[%Ld]" session_id); a_input_type `Time; a_value (time_or_empty end_time)] ()];
+					D.td [Raw.input ~a:[a_name (Printf.sprintf "room[%Ld]" session_id); a_input_type `Text; a_value (match room with None -> "" | Some x -> x)] ()]
+				]
+			): _ -> _)] l in
+	let%lwt session_form = Form.lwt_post_form ~service:setup_sessions_action (fun params ->
+		let%lwt ayear_widget = Moab_terms.academic_year_select_widget (`String "academic_year") in
 		ignore [%client ((Lwt.async @@ fun () ->
-			let sel = Eliom_content.Html.To_dom.of_element ~%t in
+			let sel = Eliom_content.Html.To_dom.of_element ~%ayear_widget in
 			Lwt_js_events.changes sel @@ fun _ _ ->
 			Js.Opt.case (Dom_html.CoerceTo.select sel)
 				(fun () -> Lwt.return_unit)
 			  (fun s ->
 					let ayear = Js.to_string s##.value in
 					let%lwt sessions = get_sessions ayear in
-					Eliom_shared.ReactiveData.RList.set ~%session_h
-						(List.mapi (fun i (tid, sid, stype, w, st, et, r) -> (i, tid, sid, stype, w, st, et, r)) sessions);
+					let%lwt terms = Moab_terms.get_term_ids ayear in
+					Eliom_shared.ReactiveData.RList.set ~%term_h terms;
+					Eliom_shared.ReactiveData.RList.set ~%session_h (List.map (sessions_aux ~%term_l) sessions);
 					Lwt.return_unit
 				)
 			) : unit)
-		] in
-	let display_session_rows (l, h) =
-		Eliom_shared.ReactiveData.RList.map 
-			[%shared ((fun (nr, term_id, session_id, session_type, weekday, start_time, end_time, room) -> 
-				D.tr [
-					D.td [Raw.input ~a:[a_name (Printf.sprintf "term_id[%d]" nr); a_input_type `Text; a_value (Int64.to_string term_id)] ()];
-					D.td [pcdata session_type];
-					D.td [pcdata (Printer.name_of_day (Date.day_of_int weekday))];
-					D.td [pcdata (Printer.Time.sprint "%H:%M" start_time)];
-					D.td [pcdata (Printer.Time.sprint "%H:%M" end_time)];
-					D.td [pcdata (match room with None -> [%i18n S.tbd] | Some x -> x)]
-				]
-			): _ -> _)] l in
-	let%lwt session_form = Form.lwt_post_form ~service:setup_sessions_action (fun params ->
-		let%lwt ayear_widget = Moab_terms.academic_year_select_widget (`String "academic_year") in
-		let session_rows = display_session_rows (session_l, session_h) in
-		ayear_change_function ayear_widget;
+		];
+		let add_button = Moab_icons.D.add () in
+		ignore [%client ((Lwt.async @@ fun () ->
+			let btn = Eliom_content.Html.To_dom.of_element ~%add_button in
+			Lwt_js_events.clicks btn @@ fun _ _ ->
+			let%lwt sid = get_fresh_session_id () in
+			Eliom_shared.ReactiveData.RList.snoc (term_selector sid 1L ~%term_l, sid, "L", 1, None, None, None) ~%session_h;
+			Lwt.return_unit
+			) : unit)
+		];
+		let%lwt session_rows = display_session_rows session_l in
 		Lwt.return [
 			Eliom_content.Html.R.table ~thead:(Eliom_shared.React.S.const (thead [
 				tr [
-					th [pcdata [%i18n S.academic_year]];
-					td [ayear_widget]
+					th ~a:[a_colspan 2] [pcdata [%i18n S.academic_year]];
+					td ~a:[a_colspan 5] [ayear_widget]
 				];
 				tr [
+					th [];	
 					th [pcdata [%i18n S.term]];
 					th [pcdata [%i18n S.session_type]];
 					th [pcdata [%i18n S.weekday]];
@@ -87,7 +133,11 @@ let%shared real_setup_sessions_handler myid () () =
 				]
 			])) ~tfoot:(Eliom_shared.React.S.const (tfoot [
 				tr [
-					td ~a:[a_colspan 6] [Raw.input ~a:[a_class ["button"]; a_input_type `Submit; a_value [%i18n S.save]] ()]
+					td [add_button];
+					td ~a:[a_colspan 6] [];
+				];
+				tr [
+					td ~a:[a_colspan 7] [Raw.input ~a:[a_class ["button"]; a_input_type `Submit; a_value [%i18n S.save]] ()]
 				]
 			]))
 			 session_rows
