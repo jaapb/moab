@@ -34,9 +34,27 @@ let%client get_fresh_session_id =
 (* Handlers *)
 
 let%server do_setup_sessions () params =
+	let ayear = List.assoc "academic_year" params in
+	let h = Hashtbl.create (List.length params) in
+	let sid_list = ref [] in
 	List.iter (fun (n, v) ->
-		Ocsigen_messages.console (fun () -> Printf.sprintf "%s = %s" n v)
+		Scanf.ksscanf n
+			(fun c _ -> Ocsigen_messages.console (fun () -> Printf.sprintf "error (%s)" n))
+			"%s[%Ld]" (fun tp sid -> 
+				Ocsigen_messages.console (fun () -> Printf.sprintf ("%s,%Ld") tp sid);
+				if tp = "term_id" then (sid_list := sid::!sid_list; Hashtbl.add h (sid, `Term_id) v)
+				else if tp = "session_type" then Hashtbl.add h (sid, `Session_type) v
+				else if tp = "weekday" then Hashtbl.add h (sid, `Weekday) v
+				else if tp = "start_time" then Hashtbl.add h (sid, `Start_time) v
+				else if tp = "end_time" then Hashtbl.add h (sid, `End_time) v
+				else if tp = "room" then Hashtbl.add h (sid, `Room) v
+				else ()
+			)
 	) params;
+	List.iter (fun sid ->
+		Ocsigen_messages.console (fun () -> Printf.sprintf "sid %Ld, term_id %s, session_type %s, weekday %s"
+			sid (Hashtbl.find h (sid, `Term_id)) (Hashtbl.find h (sid, `Session_type)) (Hashtbl.find h (sid, `Weekday)))
+	) !sid_list;
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared term_selector nr v terms =
@@ -55,8 +73,8 @@ let%shared session_selector nr v =
 let%shared weekday_selector nr v =
 	Raw.select ~a:[a_name (Printf.sprintf "weekday[%Ld]" nr)]
 		(List.map (fun x -> if x = v
-			then option ~a:[a_selected ()] (pcdata (Printer.name_of_day (Date.day_of_int x)))
-			else option (pcdata (Printer.name_of_day (Date.day_of_int x)))) [1; 2; 3; 4; 5; 6; 7])
+			then option ~a:[a_selected (); a_value (string_of_int x)] (pcdata (Printer.name_of_day (Date.day_of_int x)))
+			else option ~a:[a_value (string_of_int x)] (pcdata (Printer.name_of_day (Date.day_of_int x)))) [1; 2; 3; 4; 5; 6; 7])
 
 let%shared sessions_aux terms (tid, sid, t, wd, st, et, rm) =
  (term_selector sid tid terms, sid, t, wd, Some st, Some et, rm)

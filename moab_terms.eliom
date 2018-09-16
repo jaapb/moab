@@ -43,7 +43,7 @@ let%client get_term_ids =
 
 let%shared learning_week_of_date t d =
 	let res = ref None in
-	let%lwt l = get_learning_weeks t in	
+	let%lwt l = get_learning_weeks t in
 	let%lwt () = Lwt_list.iteri_s (fun i (w, y) ->
 		if w = (Int32.of_int (Date.week d)) && y = (Date.year d) then
 		begin
@@ -65,11 +65,11 @@ let%shared academic_year_select_widget param =
 	let%lwt ayears = get_academic_years () in
 	match ayears with
 	| [] -> Lwt.return (pcdata [%i18n S.no_academic_years_yet])
-	| h::t ->	begin
+	| h::t -> begin
 		match param with
 		| `Param p ->  Lwt.return @@ D.Form.select ~name:p Form.string (ayear_opt h) (List.map ayear_opt t)
 		| `String s -> Lwt.return @@ D.Raw.select ~a:[a_name s] (List.map (fun x -> option (pcdata x)) (h::t))
-		end
+	end
 
 (* Handlers *)
 
