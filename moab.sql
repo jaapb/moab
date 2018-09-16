@@ -38,7 +38,7 @@ CREATE SCHEMA moab
 		joined_week smallint not null,
     left_week smallint,
 		group_number smallint,
-		primary key (userid, year),
+		primary key (userid, academic_year),
 		unique (student_id, academic_year)
 	);
 
