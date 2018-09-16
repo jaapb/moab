@@ -22,10 +22,11 @@ module Make(A : module type of Eliom_content.Html.F) = struct
 
   (** Icons used by Ocsigen Start's library *)
 
-  let user = icon ["fa-user"; "fa-fw"]
-  let signout = icon ["fa-sign-out"; "fa-fw"]
-  let close = icon ["fa-close"; "fa-fw"]
-  let trash = icon ["fa-trash-o"; "fa-fw"]
+  let user = icon ["fa-user"; "fas"]
+  let signout = icon ["fa-sign-out-alt"; "fas"]
+  let close = icon ["fa-times"; "fas"]
+  let trash = icon ["fa-trash"; "fas"]
+	let add = icon ["fa-plus"; "fas"]
 
   (* Add your own icons here. See http://fontawesome.io/icons/ for the
      complete list of CSS classes available by default. *)

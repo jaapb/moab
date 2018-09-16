@@ -164,7 +164,7 @@ EXTERNAL_CSS_FILES    := $(SHAREDIR_OT_CSS)/ot_buttons.css \
 # This variable is only used if SASS is deactivated.
 # The order is important because it will be used when concataining all CSS
 # files.
-CSS_FILES             := $(LOCAL_STATIC_CSS)/font-awesome.min.css \
+CSS_FILES             := $(LOCAL_STATIC_CSS)/font-awesome.all.css \
                          $(EXTERNAL_CSS_FILES) \
                          $(LOCAL_STATIC_DEFAULTCSS)/os.css \
 												 $(LOCAL_STATIC_CSS)/main.css 
