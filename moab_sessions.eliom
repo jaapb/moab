@@ -31,17 +31,24 @@ let%client get_fresh_session_id =
 	~%(Eliom_client.server_function [%derive.json : unit]
 		(Os_session.connected_wrapper get_fresh_session_id))
 
+let%server add_session (session_id, ayear, term_id, session_type, weekday, start_time, end_time, room) =
+	Moab_session_db.add_session session_id ayear term_id session_type weekday start_time end_time room
+
+let%client add_session =
+	~%(Eliom_client.server_function [%derive.json : int64 option * string * int64 * string * int * string * string * string option]
+		(Os_session.connected_wrapper add_session))
+
 (* Handlers *)
 
 let%server do_setup_sessions () params =
+	Ocsigen_messages.console (fun () -> "[do_setup_sessions]");
 	let ayear = List.assoc "academic_year" params in
 	let h = Hashtbl.create (List.length params) in
 	let sid_list = ref [] in
 	List.iter (fun (n, v) ->
 		Scanf.ksscanf n
-			(fun c _ -> Ocsigen_messages.console (fun () -> Printf.sprintf "error (%s)" n))
-			"%s[%Ld]" (fun tp sid -> 
-				Ocsigen_messages.console (fun () -> Printf.sprintf ("%s,%Ld") tp sid);
+			(fun c _ -> ())
+			"%s@[%Ld]" (fun tp sid -> 
 				if tp = "term_id" then (sid_list := sid::!sid_list; Hashtbl.add h (sid, `Term_id) v)
 				else if tp = "session_type" then Hashtbl.add h (sid, `Session_type) v
 				else if tp = "weekday" then Hashtbl.add h (sid, `Weekday) v
@@ -51,10 +58,13 @@ let%server do_setup_sessions () params =
 				else ()
 			)
 	) params;
-	List.iter (fun sid ->
-		Ocsigen_messages.console (fun () -> Printf.sprintf "sid %Ld, term_id %s, session_type %s, weekday %s"
-			sid (Hashtbl.find h (sid, `Term_id)) (Hashtbl.find h (sid, `Session_type)) (Hashtbl.find h (sid, `Weekday)))
-	) !sid_list;
+	let%lwt () = Lwt_list.iter_s (fun sid ->
+		let room = Hashtbl.find h (sid, `Room) in
+		add_session (Some sid, ayear, Int64.of_string (Hashtbl.find h (sid, `Term_id)),
+			Hashtbl.find h (sid, `Session_type), int_of_string (Hashtbl.find h (sid, `Weekday)),
+			Hashtbl.find h (sid, `Start_time), Hashtbl.find h (sid, `End_time),
+			if room = "" then None else Some room)
+	) !sid_list in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared term_selector nr v terms =
