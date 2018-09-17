@@ -159,7 +159,6 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 	]
 
 let%shared real_add_students_handler myid () () =
-	Ocsigen_messages.console (fun () -> "[add_students]");
 	let%lwt student_form = Form.lwt_post_form ~service:add_students_action (fun (ayear, (group, csv)) ->
 		let%lwt ayear_widget = Moab_terms.academic_year_select_widget (`Param ayear) in
 		Lwt.return [
@@ -190,12 +189,13 @@ let%shared real_add_students_handler myid () () =
 	[
 		div ~a:[a_class ["content-box"]]
 		[
-			h1 [pcdata [%i18n S.add_students]];
+			h1 [pcdata [%i18n S.add_students ~capitalize:true]];
 			student_form
 		]
 	]
 
 let%server add_students_handler myid () () =
+	Ocsigen_messages.console (fun () -> "[add_students]");
 	Moab_base.App.register ~scope:Eliom_common.default_session_scope
 		~service:add_students_action (Moab_page.connected_page do_add_students);
 	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
