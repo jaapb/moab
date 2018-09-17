@@ -5,12 +5,6 @@
   open Eliom_content.Html.F
 ]
 
-[%%client
-  module Ocsigen_config = struct
-    let get_debugmode () = false
-  end
-]
-
 let%server css_name = !Moab_config.css_name
 let%client css_name = try Js.to_string (Js.Unsafe.global##.___css_name_)
   with _ -> ""
@@ -57,15 +51,21 @@ let%shared the_local_css = [
 
     let default_error_page _ _ exn =
       Moab_container.page None
-        (if Ocsigen_config.get_debugmode ()
-         then [p [pcdata (Printexc.to_string exn)]]
-         else [p [pcdata [%i18n S.error ~capitalize:true]]])
+        [
+					div ~a:[a_class ["content-box"]] [
+						h1 [pcdata [%i18n S.error ~capitalize:true]];
+						p [pcdata (Printexc.to_string exn)]
+					]
+				]
 
     let default_connected_error_page myid_o _ _ exn =
       Moab_container.page myid_o
-        (if Ocsigen_config.get_debugmode ()
-         then [p [pcdata (Printexc.to_string exn)]]
-         else [p [pcdata [%i18n S.error ~capitalize:true]]])
+        [
+					div ~a:[a_class ["content-box"]] [
+						h1 [pcdata [%i18n S.error ~capitalize:true]];
+						p [pcdata (Printexc.to_string exn)]
+					]
+				]
 
   end
 
