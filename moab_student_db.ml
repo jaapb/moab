@@ -1,5 +1,5 @@
 open Os_db
-open Lwt
+open Lwt.Infix
 
 let set_student_info userid ayear mdx_id joined_week =
 	full_transaction_block (fun dbh ->
@@ -26,3 +26,13 @@ let set_group_number userid group_number =
 		PGSQL(dbh) "UPDATE moab.students \
 			SET group_number = $?group_number	\
 			WHERE userid = $userid")
+
+let get_group_numbers ayear =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT DISTINCT(group_number) \
+			FROM moab.students \
+			WHERE academic_year = $ayear \
+			ORDER BY 1 ASC") >>=
+	Lwt_list.map_s @@ function
+	| None -> Lwt.fail (Invalid_argument "get_group_numbers found an empty value after DISTINCT")
+	| Some x -> Lwt.return x

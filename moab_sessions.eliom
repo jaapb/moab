@@ -31,12 +31,13 @@ let%client get_fresh_session_id =
 	~%(Eliom_client.server_function [%derive.json : unit]
 		(Os_session.connected_wrapper get_fresh_session_id))
 
-let%server add_session (session_id, ayear, term_id, session_type, weekday, start_time, end_time, room) =
-	Moab_session_db.add_session session_id ayear term_id session_type weekday start_time end_time room
+let%server add_or_update_session (session_id, ayear, term_id, session_type, weekday, start_time, end_time, room, group_number) =
+	Moab_session_db.add_session session_id ayear term_id session_type weekday start_time end_time room group_number
 
-let%client add_session =
-	~%(Eliom_client.server_function [%derive.json : int64 option * string * int64 * string * int * string * string * string option]
-		(Os_session.connected_wrapper add_session))
+let%client add_or_update_session =
+	~%(Eliom_client.server_function [%derive.json : int64 option * string * int64 * string * int * string * string * string option *
+			int option]
+		(Os_session.connected_wrapper add_or_update_session))
 
 (* Handlers *)
 
@@ -55,15 +56,17 @@ let%server do_setup_sessions () params =
 				else if tp = "start_time" then Hashtbl.add h (sid, `Start_time) v
 				else if tp = "end_time" then Hashtbl.add h (sid, `End_time) v
 				else if tp = "room" then Hashtbl.add h (sid, `Room) v
+				else if tp = "group_number" then Hashtbl.add h (sid, `Group_number) v
 				else ()
 			)
 	) params;
 	let%lwt () = Lwt_list.iter_s (fun sid ->
 		let room = Hashtbl.find h (sid, `Room) in
-		add_session (Some sid, ayear, Int64.of_string (Hashtbl.find h (sid, `Term_id)),
+		let gnr = Hashtbl.find h (sid, `Group_number) in
+		add_or_update_session (Some sid, ayear, Int64.of_string (Hashtbl.find h (sid, `Term_id)),
 			Hashtbl.find h (sid, `Session_type), int_of_string (Hashtbl.find h (sid, `Weekday)),
 			Hashtbl.find h (sid, `Start_time), Hashtbl.find h (sid, `End_time),
-			if room = "" then None else Some room)
+			(if room = "" then None else Some room), if gnr = "" then None else Some (int_of_string gnr))
 	) !sid_list in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
@@ -86,8 +89,16 @@ let%shared weekday_selector nr v =
 			then option ~a:[a_selected (); a_value (string_of_int x)] (pcdata (Printer.name_of_day (Date.day_of_int x)))
 			else option ~a:[a_value (string_of_int x)] (pcdata (Printer.name_of_day (Date.day_of_int x)))) [1; 2; 3; 4; 5; 6; 7])
 
-let%shared sessions_aux terms (tid, sid, t, wd, st, et, rm) =
- (term_selector sid tid terms, sid, t, wd, Some st, Some et, rm)
+let%shared group_number_selector nr v groups =
+	R.select ~a:[a_name (Printf.sprintf "group_number[%Ld]" nr)]
+		(Eliom_shared.ReactiveData.RList.map
+			[%shared ((fun x -> if x = ~%v
+			then option ~a:[a_selected ()] (pcdata x)
+			else option (pcdata x)): _ -> _)] groups)
+ 
+let%shared sessions_aux terms groups (tid, sid, t, wd, st, et, rm, gn) =
+ (term_selector sid tid terms, sid, t, wd, Some st, Some et, rm,
+	group_number_selector sid (match gn with None -> "" | Some x -> string_of_int x) groups)
 
 let%shared time_or_empty = function
 | None -> ""
@@ -99,14 +110,19 @@ let%shared real_setup_sessions_handler myid () () =
 	| [] -> Lwt.return []
 	| h::_ -> Moab_terms.get_term_ids h in
 	let (term_l, term_h) = Eliom_shared.ReactiveData.RList.create terms in
+	let%lwt groups = match ayears with
+	| [] -> Lwt.return [""]
+	| h::_ -> let%lwt gn = Moab_students.get_group_numbers h in
+			Lwt.return @@ ""::(List.map string_of_int gn) in
+	let (group_l, group_h) = Eliom_shared.ReactiveData.RList.create groups in
 	let%lwt sessions = match ayears with
 	| [] -> Lwt.return []
 	| h::_ -> let%lwt l = get_sessions h in
-		Lwt.return @@ List.map (sessions_aux term_l) l in
+		Lwt.return @@ List.map (sessions_aux term_l group_l) l in
 	let (session_l, session_h) = Eliom_shared.ReactiveData.RList.create sessions in
 	let display_session_rows l =
 		Eliom_shared.ReactiveData.RList.Lwt.map_p 
-			[%shared ((fun (ts, session_id, session_type, weekday, start_time, end_time, room) -> 
+			[%shared ((fun (ts, session_id, session_type, weekday, start_time, end_time, room, gns) -> 
 				Lwt.return @@ D.tr [
 					D.td [];
 					D.td [ts];
@@ -114,7 +130,8 @@ let%shared real_setup_sessions_handler myid () () =
 					D.td [weekday_selector session_id weekday];
 					D.td [Raw.input ~a:[a_name (Printf.sprintf "start_time[%Ld]" session_id); a_input_type `Time; a_value (time_or_empty start_time)] ()];
 					D.td [Raw.input ~a:[a_name (Printf.sprintf "end_time[%Ld]" session_id); a_input_type `Time; a_value (time_or_empty end_time)] ()];
-					D.td [Raw.input ~a:[a_name (Printf.sprintf "room[%Ld]" session_id); a_input_type `Text; a_value (match room with None -> "" | Some x -> x)] ()]
+					D.td [Raw.input ~a:[a_name (Printf.sprintf "room[%Ld]" session_id); a_input_type `Text; a_value (match room with None -> "" | Some x -> x)] ()];
+					D.td [gns]
 				]
 			): _ -> _)] l in
 	let%lwt session_form = Form.lwt_post_form ~service:setup_sessions_action (fun params ->
@@ -128,8 +145,11 @@ let%shared real_setup_sessions_handler myid () () =
 					let ayear = Js.to_string s##.value in
 					let%lwt sessions = get_sessions ayear in
 					let%lwt terms = Moab_terms.get_term_ids ayear in
+					let%lwt gn = Moab_students.get_group_numbers ayear in
+					let groups = ""::(List.map string_of_int gn) in
 					Eliom_shared.ReactiveData.RList.set ~%term_h terms;
-					Eliom_shared.ReactiveData.RList.set ~%session_h (List.map (sessions_aux ~%term_l) sessions);
+					Eliom_shared.ReactiveData.RList.set ~%group_h groups;
+					Eliom_shared.ReactiveData.RList.set ~%session_h (List.map (sessions_aux ~%term_l ~%group_l) sessions);
 					Lwt.return_unit
 				)
 			) : unit)
@@ -139,7 +159,8 @@ let%shared real_setup_sessions_handler myid () () =
 			let btn = Eliom_content.Html.To_dom.of_element ~%add_button in
 			Lwt_js_events.clicks btn @@ fun _ _ ->
 			let%lwt sid = get_fresh_session_id () in
-			Eliom_shared.ReactiveData.RList.snoc (term_selector sid 1L ~%term_l, sid, "L", 1, None, None, None) ~%session_h;
+			Eliom_shared.ReactiveData.RList.snoc (term_selector sid 1L ~%term_l, sid, "L", 1, None, None, None,
+			group_number_selector sid "" ~%group_l) ~%session_h;
 			Lwt.return_unit
 			) : unit)
 		];

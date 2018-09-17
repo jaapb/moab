@@ -24,6 +24,13 @@ let%server add_students_action2 =
 let%client add_students_action2 = 
 	~%add_students_action2
 
+let%server get_group_numbers ayear =
+	Moab_student_db.get_group_numbers ayear
+
+let%client get_group_numbers =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper get_group_numbers))
+
 (* Database access *)
 
 let%server set_student_info (uid, ayear, mdx_id, joined_week) =
