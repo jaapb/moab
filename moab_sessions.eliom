@@ -39,6 +39,13 @@ let%client add_or_update_session =
 			int option]
 		(Os_session.connected_wrapper add_or_update_session))
 
+let%server get_current_sessions ayear =
+	Moab_session_db.get_current_sessions ayear
+
+let%client get_current_sessions =
+	~%(Eliom_client.server_function [%derive.json : string]
+		(Os_session.connected_wrapper get_current_sessions))
+
 (* Handlers *)
 
 let%server do_setup_sessions () params =
@@ -121,9 +128,9 @@ let%shared real_setup_sessions_handler myid () () =
 		Lwt.return @@ List.map (sessions_aux term_l group_l) l in
 	let (session_l, session_h) = Eliom_shared.ReactiveData.RList.create sessions in
 	let display_session_rows l =
-		Eliom_shared.ReactiveData.RList.Lwt.map_p 
+		Eliom_shared.ReactiveData.RList.map
 			[%shared ((fun (ts, session_id, session_type, weekday, start_time, end_time, room, gns) -> 
-				Lwt.return @@ D.tr [
+				D.tr [
 					D.td [];
 					D.td [ts];
 					D.td [session_selector session_id session_type];
@@ -164,7 +171,7 @@ let%shared real_setup_sessions_handler myid () () =
 			Lwt.return_unit
 			) : unit)
 		];
-		let%lwt session_rows = display_session_rows session_l in
+		let session_rows = display_session_rows session_l in
 		Lwt.return [
 			Eliom_content.Html.R.table ~thead:(Eliom_shared.React.S.const (thead [
 				tr [

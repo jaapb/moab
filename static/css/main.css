@@ -14,3 +14,9 @@ div.content-box h1
 	margin: 0;
 	padding: 0;
 }
+
+tr.unknown-user
+{
+	background-color: lightpink;
+}
+

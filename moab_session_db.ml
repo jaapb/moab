@@ -28,9 +28,17 @@ let add_session session_id ayear term_id session_type weekday start_time end_tim
 			(session_id, academic_year, term_id, session_type, weekday, start_time, end_time, room, group_number) \
 			VALUES \
 			($sid, $ayear, $term_id, $session_type, $weekday, $st, $et, $?room, $?group_number) \
-			ON CONFLICT (session_id, academic_year) DO UPDATE \
+			ON CONFLICT (session_id) DO UPDATE \
 				SET term_id = EXCLUDED.term_id, session_type = EXCLUDED.session_type, \
 					weekday = EXCLUDED.weekday, start_time = EXCLUDED.start_time, \
 					end_time = EXCLUDED.end_time, room = EXCLUDED.room, \
 					group_number = EXCLUDED.group_number")
  
+let get_current_sessions ayear =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT session_id \
+			FROM moab.sessions s JOIN moab.terms t \
+				ON s.academic_year = t.academic_year AND s.term_id = t.term_id \
+			WHERE s.academic_year = $ayear \
+			AND	EXTRACT(WEEK FROM CURRENT_DATE) BETWEEN start_week AND end_week \
+			AND LOCALTIME BETWEEN start_time AND end_time") 

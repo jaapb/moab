@@ -16,6 +16,7 @@ let%shared admin_menu () =
 	; item [%i18n S.setup_terms ~capitalize:true] Moab_services.setup_terms_service
 	; item [%i18n S.setup_sessions ~capitalize:true] Moab_services.setup_sessions_service
 	; item [%i18n S.add_students ~capitalize:true] Moab_services.add_students_service
+	; item [%i18n S.register_attendance] Moab_services.register_attendance_service
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]
@@ -37,7 +38,6 @@ let%shared student_menu () =
 	Lwt.return @@
   [ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
 	; item [%i18n S.write_blog ~capitalize:true] Moab_services.edit_blog_service
-	; item [%i18n S.register_attendance] Moab_services.register_attendance_service
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]

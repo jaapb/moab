@@ -3,17 +3,21 @@
 	open Eliom_content.Html.F
 ]
 
+(* Types *)
+
+[%%shared
+	type user_type = Admin | Examiner | Student
+	[@@deriving json]
+]
+
+(* Database access *)
+
 let%shared find_user e =
 	Moab_user_db.find_user e
 
 let%client find_user =
 	~%(Eliom_client.server_function [%derive.json : string]
 			(Os_session.connected_wrapper find_user))
-
-[%%shared
-	type user_type = Admin | Examiner | Student
-	[@@deriving json]
-]
 
 let%server get_user_type u =
 	let%lwt t = Moab_user_db.get_user_type u in
@@ -39,6 +43,15 @@ let%client add_user =
 
 let%server verify_password email password =
 	Moab_user_db.verify_password email password
+
+let%server get_name uid =
+	Moab_user_db.get_name uid
+
+let%client get_name =
+	~%(Eliom_client.server_function [%derive.json: int64]
+			(Os_session.connected_wrapper get_name))
+
+(* Handlers *)
 
 let%shared connect_form () =
 	D.Form.post_form ~service:Moab_services.connect_service

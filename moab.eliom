@@ -75,25 +75,28 @@ let%shared () =
 		~service:Moab_services.register_attendance_service
 		(Moab_page.connected_page Moab_attendance.register_attendance_handler)
 
-(* Print more debugging information when <debugmode/> is in config file
-   (DEBUG = yes in Makefile.options).
-   Example of use:
-   let section = Lwt_log.Section.make "Moab:sectionname"
-   ...
-   Lwt_log.ign_info ~section "This is an information";
-   (or ign_debug, ign_warning, ign_error etc.)
- *)
-(* let%server _ =
-  if Eliom_config.get_debugmode ()
-  then begin
-    ignore
-      [%client (
-        (* Eliom_config.debug_timings := true; *)
-        (* Lwt_log_core.add_rule "eliom:client*" Lwt_log.Debug; *)
-        (* Lwt_log_core.add_rule "os*" Lwt_log.Debug; *)
-        Lwt_log_core.add_rule "Moab*" Lwt_log.Debug
-        (* Lwt_log_core.add_rule "*" Lwt_log.Debug *)
-        : unit ) ];
-    (* Lwt_log_core.add_rule "*" Lwt_log.Debug *)
-    Lwt_log_core.add_rule "Moab*" Lwt_log.Debug
-  end *)
+let%shared () =
+	CalendarLib.Printer.day_name :=
+	(function
+	| Sun -> [%i18n S.sunday]
+	| Mon -> [%i18n S.monday]
+	| Tue -> [%i18n S.tuesday]
+	| Wed -> [%i18n S.wednesday]
+	| Thu -> [%i18n S.thursday]
+	| Fri -> [%i18n S.friday]
+	| Sat -> [%i18n S.saturday]);
+	CalendarLib.Printer.month_name :=
+	(function
+	| Jan -> [%i18n S.january]
+	| Feb -> [%i18n S.february]
+	| Mar -> [%i18n S.march]
+	| Apr -> [%i18n S.april]
+	| May -> [%i18n S.may]
+	| Jun -> [%i18n S.june]
+	| Jul -> [%i18n S.july]
+	| Aug -> [%i18n S.august]
+	| Sep -> [%i18n S.september]
+	| Oct -> [%i18n S.october]
+	| Nov -> [%i18n S.november]
+	| Dec -> [%i18n S.december])
+

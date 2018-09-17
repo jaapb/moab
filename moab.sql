@@ -54,13 +54,18 @@ CREATE SCHEMA moab
 	CREATE TABLE sessions (
 		academic_year varchar(8) not null,
 		term_id bigint not null,
-		session_id bigserial not null,
+		session_id bigserial not null primary key,
 		session_type char(1) not null,
 		start_time time not null,
 		end_time time not null,	
 		room varchar(8),
 		weekday smallint not null,
 		group_number smallint,
-		primary key (academic_year, session_id),
 		foreign key (academic_year, term_id) references terms(academic_year, term_id) 
+	);
+
+	CREATE TABLE attendance (
+		session_id bigint not null references sessions(session_id),
+		userid bigint not null references ocsigen_start.users(userid),
+		primary key (session_id, userid)
 	);

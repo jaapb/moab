@@ -31,6 +31,24 @@ let%client get_group_numbers =
 	~%(Eliom_client.server_function [%derive.json : string]
 			(Os_session.connected_wrapper get_group_numbers))
 
+let%server find_student mdx_id =
+	Moab_student_db.find_student mdx_id
+
+let%client find_student =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper find_student))
+
+let%server find_student_opt mdx_id =
+	try%lwt
+		let%lwt uid = Moab_student_db.find_student mdx_id in
+		Lwt.return_some uid
+	with
+	|  Not_found -> Lwt.return_none
+
+let%client find_student_opt =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper find_student_opt))
+
 (* Database access *)
 
 let%server set_student_info (uid, ayear, mdx_id, joined_week) =

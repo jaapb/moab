@@ -36,3 +36,13 @@ let get_group_numbers ayear =
 	Lwt_list.map_s @@ function
 	| None -> Lwt.fail (Invalid_argument "get_group_numbers found an empty value after DISTINCT")
 	| Some x -> Lwt.return x
+
+let find_student student_id =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT userid \
+			FROM moab.students \
+			WHERE student_id = upper($student_id)") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [x] -> Lwt.return x
+	| _ -> Lwt.fail (Invalid_argument "find_student found multiple students with same student_id")

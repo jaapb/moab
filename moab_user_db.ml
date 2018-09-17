@@ -55,3 +55,13 @@ let add_user user_type fn ln email password =
 			| Some p ->	update_password x p) >>=
 		fun () -> Lwt.return x
 	| _ -> fail (Invalid_argument "add_user returned no rows"))
+
+let get_name uid =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT firstname, lastname \
+			FROM ocsigen_start.users \
+			WHERE userid = $uid") >>=
+	function
+	| [] -> fail Not_found
+	| [x] -> return x
+	| _ -> fail (Invalid_argument "get_name found multiple users with same uid")
