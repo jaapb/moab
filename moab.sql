@@ -67,5 +67,6 @@ CREATE SCHEMA moab
 	CREATE TABLE attendance (
 		session_id bigint not null references sessions(session_id),
 		userid bigint not null references ocsigen_start.users(userid),
-		primary key (session_id, userid)
+		learning_week smallint not null,
+		primary key (session_id, userid, learning_week)
 	);

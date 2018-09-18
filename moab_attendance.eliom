@@ -14,6 +14,13 @@ let%client get_attendance =
 	~%(Eliom_client.server_function [%derive.json : int64]
 		(Os_session.connected_wrapper get_attendance))
 
+let%server add_attendance (sid, uid, lw) =
+	Moab_attendance_db.add_attendance sid uid lw
+
+let%client add_attendance =
+	~%(Eliom_client.server_function [%derive.json : int64 * int64 * int]
+		(Os_session.connected_wrapper add_attendance))
+
 (* Handlers *)
 
 let%server do_register_attendance () () =
@@ -21,6 +28,10 @@ let%server do_register_attendance () () =
 
 let%shared register_attendance_handler myid () () =
 	let%lwt sids = Moab_sessions.get_current_sessions "2018-19" in
+	let%lwt lw = Moab_terms.learning_week_of_date "2018-19" (Date.today ()) in
+	let learning_week = match lw with
+		| None -> 0
+		| Some x -> x in
 	match sids with
 	| [] -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_session_now]]]
  	| sid::_ ->
@@ -44,15 +55,16 @@ let%shared register_attendance_handler myid () () =
 			Lwt_js_events.changes inp @@ fun _ _ ->
 			Js.Opt.case (Dom_html.CoerceTo.input inp)
 				(fun () -> Lwt.return_unit)
-				(fun s -> let student_id = (Js.to_string s##.value) in
+				(fun s -> let student_id = String.uppercase_ascii (Js.to_string s##.value) in
 					let%lwt x = Moab_students.find_student_opt student_id in
 					let%lwt () = match x with
 					| None -> 
-							Eliom_shared.ReactiveData.RList.snoc (None, String.uppercase_ascii student_id) ~%attendance_h;
+							Eliom_shared.ReactiveData.RList.snoc (None, student_id) ~%attendance_h;
 							Lwt.return_unit
 					|	Some uid ->
 							let%lwt (fn, ln) = Moab_users.get_name uid in
-							Eliom_shared.ReactiveData.RList.snoc (Some (uid, fn, ln), String.uppercase_ascii student_id) ~%attendance_h;
+							let%lwt () = add_attendance (~%sid, uid, ~%learning_week) in
+							Eliom_shared.ReactiveData.RList.snoc (Some (uid, fn, ln), student_id) ~%attendance_h;
 							Lwt.return_unit in
 					s##.value := Js.string "";
 					s##focus;
