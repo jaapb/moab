@@ -40,5 +40,15 @@ let get_current_sessions ayear =
 			FROM moab.sessions s JOIN moab.terms t \
 				ON s.academic_year = t.academic_year AND s.term_id = t.term_id \
 			WHERE s.academic_year = $ayear \
+			AND EXTRACT(YEAR FROM CURRENT_DATE) = year \
 			AND	EXTRACT(WEEK FROM CURRENT_DATE) BETWEEN start_week AND end_week \
 			AND LOCALTIME BETWEEN start_time AND end_time") 
+
+let get_week_sessions ayear year learning_week =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT session_id \
+			FROM moab.sessions s JOIN moab.terms t \
+				ON s.academic_year = t.academic_year AND s.term_id = t.term_id \
+			WHERE s.academic_year = $ayear \
+			AND year = $year")
+

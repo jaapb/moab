@@ -21,6 +21,40 @@ let%client add_attendance =
 	~%(Eliom_client.server_function [%derive.json : int64 * int64 * int]
 		(Os_session.connected_wrapper add_attendance))
 
+let%server get_week_attendance (uid, ayear, year, lw) =
+	Moab_attendance_db.get_week_attendance uid ayear year lw
+
+let%client get_week_attendance =
+	~%(Eliom_client.server_function [%derive.json : int64 * string * int * int]
+		(Os_session.connected_wrapper get_week_attendance))
+
+(* Utility functions *)
+
+let%shared attendance_table uid =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
+	let year = Date.year (Date.today ()) in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
+	let%lwt week_list = Lwt_list.mapi_s (fun i (w, y) ->
+		let week_nr = i + 1 in
+		let%lwt (a, s) = get_week_attendance (uid, ayear, year, week_nr) in
+		let att_class = 
+			match lw with
+			| None -> []
+			| Some learning_week ->
+				if week_nr > learning_week then []
+				else if a = s then ["full-attendance"]
+				else if a = 0 then ["no-attendance"]
+				else ["some-attendance"] in
+		Lwt.return @@	td ~a:[a_class att_class] [pcdata (string_of_int week_nr)]
+	) weeks in
+	Lwt.return @@ table ~a:[a_class ["attendance-table"]] [
+		tr (
+			td [pcdata [%i18n S.your_attendance]]::
+			week_list
+		)
+	]
+
 (* Handlers *)
 
 let%server do_register_attendance () () =

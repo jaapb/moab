@@ -70,3 +70,11 @@ CREATE SCHEMA moab
 		learning_week smallint not null,
 		primary key (session_id, userid, learning_week)
 	);
+
+	CREATE TABLE presentation_schedule (
+		academic_year varchar(8) not null,
+		group_number smallint not null,
+		learning_week smallint not null,
+		userid bigint not null references ocsigen_start.users(userid),
+		primary key (academic_year, group_number, learning_week)
+	);

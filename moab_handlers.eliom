@@ -150,9 +150,17 @@ let%shared admin_dashboard () =
 		]
 	]]
 
-let%shared student_dashboard () =
+let%shared student_dashboard myid =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let%lwt attendance_table = Moab_attendance.attendance_table myid in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
-		h1 [pcdata [%i18n S.dashboard]]	
+		h1 [pcdata [%i18n S.dashboard]];
+		p [pcdata [%i18n S.learning_week ~capitalize:true]; pcdata ": ";
+		match lw with
+		| None -> b [pcdata [%i18n S.none]]
+		| Some l -> pcdata (string_of_int l)];
+		attendance_table
 	]]
 
 let%shared examiner_dashboard () =
@@ -167,7 +175,7 @@ let%shared main_service_handler myid_o () () =
 		let%lwt tp = get_user_type myid in
 		match tp with
 		| Admin -> admin_dashboard ()
-		| Student -> student_dashboard ()
+		| Student -> student_dashboard myid
 		| Examiner -> examiner_dashboard ())
 	in
   Moab_container.page

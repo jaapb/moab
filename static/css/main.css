@@ -34,3 +34,18 @@ tr.unknown-user
 {
 	background-color: #2e5900;
 }
+
+table.attendance-table td.no-attendance
+{
+	background-color: red;
+}
+
+table.attendance-table td.some-attendance
+{
+	background-color: orange;
+}
+
+table.attendance-table td.full-attendance
+{
+	background-color: green;
+}
