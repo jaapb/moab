@@ -51,7 +51,7 @@
           database="%%DB_NAME%%"
         />
 				<moab>
-					<term>2018-19</term>
+					<academic-year>2018-19</academic-year>
 				</moab>
       </eliommodule>
       <eliom/>
