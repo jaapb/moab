@@ -46,17 +46,26 @@ let%shared register_attendance_handler myid () () =
 				(fun () -> Lwt.return_unit)
 				(fun s -> let student_id = (Js.to_string s##.value) in
 					let%lwt x = Moab_students.find_student_opt student_id in
-					match x with
-					| None ->
+					let%lwt () = match x with
+					| None -> 
 							Eliom_shared.ReactiveData.RList.snoc (None, String.uppercase_ascii student_id) ~%attendance_h;
 							Lwt.return_unit
-					|	Some uid -> 
-						let%lwt (fn, ln) = Moab_users.get_name uid in
-						Eliom_shared.ReactiveData.RList.snoc (Some (uid, fn, ln), String.uppercase_ascii student_id) ~%attendance_h;
-						Lwt.return_unit
+					|	Some uid ->
+							let%lwt (fn, ln) = Moab_users.get_name uid in
+							Eliom_shared.ReactiveData.RList.snoc (Some (uid, fn, ln), String.uppercase_ascii student_id) ~%attendance_h;
+							Lwt.return_unit in
+					s##.value := Js.string "";
+					s##focus;
+					Lwt.return_unit
 				)
 		): unit)];
-		Moab_container.page (Some myid)
+		let focus_f = [%client (fun _ -> 
+			let inp = Eliom_content.Html.To_dom.of_element ~%student_id_input in
+			Js.Opt.case (Dom_html.CoerceTo.input inp)
+			(fun () -> ())
+			(fun s -> s##focus)
+		)] in
+		Moab_container.page ~a:[a_onload focus_f] (Some myid)
 		[
 			div ~a:[a_class ["content-box"]] [
 				h1 [pcdata [%i18n S.register_attendance]];
