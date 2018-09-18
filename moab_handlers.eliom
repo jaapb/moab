@@ -3,6 +3,7 @@
 
 [%%shared
   open Eliom_content.Html.F
+	open CalendarLib
 ]
 
 (* Set personal data *)
@@ -131,13 +132,44 @@ let%client preregister_handler =
   in
   fun () -> preregister_rpc
 
+let%shared admin_dashboard () =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	Lwt.return [div ~a:[a_class ["content-box"]] [
+		h1 [pcdata [%i18n S.dashboard]];
+		p [
+			pcdata "Current academic year: "; pcdata ayear;
+			pcdata "; learning week: ";
+			match lw with
+			| None -> b [pcdata "none"]
+			| Some l -> pcdata (string_of_int l)
+		]
+	]]
+
+let%shared student_dashboard () =
+	Lwt.return [div ~a:[a_class ["content-box"]] [
+		h1 [pcdata [%i18n S.dashboard]]	
+	]]
+
+let%shared examiner_dashboard () =
+	Lwt.return [div ~a:[a_class ["content-box"]] [
+		h1 [pcdata [%i18n S.dashboard]]	
+	]]
+
 let%shared main_service_handler myid_o () () =
+	let%lwt contents = match myid_o with
+	| None -> Lwt.return [p [%i18n welcome_text1]]
+	| Some myid -> Moab_users.(
+		let%lwt tp = get_user_type myid in
+		match tp with
+		| Admin -> admin_dashboard ()
+		| Student -> student_dashboard ()
+		| Examiner -> examiner_dashboard ())
+	in
   Moab_container.page
     ~a:[ a_class ["os-page-main"] ]
-    myid_o (
-    [ p [%i18n welcome_text1]
-    ]
-  )
+    myid_o
+		contents
 
 let%shared settings_handler myid_o () () =
   let%lwt content = match myid_o with
