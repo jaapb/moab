@@ -47,3 +47,9 @@ let find_student student_id =
 	| [] -> Lwt.fail Not_found
 	| [x] -> Lwt.return x
 	| _ -> Lwt.fail (Invalid_argument "find_student found multiple students with same student_id")
+
+let get_students ayear =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT userid \
+			FROM moab.students \
+			WHERE academic_year = $ayear")

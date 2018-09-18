@@ -135,14 +135,17 @@ let%client preregister_handler =
 let%shared admin_dashboard () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let%lwt sids = Moab_students.get_students ayear in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [pcdata [%i18n S.dashboard]];
 		p [
-			pcdata "Current academic year: "; pcdata ayear;
-			pcdata "; learning week: ";
-			match lw with
-			| None -> b [pcdata "none"]
-			| Some l -> pcdata (string_of_int l)
+			pcdata [%i18n S.current_academic_year]; pcdata ": "; pcdata ayear; pcdata "; ";
+			pcdata [%i18n S.learning_week]; pcdata ": ";
+			(match lw with
+			| None -> b [pcdata [%i18n S.none]]
+			| Some l -> pcdata (string_of_int l)); pcdata "; ";
+			pcdata [%i18n S.number_of_students]; pcdata ": ";
+			pcdata (string_of_int (List.length sids))
 		]
 	]]
 

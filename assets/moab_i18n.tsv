@@ -108,3 +108,7 @@ no_blog_needed	It is not a learning week, you do not need to submit a blog for t
 no_blog_for_week	The user has not entered a blog for this week.	L'utilisateur n'a pas soumis de blog pour cette semaine.
 no_week_specified	Please specify a week for which you want to see the blog.	Veuillez donner une semaine pour laquelle vous voulez voir le blog.
 dashboard	Dashboard	Tableau de bord
+current_academic_year	{{{capitalize?C||c}}}urrent academic year	{{{capitalize?A||a}}}nnée académique en cours
+learning_week	{{{capitalize?L||l}}}earning week	{{{capitalize?S||s}}}emaine d'éducation
+none	{{{capitalize?N||n}}}one	{{{capitalize?A||a}}}ucun
+number_of_students	{{{capitalize?N||n}}}umber of enrolled students	{{{capitalize?N||n}}}ombre d'étudiant(e)s inscrit(e)s
