@@ -37,18 +37,13 @@ let%shared register_attendance_handler myid () () =
 	| [] -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_session_now]]]
  	| sid::_ ->
 		let%lwt attendance = get_attendance (sid, learning_week) in
-		let (attendance_l, attendance_h) = Eliom_shared.ReactiveData.RList.create (List.map (fun (uid, mid, fn, ln) -> (Some (uid, fn, ln), mid)) attendance) in 
+		let (attendance_l, attendance_h) = Eliom_shared.ReactiveData.RList.create attendance in
 		let attendance_rows l = Eliom_shared.ReactiveData.RList.map 
-			[%shared ((fun (user, mdx_id) ->
-				match user with
-				| None -> tr ~a:[a_class ["unknown-user"]] [
-						td [pcdata mdx_id];
-						td []
-					]
-				| Some (uid, fn, ln) -> tr [
-						td [pcdata mdx_id];
-						td [pcdata fn; pcdata " "; pcdata ln]
-					]
+			[%shared ((fun (uid, mdx_id, fn, ln) ->
+				tr [
+					td [pcdata mdx_id];
+					td [pcdata fn; pcdata " "; pcdata ln]
+				]
 			): _ -> _)] l in
 		let student_id_input = D.Raw.input () in
 		ignore [%client ((Lwt.async @@ fun () ->
@@ -60,12 +55,12 @@ let%shared register_attendance_handler myid () () =
 					let%lwt x = Moab_students.find_student_opt student_id in
 					let%lwt () = match x with
 					| None -> 
-							Eliom_shared.ReactiveData.RList.snoc (None, student_id) ~%attendance_h;
+							Os_msg.msg ~level:`Err [%i18n S.unknown_student];
 							Lwt.return_unit
 					|	Some uid ->
 							let%lwt (fn, ln) = Moab_users.get_name uid in
 							let%lwt () = add_attendance (~%sid, uid, ~%learning_week) in
-							Eliom_shared.ReactiveData.RList.snoc (Some (uid, fn, ln), student_id) ~%attendance_h;
+							Eliom_shared.ReactiveData.RList.snoc (uid, student_id, fn, ln) ~%attendance_h;
 							Lwt.return_unit in
 					s##.value := Js.string "";
 					s##focus;
