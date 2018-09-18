@@ -169,10 +169,11 @@ let%shared real_setup_sessions_handler myid () () =
 			Eliom_shared.ReactiveData.RList.snoc (term_selector sid 1L ~%term_l, sid, "L", 1, None, None, None,
 			group_number_selector sid "" ~%group_l) ~%session_h;
 			Lwt.return_unit
-			) : unit)
+			): unit)
 		];
+		let submit_button = D.button ~a:[a_class ["button"]] [pcdata [%i18n S.save]] in
 		let session_rows = display_session_rows session_l in
-		Lwt.return [
+		let session_table = 
 			Eliom_content.Html.R.table ~thead:(Eliom_shared.React.S.const (thead [
 				tr [
 					th ~a:[a_colspan 2] [pcdata [%i18n S.academic_year]];
@@ -186,6 +187,7 @@ let%shared real_setup_sessions_handler myid () () =
 					th [pcdata [%i18n S.start_time]];
 					th [pcdata [%i18n S.end_time]];
 					th [pcdata [%i18n S.room]];
+					th [pcdata [%i18n S.group_number]]
 				]
 			])) ~tfoot:(Eliom_shared.React.S.const (tfoot [
 				tr [
@@ -193,11 +195,41 @@ let%shared real_setup_sessions_handler myid () () =
 					td ~a:[a_colspan 6] [];
 				];
 				tr [
-					td ~a:[a_colspan 7] [Raw.input ~a:[a_class ["button"]; a_input_type `Submit; a_value [%i18n S.save]] ()]
+					td ~a:[a_colspan 7] [submit_button]
 				]
 			]))
-			 session_rows
-		]) () in
+			session_rows in
+		ignore [%client ((Lwt.async @@ fun () ->
+			let btn = Eliom_content.Html.To_dom.of_element ~%submit_button in
+			let ses_table = Eliom_content.Html.To_dom.of_element ~%session_table in
+				Lwt_js_events.clicks ~use_capture:true btn @@ fun ev _ ->
+				Lwt_list.iter_s (fun c ->
+					Lwt_log_js.ign_notice_f "Found %s, has %d children" (Js.to_string c##.nodeName) (List.length (Dom.list_of_nodeList c##.childNodes));
+					if c##.nodeName = Js.string "TR" then
+					begin
+						let _::_::_::_::_::_::x::_ = Dom.list_of_nodeList c##.childNodes in
+						let rm::_ = Dom.list_of_nodeList x##.childNodes in
+						Js.Opt.case (Dom_html.CoerceTo.element rm)
+							(fun () -> Lwt_log_js.ign_notice "Cannot coerce to element")
+							(fun e -> Js.Opt.case (Dom_html.CoerceTo.input e)
+								(fun () -> Lwt_log_js.ign_notice "Cannot coerce to input")
+								(fun inp -> Lwt_log_js.ign_notice "Found room input";
+									if String.length (Js.to_string inp##.value) > 8 then
+									begin
+										(Js.Unsafe.coerce inp)##setCustomValidity "String too long";
+										Dom.preventDefault ev
+									end
+									else
+										(Js.Unsafe.coerce inp)##setCustomValidity "";
+								)
+							)
+					end;
+					Lwt.return_unit
+				) (Dom.list_of_nodeList ses_table##.childNodes) 
+			): unit)
+		];
+		Lwt.return [session_table]
+		) () in
 	Moab_container.page (Some myid)
 	[
 		div ~a:[a_class ["content-box"]] [
