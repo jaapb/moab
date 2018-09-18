@@ -27,9 +27,9 @@ let%server do_register_attendance () () =
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared register_attendance_handler myid () () =
-	let term = ~%(!Moab_config.current_term) in
-	let%lwt sids = Moab_sessions.get_current_sessions term in
-	let%lwt lw = Moab_terms.learning_week_of_date term (Date.today ()) in
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt sids = Moab_sessions.get_current_sessions ayear in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let learning_week = match lw with
 		| None -> 0
 		| Some x -> x in
@@ -41,6 +41,7 @@ let%shared register_attendance_handler myid () () =
 		let attendance_rows l = Eliom_shared.ReactiveData.RList.map 
 			[%shared ((fun (uid, mdx_id, fn, ln) ->
 				tr [
+					td [Moab_icons.D.trash ()];
 					td [pcdata mdx_id];
 					td [pcdata fn; pcdata " "; pcdata ln]
 				]
@@ -83,6 +84,13 @@ let%shared register_attendance_handler myid () () =
 						td [student_id_input];
 					]
 				];
-				R.table (attendance_rows attendance_l)
+				R.table ~thead:(Eliom_shared.React.S.const (thead [
+					tr [
+						th [];
+						th [pcdata [%i18n S.student_id]];
+						th [pcdata [%i18n S.name]]
+					]
+				]))
+				(attendance_rows attendance_l)
 			]
 		] 
