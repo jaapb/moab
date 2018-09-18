@@ -83,7 +83,8 @@ let%shared register_attendance_handler myid () () =
 			Js.Opt.case (Dom_html.CoerceTo.input inp)
 				(fun () -> Lwt.return_unit)
 				(fun s -> let student_id = String.uppercase_ascii (Js.to_string s##.value) in
-					let%lwt () = if Re.Str.string_match student_id_regexp student_id 0 = true
+					let%lwt () =
+					if Re.Str.string_match student_id_regexp student_id 0 = true
 					then let%lwt x = Moab_students.find_student_opt student_id in
 					begin
 						match x with
