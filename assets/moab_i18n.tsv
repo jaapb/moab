@@ -55,7 +55,7 @@ change_language	Change language	Changer la langue
 change_profile_picture	Change profile picture	Changer votre photo de profil
 add_students	{{{capitalize?A||a}}}dd students	{{{capitalize?A||a}}}jouter des étudiants
 setup_terms	Setup terms	Réglage des trimestres
-write_blog	{{{capitalize?W||w}}}rite blog	{{{capitalize?É||é}}}crire un blog
+write_blog	Write blog	Écrire un blog
 setup_sessions	{{{capitalize?S||s}}}etup sessions	{{{capitalize?R||r}}}églage des sessions
 changes_to_be_made	Changes to be made	Modifications à faire
 action	Action	Action
@@ -102,3 +102,6 @@ november	November	Novembre
 december	December	Décembre
 no_session_now	There is currently no session running.	Il n'y a pas de session actuellement en cours.
 unknown_student	This student is not known.	Cet(te) étudiant(e) n'est pas connu(e).
+title	Title	Titre
+writing_blog_for_week	You are writing your blog for learning week	Vous écrivez votre blog pour la semaine numéro
+no_blog_needed	It is not a learning week, you do not need to submit a blog for this week.	Cette semaine n'étant pas une semaine d'éducations, vous n'avez pas à soumettre de blog.
