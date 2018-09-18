@@ -31,7 +31,8 @@ let get_group_numbers ayear =
 	full_transaction_block (fun dbh ->
 		PGSQL(dbh) "SELECT DISTINCT(group_number) \
 			FROM moab.students \
-			WHERE academic_year = $ayear \
+			WHERE group_number IS NOT NULL \
+				AND academic_year = $ayear \
 			ORDER BY 1 ASC") >>=
 	Lwt_list.map_s @@ function
 	| None -> Lwt.fail (Invalid_argument "get_group_numbers found an empty value after DISTINCT")
