@@ -175,6 +175,6 @@ let%client connect_handler_rpc =
 	~%(Eliom_client.server_function
 			~name:"Moab_handlers.connect_handler"
 			[%derive.json: (string * string) * bool]
-			connect_handler_rpc)
+		connect_handler_rpc)
 
 let%client connect_handler () v = connect_handler_rpc v

@@ -56,6 +56,12 @@ let%server edit_blog_service =
 		~meth:(Get unit)
 		()
 
+let%server show_blog_service =
+	create
+		~path:(Path ["show-blog"])
+		~meth:(Get (opt (int64 "uid") ** opt (int "week")))
+		()
+
 let%server register_attendance_service =
 	create
 		~path:(Path ["register-attendance"])
@@ -85,6 +91,9 @@ let%client setup_sessions_service =
 
 let%client edit_blog_service =
 	~%edit_blog_service
+
+let%client show_blog_service =
+	~%show_blog_service
 
 let%client register_attendance_service =
 	~%register_attendance_service

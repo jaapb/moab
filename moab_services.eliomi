@@ -125,6 +125,22 @@ val edit_blog_service :
     Eliom_service.non_ocaml
   ) Eliom_service.t
 
+val show_blog_service :
+  (
+    int64 option * int option,
+    unit,
+    Eliom_service.get,
+    Eliom_service.att,
+    Eliom_service.non_co,
+    Eliom_service.non_ext,
+    Eliom_service.reg,
+    [ `WithoutSuffix ],
+    [ `One of int64 ] Eliom_parameter.param_name *
+		[ `One of int ] Eliom_parameter.param_name,
+    unit,
+    Eliom_service.non_ocaml
+  ) Eliom_service.t
+
 val register_attendance_service :
   (
     unit,

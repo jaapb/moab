@@ -72,6 +72,10 @@ let%shared () =
 		(Moab_page.connected_page Moab_blogs.edit_blog_handler);
 
 	Moab_base.App.register
+		~service:Moab_services.show_blog_service
+		(Moab_page.connected_page Moab_blogs.show_blog_handler);
+
+	Moab_base.App.register
 		~service:Moab_services.register_attendance_service
 		(Moab_page.connected_page Moab_attendance.register_attendance_handler)
 

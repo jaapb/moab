@@ -43,6 +43,34 @@ let%client update_blog =
 
 (* Handlers *)
 
+let%shared show_blog_handler myid (opt_uid, opt_week) () =
+	let uid = match opt_uid with
+	| None -> myid
+	| Some x -> x in
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let display_blog week =
+		let%lwt x = get_blog_opt (uid, ayear, week) in
+		match x with
+		| None -> Lwt.return @@ p [pcdata [%i18n S.no_blog_for_week]]
+		| Some (title, text) -> Lwt.return @@
+			div ~a:[a_class ["content-box"]]
+			(
+				h1 [pcdata title]::
+				List.map (fun x ->
+					p [pcdata x]
+				) (List.filter (fun x -> x <> "") (String.split_on_char '\n' text))
+			)
+		in
+	let%lwt blog = match opt_week, lw with
+	| None, None -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]] 
+	| Some w, _ -> display_blog w
+	| _, Some w -> display_blog w in
+	Moab_container.page (Some myid) 
+	[
+		blog
+	]
+
 let do_edit_blog myid () (title, text) =
 	let ayear = !Moab_config.current_academic_year in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
