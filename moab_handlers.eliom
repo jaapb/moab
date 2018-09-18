@@ -139,7 +139,8 @@ let%shared admin_dashboard () =
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [pcdata [%i18n S.dashboard]];
 		p [
-			pcdata [%i18n S.current_academic_year]; pcdata ": "; pcdata ayear; pcdata "; ";
+			pcdata [%i18n S.current_academic_year ~capitalize:true]; pcdata ": ";
+			pcdata ayear; pcdata "; ";
 			pcdata [%i18n S.learning_week]; pcdata ": ";
 			(match lw with
 			| None -> b [pcdata [%i18n S.none]]
