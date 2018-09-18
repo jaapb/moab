@@ -34,7 +34,7 @@ let%shared the_local_css = [
 
     include Os_page.Default_config
 
-    let title ="CSD3600"
+    let title = "CSD3600"
 
     let local_js = the_local_js
     let local_css = the_local_css

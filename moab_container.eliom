@@ -2,11 +2,16 @@
    Feel free to use it, modify it, and redistribute it as you wish. *)
 
 let%shared os_header ?user () = Eliom_content.Html.F.(
-  let%lwt user_box =
-    Moab_users.user_box user
-  in
+  let%lwt user_box = Moab_users.user_box user in
+	let%lwt tp = match user with
+		| None -> Lwt.return Moab_users.Student
+		| Some u -> Moab_users.get_user_type (Os_user.userid_of_user u) in
+	let user_class = match tp with
+	| Moab_users.Admin -> "header-admin"
+	| Moab_users.Examiner -> "header-examiner"
+	| Moab_users.Student -> "header-student" in
   Lwt.return (
-    header ~a:[a_class ["os-page-header"]]
+    header ~a:[a_class ["os-page-header"; user_class]]
       [ a ~a:[a_class ["os-page-header-app-name"]]
           ~service:Os_services.main_service
           [ pcdata Moab_base.displayed_app_name ]

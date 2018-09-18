@@ -20,3 +20,17 @@ tr.unknown-user
 	background-color: lightpink;
 }
 
+.header-student
+{
+	background-color: #25a;
+}
+
+.header-admin
+{
+	background-color: red;
+}
+
+.header-examiner
+{
+	background-color: #2e5900;
+}
