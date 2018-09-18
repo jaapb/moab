@@ -121,3 +121,6 @@ second_presenter	Second presenter	Deuxième intervenant(e)
 no_group_number	You have not been assigned a group number.	Vous n'avez pas été affecté(e) à aucun groupe.
 invalid_student_id	Invalid student ID	ID étudiant non valide.
 unknown_student	This student is not known.	Cet(te) étudiant(e) n'est pas connu(e).
+title	Title	Titre
+writing_blog_for_week	You are writing your blog for learning week	Vous écrivez votre blog pour la semaine numéro
+no_blog_needed	It is not a learning week, you do not need to submit a blog for this week.	Cette semaine n'étant pas une semaine d'éducations, vous n'avez pas à soumettre de blog.
