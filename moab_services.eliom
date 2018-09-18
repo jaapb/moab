@@ -59,7 +59,7 @@ let%server edit_blog_service =
 let%server show_blog_service =
 	create
 		~path:(Path ["show-blog"])
-		~meth:(Get (opt (int64 "uid") ** opt (int "week")))
+		~meth:(Get (suffix (opt (int64 "uid") ** opt (int "week"))))
 		()
 
 let%server register_attendance_service =

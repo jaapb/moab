@@ -134,7 +134,7 @@ val show_blog_service :
     Eliom_service.non_co,
     Eliom_service.non_ext,
     Eliom_service.reg,
-    [ `WithoutSuffix ],
+    [ `WithSuffix ],
     [ `One of int64 ] Eliom_parameter.param_name *
 		[ `One of int ] Eliom_parameter.param_name,
     unit,
