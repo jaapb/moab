@@ -31,6 +31,10 @@ let os_db_password = ref None
 let os_db_database = ref None
 let os_db_unix_domain_socket_dir = ref None
 
+(* Term *)
+
+let current_term = ref ""
+
 (* Get variables values from the ocsigenserver configuration file *)
 
 (* Application configuration *)
@@ -74,4 +78,13 @@ let os_db = Ocsigen_extensions.Configuration.(
   element ~name:"os-db" ~attributes ()
 )
 
-let _ = Eliom_config.parse_config [app; avatars; os_db]
+(* Moab *)
+let moab = Ocsigen_extensions.Configuration.(
+	let elements = [
+		element ~name:"term" ~pcdata:(fun t -> current_term := t) ()
+	] in
+
+	element ~name:"moab" ~obligatory:true ~elements ()
+)
+
+let _ = Eliom_config.parse_config [app; avatars; os_db; moab]

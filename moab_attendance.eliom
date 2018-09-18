@@ -7,11 +7,11 @@
 
 (* Database access *)
 
-let%server get_attendance sid =
-	Moab_attendance_db.get_attendance sid
+let%server get_attendance (sid, lw) =
+	Moab_attendance_db.get_attendance sid lw
 
 let%client get_attendance =
-	~%(Eliom_client.server_function [%derive.json : int64]
+	~%(Eliom_client.server_function [%derive.json : int64 * int]
 		(Os_session.connected_wrapper get_attendance))
 
 let%server add_attendance (sid, uid, lw) =
@@ -27,15 +27,16 @@ let%server do_register_attendance () () =
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared register_attendance_handler myid () () =
-	let%lwt sids = Moab_sessions.get_current_sessions "2018-19" in
-	let%lwt lw = Moab_terms.learning_week_of_date "2018-19" (Date.today ()) in
+	let term = ~%(!Moab_config.current_term) in
+	let%lwt sids = Moab_sessions.get_current_sessions term in
+	let%lwt lw = Moab_terms.learning_week_of_date term (Date.today ()) in
 	let learning_week = match lw with
 		| None -> 0
 		| Some x -> x in
 	match sids with
 	| [] -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_session_now]]]
  	| sid::_ ->
-		let%lwt attendance = get_attendance sid in
+		let%lwt attendance = get_attendance (sid, learning_week) in
 		let (attendance_l, attendance_h) = Eliom_shared.ReactiveData.RList.create (List.map (fun (uid, mid, fn, ln) -> (Some (uid, fn, ln), mid)) attendance) in 
 		let attendance_rows l = Eliom_shared.ReactiveData.RList.map 
 			[%shared ((fun (user, mdx_id) ->

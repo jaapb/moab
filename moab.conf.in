@@ -50,6 +50,9 @@
           password="%%DB_PASSWORD%%"
           database="%%DB_NAME%%"
         />
+				<moab>
+					<term>2018-19</term>
+				</moab>
       </eliommodule>
       <eliom/>
       <if>
