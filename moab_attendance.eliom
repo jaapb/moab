@@ -55,9 +55,6 @@ let%shared attendance_tr uid =
 
 (* Handlers *)
 
-let%server do_register_attendance () () =
-	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
-
 let%shared register_attendance_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt sids = Moab_sessions.get_current_sessions ayear in
