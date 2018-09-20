@@ -75,6 +75,7 @@ CREATE SCHEMA moab
 		academic_year varchar(8) not null,
 		group_number smallint not null,
 		learning_week smallint not null,
+		first_presenter boolean not null default true,
 		userid bigint not null references ocsigen_start.users(userid),
-		primary key (academic_year, group_number, learning_week)
+		primary key (academic_year, group_number, learning_week, first_presenter)
 	);

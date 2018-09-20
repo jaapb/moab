@@ -155,12 +155,16 @@ let%shared student_dashboard myid =
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt attendance_row = Moab_attendance.attendance_tr myid in
 	let%lwt blog_row = Moab_blogs.blog_tr myid in
+	let%lwt gn = Moab_students.get_group_number (ayear, myid) in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [pcdata [%i18n S.dashboard]];
 		p [pcdata [%i18n S.learning_week ~capitalize:true]; pcdata ": ";
 		match lw with
 		| None -> b [pcdata [%i18n S.none]]
 		| Some l -> pcdata (string_of_int l)];
+		p [pcdata [%i18n S.group_number]; pcdata ": "; match gn with
+		| None -> b [pcdata [%i18n S.none]]
+		| Some g -> pcdata (string_of_int g)];
 		table ~a:[a_class ["dashboard-table"]] [
 			attendance_row;
 			blog_row
