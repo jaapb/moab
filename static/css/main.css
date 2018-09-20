@@ -49,3 +49,8 @@ table.dashboard-table td.dt-good
 {
 	background-color: green;
 }
+
+table.schedule-table tr:nth-child(even)
+{
+	background-color: darkgray;
+}
