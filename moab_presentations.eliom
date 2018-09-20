@@ -19,10 +19,16 @@ let%client get_schedule =
 let%shared schedule_table ayear gnr weekday =
 	let%lwt schedule = get_schedule (ayear, gnr) in
 	let%lwt trs = Lwt_list.map_s (fun (week, uid1, uid2) ->
+		let create_field uid = match uid with
+		| None -> Lwt.return [pcdata [%i18n S.none]]
+		| Some u -> let%lwt (fn, ln) = Moab_users.get_name u in
+			Lwt.return [pcdata fn; pcdata " "; pcdata ln] in
+		let%lwt f1 = create_field uid1 in
+		let%lwt f2 = create_field uid2 in
 		Lwt.return @@ tr [
 			td [pcdata (Int32.to_string week)];
-			td [pcdata (match uid1 with None -> [%i18n S.none] | Some u -> Int64.to_string u)];
-			td [pcdata (match uid2 with None -> [%i18n S.none] | Some u -> Int64.to_string u)];
+			td f1;
+			td f2
 		]) schedule in
 	Lwt.return @@ table ~a:[a_class ["schedule-table"]] (
 		tr [
