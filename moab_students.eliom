@@ -24,6 +24,8 @@ let%server add_students_action2 =
 let%client add_students_action2 = 
 	~%add_students_action2
 
+(* Database access *)
+
 let%server get_group_numbers ayear =
 	Moab_student_db.get_group_numbers ayear
 
@@ -65,18 +67,18 @@ let%client set_student_info =
 	~%(Eliom_client.server_function [%derive.json : int64 * string * string * int]
 		(Os_session.connected_wrapper set_student_info))
 
-let%server get_group_number uid =
-	Moab_student_db.get_group_number uid
+let%server get_group_number (ayear, uid) =
+	Moab_student_db.get_group_number ayear uid
 
 let%client get_group_number =
-	~%(Eliom_client.server_function [%derive.json : int64]
+	~%(Eliom_client.server_function [%derive.json : string * int64]
 		(Os_session.connected_wrapper get_group_number))
 
-let%server set_group_number (uid, gnr) =
-	Moab_student_db.set_group_number uid gnr
+let%server set_group_number (ayear, uid, gnr) =
+	Moab_student_db.set_group_number ayear uid gnr
 
 let%client set_group_number =
-	~%(Eliom_client.server_function [%derive.json : int64 * int option]
+	~%(Eliom_client.server_function [%derive.json : string * int64 * int option]
 		(Os_session.connected_wrapper set_group_number))
 
 (* Handlers *)
@@ -91,7 +93,7 @@ let%server do_add_students2 myid () (ayear, changes_list) =
 					match uid with
 					| None -> Lwt.fail (Invalid_argument "group_<nr> action, but no uid")
 					| Some u -> let gp = if g = "none" then None else Some (int_of_string g) in
-							set_group_number (u, gp));
+							set_group_number (ayear, u, gp));
 				Scanf.sscanf act "join_%d" (fun w ->
 					let%lwt uid = Moab_users.add_user (Student, fn, ln, email, Some mdx_id) in
 					let%lwt () = set_student_info (uid, ayear, mdx_id, w) in
@@ -119,7 +121,7 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 			Scanf.sscanf mail "mailto:%s" (fun e ->
 				try%lwt
 					let%lwt uid = Moab_users.find_user e in
-					let%lwt st_group = get_group_number uid in
+					let%lwt st_group = get_group_number (ayear_v, uid) in
 					Ocsigen_messages.console (fun () -> Printf.sprintf "> [%s] sg: %s" mdx_id (match st_group with None -> "<none>" | Some x -> string_of_int x));
 					if group <> "" then
 						match st_group with
