@@ -30,7 +30,7 @@ let%client get_week_attendance =
 
 (* Utility functions *)
 
-let%shared attendance_table uid =
+let%shared attendance_tr uid =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
 	let year = Date.year (Date.today ()) in
@@ -43,17 +43,15 @@ let%shared attendance_table uid =
 			| None -> []
 			| Some learning_week ->
 				if week_nr > learning_week then []
-				else if a = s then ["full-attendance"]
-				else if a = 0 then ["no-attendance"]
-				else ["some-attendance"] in
+				else if a = s then ["dt-good"]
+				else if a = 0 then ["dt-bad"]
+				else ["dt-warning"] in
 		Lwt.return @@	td ~a:[a_class att_class] [pcdata (string_of_int week_nr)]
 	) weeks in
-	Lwt.return @@ table ~a:[a_class ["attendance-table"]] [
-		tr (
-			td [pcdata [%i18n S.your_attendance]]::
-			week_list
-		)
-	]
+	Lwt.return @@ tr (
+		td [b [pcdata [%i18n S.your_attendance]]; pcdata " "]::
+		week_list
+	)
 
 (* Handlers *)
 

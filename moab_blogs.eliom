@@ -1,4 +1,5 @@
 [%%shared
+	open Lwt.Infix
 	open Eliom_content.Html.F
 	open Eliom_parameter
 	open CalendarLib
@@ -40,6 +41,52 @@ let%server update_blog (uid, ayear, lw, title, text) =
 let%client update_blog =
 	~%(Eliom_client.server_function [%derive.json: int64 * string * int * string * string]
 		(Os_session.connected_wrapper update_blog))
+
+let%server get_nr_blogs (uid, ayear) =
+	Moab_blog_db.get_nr_blogs uid ayear
+
+let%client get_nr_blogs =
+	~%(Eliom_client.server_function [%derive.json: int64 * string]
+		(Os_session.connected_wrapper get_nr_blogs))
+
+(* Utility functions *)
+
+let%shared blog_score uid =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
+	let year = Date.year (Date.today ()) in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
+	let learning_week = match lw with None -> 0 | Some x -> x in
+	let%lwt b = get_nr_blogs (uid, ayear) >|= Int64.to_int in
+	let pred_score = max 0 ((List.length weeks * b / learning_week) - List.length weeks + 10) in
+	Lwt.return pred_score
+
+let%shared blog_tr uid =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
+	let year = Date.year (Date.today ()) in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
+	let%lwt week_list = Lwt_list.mapi_s (fun i (w, y) ->
+		let week_nr = i + 1 in
+		let%lwt x = get_blog_opt (uid, ayear, week_nr) in
+		let att_class = 
+			match lw with
+			| None -> []
+			| Some learning_week ->
+				if week_nr > learning_week then []
+				else begin
+					match x with
+					| None -> ["dt-bad"]
+					| Some _ -> ["dt-good"]
+				end
+		in
+		Lwt.return @@	td ~a:[a_class att_class] [pcdata (string_of_int week_nr)]
+	) weeks in
+	let%lwt pred_score = blog_score uid in
+	Lwt.return @@ tr (
+		td [b [pcdata [%i18n S.your_blogs]]; pcdata " "]::
+		(week_list @ [td [b [pcdata (string_of_int pred_score)]]])
+	)
 
 (* Handlers *)
 
