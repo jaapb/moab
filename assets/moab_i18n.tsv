@@ -119,3 +119,4 @@ date	Date	Date
 first_presenter	First presenter	Premier/ère intervenant(e)
 second_presenter	Second presenter	Deuxième intervenant(e)
 no_group_number	You have not been assigned a group number.	Vous n'avez pas été affecté(e) à aucun groupe.
+invalid_student_id	Invalid student ID	ID étudiant non valide.

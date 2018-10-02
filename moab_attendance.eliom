@@ -77,21 +77,30 @@ let%shared register_attendance_handler myid () () =
 			): _ -> _)] l in
 		let student_id_input = D.Raw.input () in
 		ignore [%client ((Lwt.async @@ fun () ->
+			let student_id_regexp = Re.Str.regexp "M[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" in
 			let inp = Eliom_content.Html.To_dom.of_element ~%student_id_input in
 			Lwt_js_events.changes inp @@ fun _ _ ->
 			Js.Opt.case (Dom_html.CoerceTo.input inp)
 				(fun () -> Lwt.return_unit)
 				(fun s -> let student_id = String.uppercase_ascii (Js.to_string s##.value) in
-					let%lwt x = Moab_students.find_student_opt student_id in
-					let%lwt () = match x with
-					| None -> 
-							Os_msg.msg ~level:`Err [%i18n S.unknown_student];
-							Lwt.return_unit
-					|	Some uid ->
-							let%lwt (fn, ln) = Moab_users.get_name uid in
-							let%lwt () = add_attendance (~%sid, uid, ~%learning_week) in
-							Eliom_shared.ReactiveData.RList.snoc (uid, student_id, fn, ln) ~%attendance_h;
-							Lwt.return_unit in
+					let%lwt () = if Re.Str.string_match student_id_regexp student_id 0 = true
+					then let%lwt x = Moab_students.find_student_opt student_id in
+					begin
+						match x with
+						| None ->
+								Os_msg.msg ~level:`Err [%i18n S.unknown_student];
+								Lwt.return_unit
+						|	Some uid ->
+								let%lwt (fn, ln) = Moab_users.get_name uid in
+								let%lwt () = add_attendance (~%sid, uid, ~%learning_week) in
+								Eliom_shared.ReactiveData.RList.snoc (uid, student_id, fn, ln) ~%attendance_h;
+								Lwt.return_unit
+					end
+					else
+					begin
+						Os_msg.msg ~level:`Err [%i18n S.invalid_student_id];
+						Lwt.return_unit
+					end in
 					s##.value := Js.string "";
 					s##focus;
 					Lwt.return_unit

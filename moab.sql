@@ -40,7 +40,7 @@ CREATE SCHEMA moab
 		group_number smallint,
 		primary key (userid, academic_year),
 		unique (student_id, academic_year)
-	);
+	)
 
 	CREATE TABLE blogs (
 		userid bigint not null references ocsigen_start.users(userid),
@@ -49,7 +49,7 @@ CREATE SCHEMA moab
 		title text not null,
 		text text not null,
 		primary key (userid, academic_year, week)
-	);
+	)
 
 	CREATE TABLE sessions (
 		academic_year varchar(8) not null,
@@ -62,14 +62,14 @@ CREATE SCHEMA moab
 		weekday smallint not null,
 		group_number smallint,
 		foreign key (academic_year, term_id) references terms(academic_year, term_id) 
-	);
+	)
 
 	CREATE TABLE attendance (
 		session_id bigint not null references sessions(session_id),
 		userid bigint not null references ocsigen_start.users(userid),
 		learning_week smallint not null,
 		primary key (session_id, userid, learning_week)
-	);
+	)
 
 	CREATE TABLE presentation_schedule (
 		academic_year varchar(8) not null,
