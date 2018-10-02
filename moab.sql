@@ -45,7 +45,7 @@ CREATE SCHEMA moab
 	CREATE TABLE blogs (
 		userid bigint not null references ocsigen_start.users(userid),
 		academic_year varchar(8) not null,
-		week smallint not null,
+		learning_week smallint not null,
 		title text not null,
 		text text not null,
 		primary key (userid, academic_year, week)
