@@ -31,7 +31,6 @@ let%client get_schedule =
 let%shared schedule_table ayear gnr weekday =
 	let%lwt schedule = get_schedule (ayear, gnr) in
 	let%lwt learning_weeks = Moab_terms.get_learning_weeks ayear in
-	Ocsigen_messages.console (fun () -> Printf.sprintf "s: %d lw: %d" (List.length schedule) (List.length learning_weeks));
 	let%lwt trs = map2_s (fun (week, uid1, uid2) (w, y) ->
 		let create_field uid = match uid with
 		| None -> Lwt.return [pcdata [%i18n S.none]]
@@ -39,12 +38,11 @@ let%shared schedule_table ayear gnr weekday =
 			Lwt.return [pcdata fn; pcdata " "; pcdata ln] in
 		let%lwt f1 = create_field uid1 in
 		let%lwt f2 = create_field uid2 in
-		let (d1, d2) = Date.week_first_last (Int32.to_int w) y in
+		let (d1, _) = Date.week_first_last (Int32.to_int w) y in
+		let d = Date.add d1 (Date.Period.day weekday) in
 		Lwt.return @@ tr [
 			td [
-				pcdata (Printer.Date.sprint "%b %d" d1);
-				pcdata " - ";
-				pcdata (Printer.Date.sprint "%b %d" d2)
+				pcdata (Printer.Date.sprint "%b %d" d);
 			];
 			td f1;
 			td f2
@@ -66,9 +64,11 @@ let%server do_schedule_presentation () () =
 let%shared real_schedule_presentation_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt gnr = Moab_students.get_group_number (ayear, myid) in
+	let%lwt sids = Moab_sessions.(find_sessions (ayear, Seminar, gnr)) in
+	let%lwt weekday = Moab_sessions.get_session_info (List.hd sids) in
 	match gnr with
 	| None -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_group_number]]]
-	| Some g -> let%lwt schedule_table = schedule_table ayear g 1 in
+	| Some g -> let%lwt schedule_table = schedule_table ayear g weekday in
 			Moab_container.page (Some myid) [
 				div ~a:[a_class ["content-box"]] [
 					h1 [pcdata [%i18n S.schedule_presentation]];

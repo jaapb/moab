@@ -5,6 +5,13 @@
 	open CalendarLib
 ]
 
+(* Types *)
+
+[%%shared
+	type session_type = Seminar | Lecture
+	[@@deriving json]
+]
+
 (* Local services *)
 
 let%server setup_sessions_action = Eliom_service.create_attached_post
@@ -45,6 +52,23 @@ let%server get_current_sessions ayear =
 let%client get_current_sessions =
 	~%(Eliom_client.server_function [%derive.json : string]
 		(Os_session.connected_wrapper get_current_sessions))
+
+let%server find_sessions (ayear, session_type, group_number) =
+	let stype = match session_type with
+	| Seminar -> "S"
+	| Lecture -> "L" in
+	Moab_session_db.find_sessions ayear stype group_number
+
+let%client find_sessions =
+	~%(Eliom_client.server_function [%derive.json : string * session_type * int option]
+		(Os_session.connected_wrapper find_sessions))
+
+let%server get_session_info ayear =
+	Moab_session_db.get_session_info ayear
+
+let%client get_session_info =
+	~%(Eliom_client.server_function [%derive.json : int64]
+		(Os_session.connected_wrapper get_session_info))
 
 (* Handlers *)
 

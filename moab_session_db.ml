@@ -52,3 +52,22 @@ let get_week_sessions ayear year learning_week =
 			WHERE s.academic_year = $ayear \
 			AND year = $year")
 
+let find_sessions ayear stype group_number =
+	full_transaction_block (fun dbh -> match group_number with
+		| None -> PGSQL(dbh) "SELECT session_id \
+				FROM moab.sessions \
+				WHERE academic_year = $ayear AND session_type = $stype"
+		| Some g -> PGSQL(dbh) "SELECT session_id \
+				FROM moab.sessions
+				WHERE academic_year = $ayear AND session_type = $stype \
+					AND group_number = $g")
+
+let get_session_info session_id =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT weekday \
+			FROM moab.sessions \
+			WHERE session_id = $session_id") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [w] -> Lwt.return w
+	| _ -> Lwt.fail (Invalid_argument "get_session_info found multiple session with the same ID")
