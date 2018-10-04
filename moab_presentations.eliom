@@ -3,6 +3,7 @@
 	open Eliom_content.Html.F
 	open Eliom_parameter
 	open CalendarLib
+	open Lwt
 ]
 
 [%%shared
@@ -27,6 +28,15 @@ let map2i_s (f: int -> 'a -> 'b -> 'c Lwt.t) (l1: 'a list) (l2: 'b list): 'c lis
 		| _, _ -> Lwt.fail (Invalid_argument "map2i_s") in
 	map2i_s_aux f 0 l1 l2
 
+let rec take n l =
+	match l with
+	| [] -> []
+	| h::t -> if n = 0 then [] else h::take (n-1) t
+
+let rec drop n l =
+	match l with
+	| [] -> []
+	| h::t -> if n = 0 then l else drop (n-1) t
 ]
 
 (* Database access *)
@@ -41,18 +51,21 @@ let%client get_schedule =
 (* Utility functions *)
 
 let%shared schedule_table ayear gnr weekday =
-	let%lwt schedule = get_schedule (ayear, gnr) in
+	let sw = ~%(!Moab_config.presentation_start_week) in
+	let%lwt schedule = get_schedule (ayear, gnr) >|= drop (sw - 1) in
 	let%lwt group_members = Moab_students.get_students (ayear, Some gnr) in
-	let%lwt learning_weeks = Moab_terms.get_learning_weeks ayear in
+	let%lwt learning_weeks = Moab_terms.get_learning_weeks ayear >|= drop (sw - 1) in
 	let%lwt trs = map2i_s (fun i (week, uid1, uid2) (w, y) ->
 		let create_field uid = match uid with
 		| None -> 
 				if (2*i) < List.length group_members then
-					Lwt.return [pcdata [%i18n S.available]]
+					Lwt.return @@
+					td ~a:[a_class ["available"]] [pcdata [%i18n S.available]]
 				else
-					Lwt.return [pcdata [%i18n S.not_available]]
+					Lwt.return @@
+					td ~a:[a_class ["not-available"]] [pcdata [%i18n S.not_available]]
 		| Some u -> let%lwt (fn, ln) = Moab_users.get_name u in
-			Lwt.return [pcdata fn; pcdata " "; pcdata ln] in
+			Lwt.return @@ td [pcdata fn; pcdata " "; pcdata ln] in
 		let%lwt f1 = create_field uid1 in
 		let%lwt f2 = create_field uid2 in
 		let (d1, _) = Date.week_first_last (Int32.to_int w) y in
@@ -61,8 +74,8 @@ let%shared schedule_table ayear gnr weekday =
 			td [
 				pcdata (Printer.Date.sprint "%b %d" d);
 			];
-			td f1;
-			td f2
+			f1;
+			f2
 		]) schedule learning_weeks in
 	Lwt.return @@ table ~a:[a_class ["schedule-table"]] (
 		tr [

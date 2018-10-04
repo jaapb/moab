@@ -54,3 +54,13 @@ table.schedule-table tr:nth-child(even)
 {
 	background-color: darkgray;
 }
+
+table.schedule-table tr:nth-child(even) td.available
+{
+	background-color: lightgreen;
+}
+
+table.schedule-table tr:nth-child(odd) td.available
+{
+	background-color: palegreen;
+}

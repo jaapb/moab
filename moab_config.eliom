@@ -34,6 +34,7 @@ let os_db_unix_domain_socket_dir = ref None
 (* Term *)
 
 let current_academic_year = ref ""
+let presentation_start_week = ref 1
 
 (* Get variables values from the ocsigenserver configuration file *)
 
@@ -81,7 +82,10 @@ let os_db = Ocsigen_extensions.Configuration.(
 (* Moab *)
 let moab = Ocsigen_extensions.Configuration.(
 	let elements = [
-		element ~name:"academic-year" ~pcdata:(fun t -> current_academic_year := t) ()
+		element ~obligatory:true ~name:"academic-year"
+			~pcdata:(fun t -> current_academic_year := t) ();
+		element ~obligatory:true ~name:"presentation-start"
+			~pcdata:(fun t -> presentation_start_week := int_of_string t) ()
 	] in
 
 	element ~name:"moab" ~obligatory:true ~elements ()
