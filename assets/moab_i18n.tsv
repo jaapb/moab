@@ -124,3 +124,5 @@ unknown_student	This student is not known.	Cet(te) étudiant(e) n'est pas connu(
 title	Title	Titre
 writing_blog_for_week	You are writing your blog for learning week	Vous écrivez votre blog pour la semaine numéro
 no_blog_needed	It is not a learning week, you do not need to submit a blog for this week.	Cette semaine n'étant pas une semaine d'éducations, vous n'avez pas à soumettre de blog.
+available	{{{capitalize?A||a}}}vailable	{{{capitalize?D||d}}}isponible
+not_available	{{{capitalize?N||n}}}ot available	{{{capitalize?N||n}}}on disponible

@@ -15,6 +15,18 @@ let rec map2_s (f: 'a -> 'b -> 'c Lwt.t) (l1: 'a list) (l2: 'b list): 'c list Lw
 		let%lwt r = map2_s f t1 t2 in
 		Lwt.return @@ h::r
 	| _, _ -> Lwt.fail (Invalid_argument "map2_s")
+
+let map2i_s (f: int -> 'a -> 'b -> 'c Lwt.t) (l1: 'a list) (l2: 'b list): 'c list Lwt.t =
+	let rec map2i_s_aux f c l1 l2 =
+		match l1, l2 with
+		| [], [] -> Lwt.return []
+		| h1::t1, h2::t2 ->
+			let%lwt h = f c h1 h2 in
+			let%lwt r = map2i_s_aux f (c+1) t1 t2 in
+			Lwt.return @@ h::r
+		| _, _ -> Lwt.fail (Invalid_argument "map2i_s") in
+	map2i_s_aux f 0 l1 l2
+
 ]
 
 (* Database access *)
@@ -30,10 +42,15 @@ let%client get_schedule =
 
 let%shared schedule_table ayear gnr weekday =
 	let%lwt schedule = get_schedule (ayear, gnr) in
+	let%lwt group_members = Moab_students.get_students (ayear, Some gnr) in
 	let%lwt learning_weeks = Moab_terms.get_learning_weeks ayear in
-	let%lwt trs = map2_s (fun (week, uid1, uid2) (w, y) ->
+	let%lwt trs = map2i_s (fun i (week, uid1, uid2) (w, y) ->
 		let create_field uid = match uid with
-		| None -> Lwt.return [pcdata [%i18n S.none]]
+		| None -> 
+				if (2*i) < List.length group_members then
+					Lwt.return [pcdata [%i18n S.available]]
+				else
+					Lwt.return [pcdata [%i18n S.not_available]]
 		| Some u -> let%lwt (fn, ln) = Moab_users.get_name u in
 			Lwt.return [pcdata fn; pcdata " "; pcdata ln] in
 		let%lwt f1 = create_field uid1 in
