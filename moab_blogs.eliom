@@ -145,11 +145,12 @@ let%shared real_edit_blog_handler myid () () =
 		| Some (tt, tx) -> (tt, tx) in
 		Lwt.return [
 			p [pcdata [%i18n S.writing_blog_for_week]; pcdata " "; pcdata (string_of_int learning_week)];
+			p [pcdata [%i18n S.blog_message]];
 			Form.post_form ~service:edit_blog_action (fun (title, text) -> [
 				table [
 					tr [
 						th [pcdata [%i18n S.title]];
-						td [Form.input ~input_type:`Text ~name:title ~value:title_v Form.string]
+						td [Form.input ~a:[a_size 60] ~input_type:`Text ~name:title ~value:title_v Form.string]
 					];
 					tr [
 						td ~a:[a_colspan 2] [

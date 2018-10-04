@@ -7,3 +7,5 @@ val get_current_sessions: string -> int64 list Lwt.t
 val get_week_sessions: string -> int -> int -> int64 list Lwt.t
 val find_sessions: string -> string -> int option -> int64 list Lwt.t
 val get_session_weekday: int64 -> int Lwt.t
+val get_session_time: int64 -> (Time.t * Time.t) Lwt.t
+val get_session_room: int64 -> string option Lwt.t

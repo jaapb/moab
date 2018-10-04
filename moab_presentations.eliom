@@ -55,6 +55,24 @@ let%client schedule_presentation =
 	~%(Eliom_client.server_function [%derive.json: string * int * bool * int64]
 			(Os_session.connected_wrapper schedule_presentation))
 
+let%server find_presentation (ayear, userid) =
+	Moab_presentation_db.find_presentation ayear userid
+
+let%client find_presentation =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+			(Os_session.connected_wrapper find_presentation))
+
+let%server find_presentation_opt (ayear, userid) =
+	try%lwt
+		let%lwt x = find_presentation (ayear, userid) in
+		Lwt.return_some x
+	with
+		Not_found -> Lwt.return_none
+
+let%client find_presentation_opt =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+			(Os_session.connected_wrapper find_presentation_opt))
+
 (* Utility functions *)
 
 let%shared schedule_table myid ayear gnr weekday =
@@ -139,6 +157,7 @@ let%shared real_schedule_presentation_handler myid () () =
 			Moab_container.page (Some myid) [
 				div ~a:[a_class ["content-box"]] [
 					h1 [pcdata [%i18n S.schedule_presentation]];
+					p [pcdata [%i18n S.schedule_message]];
 					schedule_table
 				]
 			]

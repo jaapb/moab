@@ -63,12 +63,26 @@ let%client find_sessions =
 	~%(Eliom_client.server_function [%derive.json : string * session_type * int option]
 		(Os_session.connected_wrapper find_sessions))
 
-let%server get_session_weekday ayear =
-	Moab_session_db.get_session_weekday ayear
+let%server get_session_weekday sid =
+	Moab_session_db.get_session_weekday sid
 
 let%client get_session_weekday =
 	~%(Eliom_client.server_function [%derive.json : int64]
 		(Os_session.connected_wrapper get_session_weekday))
+
+let%server get_session_time sid =
+	Moab_session_db.get_session_time sid
+
+let%client get_session_time =
+	~%(Eliom_client.server_function [%derive.json : int64]
+		(Os_session.connected_wrapper get_session_time))
+
+let%server get_session_room sid =
+	Moab_session_db.get_session_room sid
+
+let%client get_session_room =
+	~%(Eliom_client.server_function [%derive.json : int64]
+		(Os_session.connected_wrapper get_session_room))
 
 (* Handlers *)
 

@@ -71,3 +71,24 @@ let get_session_weekday session_id =
 	| [] -> Lwt.fail Not_found
 	| [w] -> Lwt.return w
 	| _ -> Lwt.fail (Invalid_argument "get_session_weekday found multiple session with the same ID")
+
+let get_session_time session_id =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT start_time, end_time \
+			FROM moab.sessions \
+			WHERE session_id = $session_id") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [t] -> Lwt.return t
+	| _ -> Lwt.fail (Invalid_argument "get_session_time found multiple session with the same ID")
+
+let get_session_room session_id =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT room \
+			FROM moab.sessions \
+			WHERE session_id = $session_id") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [r] -> Lwt.return r
+	| _ -> Lwt.fail (Invalid_argument "get_session_room found multiple session with the same ID")
+

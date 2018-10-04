@@ -156,19 +156,61 @@ let%shared student_dashboard myid =
 	let%lwt attendance_row = Moab_attendance.attendance_tr myid in
 	let%lwt blog_row = Moab_blogs.blog_tr myid in
 	let%lwt gn = Moab_students.get_group_number (ayear, myid) in
+	let%lwt l_sid = Moab_sessions.(find_sessions (ayear, Lecture, None)) in
+	let%lwt l_wd = Moab_sessions.get_session_weekday (List.hd l_sid) in
+	let%lwt (l_st, l_et) = Moab_sessions.get_session_time (List.hd l_sid) in
+	let%lwt l_room = Moab_sessions.get_session_room (List.hd l_sid) in
+	let%lwt s_sid = Moab_sessions.(find_sessions (ayear, Seminar, gn)) in
+	let%lwt s_wd = Moab_sessions.get_session_weekday (List.hd s_sid) in
+	let%lwt (s_st, s_et) = Moab_sessions.get_session_time (List.hd s_sid) in
+	let%lwt s_room = Moab_sessions.get_session_room (List.hd s_sid) in
+	let%lwt pres_lw = Moab_presentations.find_presentation_opt (ayear, myid) in
+	let%lwt pres_row = match pres_lw with
+	| None -> Lwt.return @@ p [pcdata [%i18n S.no_presentation_scheduled]]
+	| Some (pr, _) -> 
+		let%lwt pres_d = Moab_terms.date_of_learning_week ayear pr (Date.day_of_int s_wd) in
+		Lwt.return @@ p [pcdata [%i18n S.your_presentation_is_scheduled_on];
+			pcdata " ";
+			pcdata (Printer.Date.sprint "%d %B %Y" pres_d);
+			pcdata "."
+		] in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [pcdata [%i18n S.dashboard]];
+		p [pcdata [%i18n S.dashboard_message]];
 		p [pcdata [%i18n S.learning_week ~capitalize:true]; pcdata ": ";
 		match lw with
 		| None -> b [pcdata [%i18n S.none]]
 		| Some l -> pcdata (string_of_int l)];
-		p [pcdata [%i18n S.group_number]; pcdata ": "; match gn with
-		| None -> b [pcdata [%i18n S.none]]
-		| Some g -> pcdata (string_of_int g)];
+		p (pcdata [%i18n S.group_number]::pcdata ": "::(match gn with
+		| None -> [b [pcdata [%i18n S.none]]]
+		| Some g -> [pcdata (string_of_int g);
+				pcdata "; ";
+				pcdata [%i18n S.lecture_on];
+				pcdata " ";
+				pcdata (Printer.name_of_day (Date.day_of_int l_wd)); 
+				pcdata " ";
+				pcdata (Printer.Time.sprint "%H:%M" l_st);
+				pcdata "-";
+				pcdata (Printer.Time.sprint "%H:%M" l_et);
+				pcdata " (";
+				pcdata (match l_room with None -> [%i18n S.none] | Some x -> x);
+				pcdata "), ";
+				pcdata [%i18n S.seminar_on];
+				pcdata " ";
+				pcdata (Printer.name_of_day (Date.day_of_int s_wd)); 
+				pcdata " ";
+				pcdata (Printer.Time.sprint "%H:%M" s_st);
+				pcdata "-";
+				pcdata (Printer.Time.sprint "%H:%M" s_et);
+				pcdata " (";
+				pcdata (match s_room with None -> [%i18n S.none] | Some x -> x);
+				pcdata ")"
+			]));
 		table ~a:[a_class ["dashboard-table"]] [
 			attendance_row;
 			blog_row
-		]
+		];
+		pres_row
 	]]
 
 let%shared examiner_dashboard () =

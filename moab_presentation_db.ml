@@ -30,3 +30,14 @@ let schedule_presentation ayear learning_week first userid =
 			ON CONFLICT (academic_year, userid) DO UPDATE \
 				SET learning_week = EXCLUDED.learning_week, \
 				first_presenter = EXCLUDED.first_presenter")
+
+let find_presentation ayear userid =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT learning_week, first_presenter \
+			FROM moab.presentation_schedule \
+			WHERE academic_year = $ayear \
+				AND userid = $userid") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [x] -> Lwt.return x
+	| _ -> Lwt.fail (Invalid_argument "find_presentation found multiple presentations for one userid")
