@@ -126,3 +126,7 @@ writing_blog_for_week	You are writing your blog for learning week	Vous écrivez 
 no_blog_needed	It is not a learning week, you do not need to submit a blog for this week.	Cette semaine n'étant pas une semaine d'éducations, vous n'avez pas à soumettre de blog.
 available	{{{capitalize?A||a}}}vailable	{{{capitalize?D||d}}}isponible
 not_available	{{{capitalize?N||n}}}ot available	{{{capitalize?N||n}}}on disponible
+confirm	{{{capitalize?C||c}}}onfirm	{{{capitalize?C||c}}}onfirmer
+cancel	{{{capitalize?C||c}}}ancel	{{{capitalize?A||a}}}nnuler
+schedule_message1	This will schedule your presentation on	Vous allez programmer votre présentation le
+schedule_message2	Any previously scheduled presentation will be cancelled. Are you sure?	Si vous avez précédemment programmé une présentation, elle sera annulée. Êtes-vous sûr?
