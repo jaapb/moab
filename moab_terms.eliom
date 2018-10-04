@@ -47,7 +47,7 @@ let%shared learning_week_of_date t d =
 	let%lwt () = Lwt_list.iteri_s (fun i (w, y) ->
 		if w = (Int32.of_int (Date.week d)) && y = (Date.year d) then
 		begin
-			res := (Some i)
+			res := Some (i+1)
 		end;
 		Lwt.return_unit
 	) l in

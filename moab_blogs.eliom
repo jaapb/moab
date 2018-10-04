@@ -58,7 +58,10 @@ let%shared blog_score uid =
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
 	let learning_week = match lw with None -> 0 | Some x -> x in
 	let%lwt b = get_nr_blogs (uid, ayear) >|= Int64.to_int in
-	let pred_score = max 0 ((List.length weeks * b / learning_week) - List.length weeks + 10) in
+	let pred_score = 
+		if learning_week = 0
+		then 0
+		else max 0 ((List.length weeks * b / learning_week) - List.length weeks + 10) in
 	Lwt.return pred_score
 
 let%shared blog_tr uid =
