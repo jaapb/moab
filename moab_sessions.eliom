@@ -63,12 +63,12 @@ let%client find_sessions =
 	~%(Eliom_client.server_function [%derive.json : string * session_type * int option]
 		(Os_session.connected_wrapper find_sessions))
 
-let%server get_session_info ayear =
-	Moab_session_db.get_session_info ayear
+let%server get_session_weekday ayear =
+	Moab_session_db.get_session_weekday ayear
 
-let%client get_session_info =
+let%client get_session_weekday =
 	~%(Eliom_client.server_function [%derive.json : int64]
-		(Os_session.connected_wrapper get_session_info))
+		(Os_session.connected_wrapper get_session_weekday))
 
 (* Handlers *)
 

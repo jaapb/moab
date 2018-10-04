@@ -65,7 +65,7 @@ let%shared real_schedule_presentation_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt gnr = Moab_students.get_group_number (ayear, myid) in
 	let%lwt sids = Moab_sessions.(find_sessions (ayear, Seminar, gnr)) in
-	let%lwt weekday = Moab_sessions.get_session_info (List.hd sids) in
+	let%lwt weekday = Moab_sessions.get_session_weekday (List.hd sids) in
 	match gnr with
 	| None -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_group_number]]]
 	| Some g -> let%lwt schedule_table = schedule_table ayear g weekday in
