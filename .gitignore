@@ -24,5 +24,4 @@ cordova
 # i18n
 moab_i18n.eliom
 
-static/css/moab.css.map
-static/defaultcss/moab.css
+static/defaultcss
