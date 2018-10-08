@@ -7,37 +7,43 @@
 
 (* Database access *)
 
-let%server get_attendance (sid, lw) =
-	Moab_attendance_db.get_attendance sid lw
+let%server get_session_attendance (sid, lw) =
+	Moab_attendance_db.get_session_attendance sid lw
 
-let%client get_attendance =
+let%client get_session_attendance =
 	~%(Eliom_client.server_function [%derive.json : int64 * int]
-		(Os_session.connected_wrapper get_attendance))
+		(Os_session.connected_wrapper get_session_attendance))
 
-let%server add_attendance (sid, uid, lw) =
-	Moab_attendance_db.add_attendance sid uid lw
+let%server add_session_attendance (sid, uid, lw) =
+	Moab_attendance_db.add_session_attendance sid uid lw
 
-let%client add_attendance =
+let%client add_session_attendance =
 	~%(Eliom_client.server_function [%derive.json : int64 * int64 * int]
-		(Os_session.connected_wrapper add_attendance))
+		(Os_session.connected_wrapper add_session_attendance))
 
-let%server get_week_attendance (uid, ayear, year, lw) =
-	Moab_attendance_db.get_week_attendance uid ayear year lw
+let%server get_week_attendance (uid, ayear, lw) =
+	Moab_attendance_db.get_week_attendance uid ayear lw
 
 let%client get_week_attendance =
-	~%(Eliom_client.server_function [%derive.json : int64 * string * int * int]
+	~%(Eliom_client.server_function [%derive.json : int64 * string * int]
 		(Os_session.connected_wrapper get_week_attendance))
+
+let%server get_attendance_list (ayear, lw) =
+	Moab_attendance_db.get_attendance_list ayear lw
+
+let%client get_attendance_list =
+	~%(Eliom_client.server_function [%derive.json : string * int32]
+		(Os_session.connected_wrapper get_attendance_list))
 
 (* Utility functions *)
 
 let%shared attendance_tr uid =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
-	let year = Date.year (Date.today ()) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
 	let%lwt week_list = Lwt_list.mapi_s (fun i (w, y) ->
 		let week_nr = i + 1 in
-		let%lwt (a, s) = get_week_attendance (uid, ayear, year, week_nr) in
+		let%lwt (a, s) = get_week_attendance (uid, ayear, week_nr) in
 		let att_class = 
 			match lw with
 			| None -> []
@@ -53,6 +59,26 @@ let%shared attendance_tr uid =
 		week_list
 	)
 
+let%shared attendance_report () =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt x = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let lw = match x with
+	| None -> 0 
+	| Some l -> l in
+	let%lwt l = get_attendance_list (ayear, Int32.of_int lw) in
+	let%lwt att_list = Lwt_list.map_s (fun (uid, pos, att) ->
+		let%lwt (fn, ln) = Moab_users.get_name uid in
+		let%lwt sid = Moab_students.get_student_id uid in
+		Lwt.return (Printf.sprintf "%s %s" fn ln, sid, if pos = 0L then 0 else Int64.to_int (Int64.div (Int64.mul att 100L) pos))
+	) l in
+	Lwt.return @@ table (List.map (fun (name, student_id, perc) ->
+		tr [
+			td [pcdata name];
+			td [pcdata student_id];
+			td [pcdata (string_of_int perc)]
+		]
+	) (List.filter (fun (_, _, p) -> p < 25) att_list))
+
 (* Handlers *)
 
 let%shared register_attendance_handler myid () () =
@@ -65,7 +91,7 @@ let%shared register_attendance_handler myid () () =
 	match sids with
 	| [] -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_session_now]]]
  	| sid::_ ->
-		let%lwt attendance = get_attendance (sid, learning_week) in
+		let%lwt attendance = get_session_attendance (sid, learning_week) in
 		let (attendance_l, attendance_h) = Eliom_shared.ReactiveData.RList.create attendance in
 		let attendance_rows l = Eliom_shared.ReactiveData.RList.map 
 			[%shared ((fun (uid, mdx_id, fn, ln) ->
@@ -93,7 +119,7 @@ let%shared register_attendance_handler myid () () =
 								Lwt.return_unit
 						|	Some uid ->
 								let%lwt (fn, ln) = Moab_users.get_name uid in
-								let%lwt () = add_attendance (~%sid, uid, ~%learning_week) in
+								let%lwt () = add_session_attendance (~%sid, uid, ~%learning_week) in
 								Eliom_shared.ReactiveData.RList.snoc (uid, student_id, fn, ln) ~%attendance_h;
 								Lwt.return_unit
 					end

@@ -44,13 +44,13 @@ let get_current_sessions ayear =
 			AND	EXTRACT(WEEK FROM CURRENT_DATE) BETWEEN start_week AND end_week \
 			AND LOCALTIME BETWEEN start_time AND end_time") 
 
-let get_week_sessions ayear year learning_week =
+let get_week_sessions ayear learning_week group_number =
 	full_transaction_block (fun dbh -> PGSQL(dbh)
 		"SELECT session_id \
 			FROM moab.sessions s JOIN moab.terms t \
 				ON s.academic_year = t.academic_year AND s.term_id = t.term_id \
 			WHERE s.academic_year = $ayear \
-			AND year = $year")
+			AND (group_number = $group_number OR group_number IS NULL)")
 
 let find_sessions ayear stype group_number =
 	full_transaction_block (fun dbh -> match group_number with

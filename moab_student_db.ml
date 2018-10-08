@@ -58,3 +58,13 @@ let get_students ayear group_number =
 				FROM moab.students \
 				WHERE academic_year = $ayear \
 					AND group_number = $g")
+
+let get_student_id uid = 
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT student_id \
+			FROM moab.students \
+			WHERE userid = $uid") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [x] -> Lwt.return x
+	| _ -> Lwt.fail (Invalid_argument "get_name found multiple users with same uid")

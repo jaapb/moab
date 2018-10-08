@@ -58,6 +58,13 @@ let%client get_students =
 	~%(Eliom_client.server_function [%derive.json : string * int option]
 			(Os_session.connected_wrapper get_students))
 
+let%server get_student_id uid =
+	Moab_student_db.get_student_id uid
+
+let%client get_student_id =
+	~%(Eliom_client.server_function [%derive.json: int64]
+			(Os_session.connected_wrapper get_student_id))
+
 (* Database access *)
 
 let%server set_student_info (uid, ayear, mdx_id, joined_week) =
