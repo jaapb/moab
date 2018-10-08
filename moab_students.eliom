@@ -91,7 +91,6 @@ let%client set_group_number =
 (* Handlers *)
 
 let%server do_add_students2 myid () (ayear, changes_list) =
-	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students2] ay: %s cl: %d" ayear (List.length changes_list));
 	let%lwt () = Lwt_list.iter_s (fun (do_b, (act, (uid, (fn, (ln, (mdx_id, email)))))) ->
 		if do_b then
 		begin
@@ -101,12 +100,17 @@ let%server do_add_students2 myid () (ayear, changes_list) =
 					| None -> Lwt.fail (Invalid_argument "group_<nr> action, but no uid")
 					| Some u -> let gp = if g = "none" then None else Some (int_of_string g) in
 							set_group_number (ayear, u, gp));
-				Scanf.sscanf act "join_%d" (fun w ->
-					let%lwt uid = Moab_users.add_user (Student, fn, ln, email, Some mdx_id) in
-					let%lwt () = set_student_info (uid, ayear, mdx_id, w) in
-					Lwt.return_unit)
 			with
-			| Scanf.Scan_failure _ -> Lwt.return_unit
+			| Scanf.Scan_failure _ ->
+			begin
+				try%lwt
+					Scanf.sscanf act "join_%d" (fun w ->
+						let%lwt uid = Moab_users.add_user (Student, fn, ln, email, Some mdx_id) in
+						let%lwt () = set_student_info (uid, ayear, mdx_id, w) in
+						Lwt.return_unit)
+				with
+				| Scanf.Scan_failure _ -> Lwt.return_unit
+			end
 		end
 		else
 			Lwt.return_unit
@@ -114,7 +118,6 @@ let%server do_add_students2 myid () (ayear, changes_list) =
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 			
 let%server do_add_students myid () (ayear_v, (group, csv)) =
-	Ocsigen_messages.console (fun () -> Printf.sprintf "[do_add_students] ay: %s g: %s csv: %s" ayear_v group csv.Ocsigen_extensions.tmp_filename);
 	let%lwt lwo = Moab_terms.learning_week_of_date ayear_v (Date.today ()) in
 	let lw = match lwo with
 		| None -> 1
@@ -129,7 +132,6 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 				try%lwt
 					let%lwt uid = Moab_users.find_user e in
 					let%lwt st_group = get_group_number (ayear_v, uid) in
-					Ocsigen_messages.console (fun () -> Printf.sprintf "> [%s] sg: %s" mdx_id (match st_group with None -> "<none>" | Some x -> string_of_int x));
 					if group <> "" then
 						match st_group with
 						| Some sg when group <> string_of_int sg ->
@@ -236,7 +238,6 @@ let%shared real_add_students_handler myid () () =
 	]
 
 let%server add_students_handler myid () () =
-	Ocsigen_messages.console (fun () -> "[add_students]");
 	Moab_base.App.register ~scope:Eliom_common.default_session_scope
 		~service:add_students_action (Moab_page.connected_page do_add_students);
 	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope

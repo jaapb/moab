@@ -87,7 +87,6 @@ let%client get_session_room =
 (* Handlers *)
 
 let%server do_setup_sessions () params =
-	Ocsigen_messages.console (fun () -> "[do_setup_sessions]");
 	let ayear = List.assoc "academic_year" params in
 	let h = Hashtbl.create (List.length params) in
 	let sid_list = ref [] in
@@ -242,23 +241,22 @@ let%shared real_setup_sessions_handler myid () () =
 			let ses_table = Eliom_content.Html.To_dom.of_element ~%session_table in
 				Lwt_js_events.clicks ~use_capture:true btn @@ fun ev _ ->
 				Lwt_list.iter_s (fun c ->
-					Lwt_log_js.ign_notice_f "Found %s, has %d children" (Js.to_string c##.nodeName) (List.length (Dom.list_of_nodeList c##.childNodes));
 					if c##.nodeName = Js.string "TR" then
 					begin
 						let _::_::_::_::_::_::x::_ = Dom.list_of_nodeList c##.childNodes in
 						let rm::_ = Dom.list_of_nodeList x##.childNodes in
 						Js.Opt.case (Dom_html.CoerceTo.element rm)
-							(fun () -> Lwt_log_js.ign_notice "Cannot coerce to element")
+							(fun () -> ())
 							(fun e -> Js.Opt.case (Dom_html.CoerceTo.input e)
-								(fun () -> Lwt_log_js.ign_notice "Cannot coerce to input")
-								(fun inp -> Lwt_log_js.ign_notice "Found room input";
+								(fun () -> ())
+								(fun inp -> 
 									if String.length (Js.to_string inp##.value) > 8 then
 									begin
 										(Js.Unsafe.coerce inp)##setCustomValidity "String too long";
 										Dom.preventDefault ev
 									end
 									else
-										(Js.Unsafe.coerce inp)##setCustomValidity "";
+										(Js.Unsafe.coerce inp)##setCustomValidity ""
 								)
 							)
 					end;

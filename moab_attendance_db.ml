@@ -40,7 +40,7 @@ let get_week_attendance userid ayear learning_week =
 let get_attendance_list ayear learning_week =
 	full_transaction_block (fun dbh -> PGSQL(dbh)
 		"SELECT st.userid, COUNT(s.session_id), COUNT(a.learning_week) \
-			FROM moab.students st JOIN moab.sessions s ON st.group_number = s.group_number \
+			FROM moab.students st JOIN moab.sessions s ON st.group_number = s.group_number OR s.group_number IS NULL \
 			CROSS JOIN generate_series(1,24) gs(week) \
 			LEFT JOIN moab.attendance a ON a.userid = st.userid \
 				AND a.session_id = s.session_id \
