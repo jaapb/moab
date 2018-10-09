@@ -44,7 +44,7 @@ let%client get_term_ids =
 let%shared learning_week_of_date t d =
 	let res = ref None in
 	let%lwt l = get_learning_weeks t in
-	let%lwt () = Lwt_list.iteri_s (fun i (w, y) ->
+	let%lwt () = Lwt_list.iteri_s (fun i (_, w, y) ->
 		if w = (Int32.of_int (Date.week d)) && y = (Date.year d) then
 		begin
 			res := Some (i+1)
@@ -55,7 +55,7 @@ let%shared learning_week_of_date t d =
 
 let%shared date_of_learning_week t lw d =
 	let%lwt l = get_learning_weeks t in
-	let (w, y) = List.nth l (lw - 1) in
+	let (_, w, y) = List.nth l (lw - 1) in
 	let (s, e) = Date.week_first_last (Int32.to_int w) y in
 	Lwt.return (Date.add s (Date.Period.day (Date.int_of_day d - 1)))
 

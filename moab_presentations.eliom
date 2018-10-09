@@ -107,7 +107,7 @@ let%shared schedule_table myid ayear gnr weekday =
 			)
 		)
 	] in
-	let%lwt trs = map2i_s (fun i (week, uid1, uid2) (w, y) ->
+	let%lwt trs = map2i_s (fun i (week, uid1, uid2) (_, w, y) ->
 		let id_string lw f =
 			Printf.sprintf "%d%s" lw (if f then "-first" else "-second") in
 		let create_field first uid = match uid with

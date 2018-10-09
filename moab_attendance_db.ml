@@ -18,19 +18,19 @@ let add_session_attendance session_id userid learning_week =
 			($session_id, $userid, $learning_week) \
 			ON CONFLICT DO NOTHING")
 
-let get_week_attendance userid ayear learning_week =
+let get_week_attendance userid ayear term_id learning_week =
 	Moab_student_db.get_group_number ayear userid >>=
 	function
 	| None -> Lwt.fail_with "user does not have group number"
 	| Some group_number -> begin
-		Moab_session_db.get_week_sessions ayear learning_week group_number >>=
+		Moab_session_db.get_week_sessions ayear term_id group_number >>=
 		fun total_sids -> full_transaction_block (fun dbh -> PGSQL(dbh)
 			"SELECT s.session_id \
-				FROM moab.sessions s JOIN moab.terms t
-					ON s.academic_year = t.academic_year AND s.term_id = t.term_id \
+				FROM moab.sessions s 
 					JOIN moab.attendance a \
 					ON s.session_id = a.session_id \
 				WHERE s.academic_year = $ayear \
+					AND term_id = $term_id \
 					AND learning_week = $learning_week \
 					AND userid = $userid") >>=
 		fun attended_sids ->
@@ -38,16 +38,41 @@ let get_week_attendance userid ayear learning_week =
 		end	
 
 let get_attendance_list ayear learning_week =
-	full_transaction_block (fun dbh -> PGSQL(dbh)
-		"SELECT st.userid, COUNT(s.session_id), COUNT(a.learning_week) \
-			FROM moab.students st JOIN moab.sessions s ON st.group_number = s.group_number OR s.group_number IS NULL \
-			CROSS JOIN generate_series(1,24) gs(week) \
-			LEFT JOIN moab.attendance a ON a.userid = st.userid \
-				AND a.session_id = s.session_id \
-				AND a.learning_week = gs.week
-			WHERE st.academic_year = $ayear AND gs.week <= $learning_week \
-			GROUP BY st.userid \
-			ORDER BY 3 ASC, 2 DESC") >>=
-	Lwt_list.map_s (function
-	| (uid, Some c1, Some c2) -> Lwt.return (uid, c1, c2)
-	| _ -> Lwt.fail_with "get_attendance_list: COUNT returned null value")
+	let ht = Hashtbl.create 1024 in
+	Moab_term_db.get_learning_weeks ayear >>=
+	Lwt_list.iteri_s (fun i (t, _, _) ->
+		let week_nr = i + 1 in
+		if week_nr <= learning_week then
+		begin
+			full_transaction_block (fun dbh -> PGSQL(dbh)
+				"SELECT st.userid, COUNT(s.session_id) \
+					FROM moab.students st JOIN moab.sessions s ON \
+						st.group_number = s.group_number OR s.group_number IS NULL \
+					WHERE $week_nr BETWEEN joined_week AND left_week OR (joined_week >= $week_nr AND left_week IS NULL) \
+						AND s.term_id = $t \
+					GROUP BY st.userid" >>=
+			fun p -> PGSQL(dbh)
+				"SELECT st.userid, COUNT(a.session_id) \
+					FROM moab.students st LEFT JOIN moab.attendance a ON \
+						st.userid = a.userid AND a.learning_week = $week_nr \
+					GROUP BY st.userid" >>=
+			fun a -> Lwt.return (p, a)) >>=
+			fun (pos_l, att_l) -> Lwt_list.iter_s (function
+			| (uid, Some p) ->
+					(match Hashtbl.find_opt ht uid with
+					| Some (pos, att) -> Hashtbl.replace ht uid (Int64.add pos p, att)
+					| None -> Hashtbl.add ht uid (p, 0L));
+					Lwt.return_unit
+			| _ -> Lwt.fail_with "get_attendance_list: COUNT returned null value") pos_l >>=
+			fun () -> Lwt_list.iter_s (function
+			| (uid, Some a) ->
+					(match Hashtbl.find_opt ht uid with
+					| Some (pos, att) -> Hashtbl.replace ht uid (pos, Int64.add att a)
+					| None -> Hashtbl.add ht uid (0L, a));
+					Lwt.return_unit
+			| _ -> Lwt.fail_with "get_attendance_list: COUNT returned null value") att_l
+		end
+		else
+			Lwt.return_unit
+	) >>=
+	fun () -> Lwt.return (Hashtbl.fold (fun k (v1, v2) acc -> (k, v1, v2)::acc) ht [])
