@@ -24,11 +24,11 @@ let%client setup_sessions_action =
 
 (* Database access *)
 
-let%server get_sessions ayear =
-	Moab_session_db.get_sessions ayear
+let%server get_sessions (ayear, term) =
+	Moab_session_db.get_sessions ayear term
 
 let%client get_sessions =
-	~%(Eliom_client.server_function [%derive.json : string]
+	~%(Eliom_client.server_function [%derive.json : string * int64 option]
 		(Os_session.connected_wrapper get_sessions))
 
 let%server get_fresh_session_id () =
@@ -84,6 +84,28 @@ let%client get_session_room =
 	~%(Eliom_client.server_function [%derive.json : int64]
 		(Os_session.connected_wrapper get_session_room))
 
+(* Utility functions *)
+
+let%shared session_select_widget ?current_sid ayear =
+	let%lwt current_term = Moab_terms.get_current_term_opt ayear in
+	let%lwt sessions = match current_term with
+		| None -> Lwt.return []
+		| Some x -> get_sessions (ayear, Some x) in
+	Lwt.return @@ D.Raw.select
+	(List.map (fun (_, sid, stype, wd, st, et, rm, _) ->
+		let text = Printf.sprintf "%s %s %s-%s %s"
+			(if stype = "L"
+			then [%i18n S.lecture ~capitalize:true]
+			else [%i18n S.seminar ~capitalize:true])
+			(Printer.name_of_day (Date.day_of_int wd))
+			(Printer.Time.sprint "%H:%M" st)
+			(Printer.Time.sprint "%H:%M" et)
+			(match rm with None -> "TBD" | Some x -> x) in
+		if (Some sid) = current_sid
+		then D.Raw.option ~a:[a_selected (); a_value (Int64.to_string sid)] (pcdata text)
+		else D.Raw.option ~a:[a_value (Int64.to_string sid)] (pcdata text)
+	) sessions)
+		
 (* Handlers *)
 
 let%server do_setup_sessions () params =
@@ -161,7 +183,7 @@ let%shared real_setup_sessions_handler myid () () =
 	let (group_l, group_h) = Eliom_shared.ReactiveData.RList.create groups in
 	let%lwt sessions = match ayears with
 	| [] -> Lwt.return []
-	| h::_ -> let%lwt l = get_sessions h in
+	| h::_ -> let%lwt l = get_sessions (h, None) in
 		Lwt.return @@ List.map (sessions_aux term_l group_l) l in
 	let (session_l, session_h) = Eliom_shared.ReactiveData.RList.create sessions in
 	let display_session_rows l =
@@ -187,7 +209,7 @@ let%shared real_setup_sessions_handler myid () () =
 				(fun () -> Lwt.return_unit)
 			  (fun s ->
 					let ayear = Js.to_string s##.value in
-					let%lwt sessions = get_sessions ayear in
+					let%lwt sessions = get_sessions (ayear, None) in
 					let%lwt terms = Moab_terms.get_term_ids ayear in
 					let%lwt gn = Moab_students.get_group_numbers ayear in
 					let groups = ""::(List.map string_of_int gn) in

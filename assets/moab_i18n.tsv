@@ -138,3 +138,5 @@ schedule_message	Click on any of the available slots to schedule your presentati
 no_presentation_scheduled	You have not scheduled a presentation.	Vous n'avez pas encore arrangé votre présentation.
 your_presentation_is_scheduled_on	Your presentation is scheduled on	Votre présentation est programmée le
 attendance	Attendance	Régistre de présence
+lecture	{{{capitalize?L||l}}}ecture	{{{capitalize?C||c}}}ours
+seminar	{{{capitalize?S||s}}}eminar	{{{capitalize?T||t}}}ravaux dirigés

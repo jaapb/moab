@@ -31,3 +31,15 @@ let get_term_ids ayear =
 			FROM moab.terms \
 			WHERE academic_year = $ayear \
 			ORDER BY 1 ASC")
+
+let get_current_term ayear =
+	full_transaction_block (fun dbh -> PGSQL (dbh) 
+		"SELECT term_id \
+			FROM moab.terms \
+			WHERE academic_year = $ayear \
+			 AND EXTRACT(YEAR FROM CURRENT_DATE) = year \
+			 AND EXTRACT(WEEK FROM CURRENT_DATE) BETWEEN start_week AND end_week") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [x] -> Lwt.return x
+	| _ -> Lwt.fail (Invalid_argument "get_current_term found multiple current terms")

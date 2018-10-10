@@ -39,6 +39,25 @@ let%client get_term_ids =
 	~%(Eliom_client.server_function [%derive.json : string]
 			(Os_session.connected_wrapper get_term_ids))
 
+let%server get_current_term ayear =
+	Moab_term_db.get_current_term ayear
+
+let%client get_current_term =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper get_current_term))
+
+let%server get_current_term_opt ayear =
+	try%lwt
+		let%lwt term = Moab_term_db.get_current_term ayear in
+		Lwt.return_some term
+	with
+	| Not_found -> Lwt.return_none
+
+let%client get_current_term_opt =
+	~%(Eliom_client.server_function [%derive.json : string]
+			(Os_session.connected_wrapper get_current_term_opt))
+
+	
 (* Utility functions and widgets *)
 
 let%shared learning_week_of_date t d =

@@ -2,12 +2,18 @@ open Os_db
 open Lwt
 open CalendarLib
 
-let get_sessions ayear =
-	full_transaction_block (fun dbh -> PGSQL(dbh)
-		"SELECT term_id, session_id, session_type, weekday, start_time, end_time, room, group_number \
-		FROM moab.sessions \
-		WHERE academic_year = $ayear \
-		ORDER BY weekday ASC, start_time ASC, term_id ASC")
+let get_sessions ayear term =
+	full_transaction_block (fun dbh -> match term with
+	| None -> PGSQL(dbh)
+			"SELECT term_id, session_id, session_type, weekday, start_time, end_time, room, group_number \
+			FROM moab.sessions \
+			WHERE academic_year = $ayear \
+			ORDER BY weekday ASC, start_time ASC, term_id ASC"
+	| Some t -> PGSQL(dbh)
+			"SELECT term_id, session_id, session_type, weekday, start_time, end_time, room, group_number \
+			FROM moab.sessions \
+			WHERE academic_year = $ayear AND term_id = $t \
+			ORDER BY weekday ASC, start_time ASC, term_id ASC")
 
 let get_fresh_session_id () =
 	full_transaction_block (fun dbh -> PGSQL(dbh)

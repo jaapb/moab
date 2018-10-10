@@ -88,83 +88,101 @@ let%shared register_attendance_handler myid () () =
 	let learning_week = match lw with
 		| None -> 0
 		| Some x -> x in
-	match sids with
-	| [] -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_session_now]]]
- 	| sid::_ ->
-		let%lwt attendance = get_session_attendance (sid, learning_week) in
-		let (attendance_l, attendance_h) = Eliom_shared.ReactiveData.RList.create attendance in
-		let attendance_rows l = Eliom_shared.ReactiveData.RList.map 
-			[%shared ((fun (uid, mdx_id, fn, ln) ->
-				tr [
-					td [Moab_icons.D.trash ()];
-					td [pcdata mdx_id];
-					td [pcdata fn; pcdata " "; pcdata ln]
-				]
-			): _ -> _)] l in
-		let student_id_input = D.Raw.input () in
-		let fplayer = Eliom_content.Html.D.(audio 
-			~srcs:[source ~a:[a_src (D.make_uri ~service:(Eliom_service.static_dir ()) ["failure.wav"])] ()]
-			[pcdata "alt"]) in
-		let splayer = Eliom_content.Html.D.(audio 
-			~srcs:[source ~a:[a_src (D.make_uri ~service:(Eliom_service.static_dir ()) ["success.wav"])] ()]
-			[pcdata "alt"]) in
-		ignore [%client ((Lwt.async @@ fun () ->
-			let student_id_regexp = Re.Str.regexp "M[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" in
-			let splayer = Eliom_content.Html.To_dom.of_audio ~%splayer in
-			let fplayer = Eliom_content.Html.To_dom.of_audio ~%fplayer in
-			let inp = Eliom_content.Html.To_dom.of_input ~%student_id_input in
-			Lwt_js_events.changes inp @@ fun _ _ ->
-				let student_id = String.uppercase_ascii (Js.to_string inp##.value) in
-				let%lwt () =
-				if Re.Str.string_match student_id_regexp student_id 0 = true
-				then let%lwt x = Moab_students.find_student_opt student_id in
-				begin
-					match x with
-					| None ->
-							(fplayer##play;
-							Os_msg.msg ~level:`Err [%i18n S.unknown_student];
-							Lwt.return_unit)
-					|	Some uid ->
+	let sid = match sids with
+		| [] -> None
+		| x::_ -> Some x in
+	let%lwt attendance = match sid with
+		| None -> Lwt.return []
+		| Some x -> get_session_attendance (x, learning_week) in
+	let (sid_s, sid_f) = Eliom_shared.React.S.create sid in
+	let (attendance_l, attendance_h) = Eliom_shared.ReactiveData.RList.create attendance in
+	let attendance_rows l = Eliom_shared.ReactiveData.RList.map 
+		[%shared ((fun (uid, mdx_id, fn, ln) ->
+			tr [
+				td [Moab_icons.D.trash ()];
+				td [pcdata mdx_id];
+				td [pcdata fn; pcdata " "; pcdata ln]
+			]
+		): _ -> _)] l in
+	let%lwt session_id_select = Moab_sessions.session_select_widget ?current_sid:sid ayear in
+	let student_id_input = D.Raw.input () in
+	let fplayer = Eliom_content.Html.D.(audio 
+		~srcs:[source ~a:[a_src (D.make_uri ~service:(Eliom_service.static_dir ()) ["failure.wav"])] ()]
+		[pcdata "alt"]) in
+	let splayer = Eliom_content.Html.D.(audio 
+		~srcs:[source ~a:[a_src (D.make_uri ~service:(Eliom_service.static_dir ()) ["success.wav"])] ()]
+		[pcdata "alt"]) in
+	ignore [%client ((Lwt.async @@ fun () ->
+		let student_id_regexp = Re.Str.regexp "M[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" in
+		let splayer = Eliom_content.Html.To_dom.of_audio ~%splayer in
+		let fplayer = Eliom_content.Html.To_dom.of_audio ~%fplayer in
+		let inp = Eliom_content.Html.To_dom.of_input ~%student_id_input in
+		Lwt_js_events.changes inp @@ fun _ _ ->
+			let student_id = String.uppercase_ascii (Js.to_string inp##.value) in
+			let%lwt () =
+			if Re.Str.string_match student_id_regexp student_id 0 = true
+			then let%lwt x = Moab_students.find_student_opt student_id in
+			begin
+				match x with
+				| None ->
+						(fplayer##play;
+						Os_msg.msg ~level:`Err [%i18n S.unknown_student];
+						Lwt.return_unit)
+				|	Some uid ->
+					begin
+						match Eliom_shared.React.S.value ~%sid_s with
+						| None -> Lwt.return_unit
+						| Some x ->
 							let%lwt (fn, ln) = Moab_users.get_name uid in
-							let%lwt () = add_session_attendance (~%sid, uid, ~%learning_week) in
+							let%lwt () = add_session_attendance (x, uid, ~%learning_week) in
 							Eliom_shared.ReactiveData.RList.snoc (uid, student_id, fn, ln) ~%attendance_h;
 							splayer##play;
 							Lwt.return_unit
-				end
-				else
-				begin
-					Os_msg.msg ~level:`Err [%i18n S.invalid_student_id];
-					Lwt.return_unit
-				end in
-				inp##.value := Js.string "";
-				inp##focus;
+					end
+			end
+			else
+			begin
+				Os_msg.msg ~level:`Err [%i18n S.invalid_student_id];
 				Lwt.return_unit
-		): unit)];
-		let focus_f = [%client (fun _ -> 
-			let inp = Eliom_content.Html.To_dom.of_element ~%student_id_input in
-			Js.Opt.case (Dom_html.CoerceTo.input inp)
-			(fun () -> ())
-			(fun s -> s##focus)
-		)] in
-		Moab_container.page ~a:[a_onload focus_f] (Some myid)
-		[
-			splayer;
-			fplayer;
-			div ~a:[a_class ["content-box"]] [
-				h1 [pcdata [%i18n S.register_attendance]];
-				table [
-					tr [
-						th [pcdata [%i18n S.student_id]];
-						td [student_id_input];
-					]
+			end in
+			inp##.value := Js.string "";
+			inp##focus;
+			Lwt.return_unit
+	): unit)];
+	ignore [%client ((Lwt.async @@ fun () ->
+		let sel = Eliom_content.Html.To_dom.of_select ~%session_id_select in
+		Lwt_js_events.changes sel @@ fun _ _ ->
+			let new_sid = Int64.of_string (Js.to_string sel##.value) in
+			~%sid_f (Some new_sid);
+			let%lwt new_att = get_session_attendance (new_sid, ~%learning_week) in
+			Eliom_shared.ReactiveData.RList.set ~%attendance_h new_att;
+			Lwt.return_unit
+	): unit)];
+	let focus_f = [%client (fun _ -> 
+		let inp = Eliom_content.Html.To_dom.of_input ~%student_id_input in
+		inp##focus
+	)] in
+	Moab_container.page ~a:[a_onload focus_f] (Some myid)
+	[
+		splayer;
+		fplayer;
+		div ~a:[a_class ["content-box"]] [
+			h1 [pcdata [%i18n S.register_attendance]];
+			table [
+				tr [
+					td [session_id_select]
 				];
-				R.table ~thead:(Eliom_shared.React.S.const (thead [
-					tr [
-						th [];
-						th [pcdata [%i18n S.student_id]];
-						th [pcdata [%i18n S.name]]
-					]
-				]))
-				(attendance_rows attendance_l)
-			]
-		] 
+				tr [
+					td [b [pcdata [%i18n S.student_id]]; pcdata " "; student_id_input]
+				]
+			];
+			R.table ~thead:(Eliom_shared.React.S.const (thead [
+				tr [
+					th [];
+					th [pcdata [%i18n S.student_id]];
+					th [pcdata [%i18n S.name]]
+				]
+			]))
+			(attendance_rows attendance_l)
+		]
+	] 
