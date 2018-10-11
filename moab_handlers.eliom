@@ -137,6 +137,7 @@ let%shared admin_dashboard () =
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt sids = Moab_students.get_students (ayear, None) in
 	let%lwt att_rep = Moab_attendance.attendance_report () in
+	let%lwt blog_rep = Moab_blogs.blog_report () in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [pcdata [%i18n S.dashboard]];
 		p [
@@ -150,7 +151,9 @@ let%shared admin_dashboard () =
 			pcdata (string_of_int (List.length sids))
 		];
 		h2 [pcdata [%i18n S.attendance]];
-		att_rep
+		att_rep;
+		h2 [pcdata [%i18n S.blogs_to_be_approved]];
+		blog_rep
 	]]
 
 let%shared student_dashboard myid =

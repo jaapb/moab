@@ -42,12 +42,19 @@ let%client update_blog =
 	~%(Eliom_client.server_function [%derive.json: int64 * string * int * string * string]
 		(Os_session.connected_wrapper update_blog))
 
-let%server get_nr_blogs (uid, ayear) =
-	Moab_blog_db.get_nr_blogs uid ayear
+let%server get_nr_blogs (uid, ayear, approved_only) =
+	Moab_blog_db.get_nr_blogs uid ayear approved_only
 
 let%client get_nr_blogs =
-	~%(Eliom_client.server_function [%derive.json: int64 * string]
+	~%(Eliom_client.server_function [%derive.json: int64 * string * bool]
 		(Os_session.connected_wrapper get_nr_blogs))
+
+let%server get_approvable_blogs ayear =
+	Moab_blog_db.get_approvable_blogs ayear
+
+let%client get_approvable_blogs =
+	~%(Eliom_client.server_function [%derive.json: string]
+		(Os_session.connected_wrapper get_approvable_blogs))
 
 (* Utility functions *)
 
@@ -57,7 +64,7 @@ let%shared blog_score uid =
 	let year = Date.year (Date.today ()) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
 	let learning_week = match lw with None -> 0 | Some x -> x in
-	let%lwt b = get_nr_blogs (uid, ayear) >|= Int64.to_int in
+	let%lwt b = get_nr_blogs (uid, ayear, true) >|= Int64.to_int in
 	let pred_score = 
 		if learning_week = 0
 		then 0
@@ -90,6 +97,18 @@ let%shared blog_tr uid =
 		td [b [pcdata [%i18n S.your_blogs]]; pcdata " "]::
 		(week_list @ [td [b [pcdata (string_of_int pred_score)]]])
 	)
+
+let%shared blog_report () =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt blogs = get_approvable_blogs ayear in
+	let%lwt trs = Lwt_list.map_s (fun (uid, title, week) ->
+		let%lwt (fn, ln) = Moab_users.get_name uid in
+		Lwt.return @@ tr [
+			td [pcdata fn; pcdata " "; pcdata ln];
+			td [pcdata title];
+			td [pcdata (string_of_int week)]
+		]) blogs in
+	Lwt.return @@ table (trs)
 
 (* Handlers *)
 

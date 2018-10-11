@@ -48,6 +48,7 @@ CREATE SCHEMA moab
 		learning_week smallint not null,
 		title text not null,
 		text text not null,
+		approved boolean,
 		primary key (userid, academic_year, week)
 	)
 
