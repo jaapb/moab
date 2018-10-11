@@ -48,6 +48,7 @@ let get_current_sessions ayear =
 			WHERE s.academic_year = $ayear \
 			AND EXTRACT(YEAR FROM CURRENT_DATE) = year \
 			AND	EXTRACT(WEEK FROM CURRENT_DATE) BETWEEN start_week AND end_week \
+			AND EXTRACT(DOW FROM CURRENT_DATE) = weekday \
 			AND LOCALTIME BETWEEN start_time AND end_time") 
 
 let get_week_sessions ayear term_id group_number =
