@@ -64,6 +64,10 @@ let%shared attendance_tr uid =
 	)
 
 let%shared attendance_report () =
+	let fits lw jw lfw =
+		match lfw with
+		| None -> jw <= lw
+		| Some x -> jw <= lw && lw <= x in
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt x = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let lw = match x with
@@ -73,15 +77,17 @@ let%shared attendance_report () =
 	let%lwt att_list = Lwt_list.map_s (fun (uid, pos, att) ->
 		let%lwt (fn, ln) = Moab_users.get_name uid in
 		let%lwt sid = Moab_students.get_student_id uid in
-		Lwt.return (Printf.sprintf "%s %s" fn ln, sid, if pos = 0L then 0 else Int64.to_int (Int64.div (Int64.mul att 100L) pos))
+		let%lwt (jw, lw) = Moab_students.get_active_period (ayear, uid) in
+		Lwt.return (Printf.sprintf "%s %s" fn ln, sid, (if pos = 0L then 0 else Int64.to_int (Int64.div (Int64.mul att 100L) pos)), jw, lw)
 	) l in
-	Lwt.return @@ table (List.map (fun (name, student_id, perc) ->
+	Lwt.return @@ table (List.map (fun (name, student_id, perc, _, _) ->
 		tr [
 			td [pcdata name];
 			td [pcdata student_id];
 			td [pcdata (string_of_int perc)]
 		]
-	) (List.sort (fun (_, _, x) (_, _, y) -> compare x y) (List.filter (fun (_, _, p) -> p < 25) att_list)))
+	) (List.sort (fun (_, _, x, _, _) (_, _, y, _, _) -> compare x y)
+			(List.filter (fun (_, _, p, j, l) -> p < 25 && (fits lw j l)) att_list)))
 
 (* Handlers *)
 

@@ -97,7 +97,10 @@ let%shared blog_tr uid =
 					| Some _ -> ["dt-good"]
 				end
 		in
-		Lwt.return @@	td ~a:[a_class att_class] [pcdata (string_of_int week_nr)]
+		Lwt.return @@	td ~a:[a_class att_class] [match x with
+		| None -> pcdata (string_of_int week_nr)
+		| Some w -> a ~service:Moab_services.show_blog_service [pcdata (string_of_int week_nr)] (Some uid, Some week_nr)
+		]
 	) weeks in
 	let%lwt pred_score = blog_score uid in
 	Lwt.return @@ tr (
