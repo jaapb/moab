@@ -183,13 +183,17 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 			)
 		)
 	) [] c in
-	let%lwt act_list = Hashtbl.fold (fun uid () acc ->
-		let%lwt acc' = acc in
-		let%lwt mdx_id = get_student_id uid in 
-		let%lwt (_, fn, ln, _, _, _) = Os_db.User.user_of_userid uid in
-		let%lwt e = Os_db.User.email_of_userid uid in
-		Lwt.return @@ (`Deactivate lw, Some uid, fn, ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
-	rem_hashtbl (Lwt.return act_list0) in
+	let%lwt act_list = 
+		if group = "" then
+			Hashtbl.fold (fun uid () acc ->
+			let%lwt acc' = acc in
+			let%lwt mdx_id = get_student_id uid in 
+			let%lwt (_, fn, ln, _, _, _) = Os_db.User.user_of_userid uid in
+			let%lwt e = Os_db.User.email_of_userid uid in
+			Lwt.return @@ (`Deactivate lw, Some uid, fn, ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
+			rem_hashtbl (Lwt.return act_list0)
+		else
+			Lwt.return act_list0 in
 	let%lwt () = Csv_lwt.close_in c in
 	Moab_container.page (Some myid) 
 	[
