@@ -77,7 +77,7 @@ let%shared attendance_report () =
 			td [pcdata student_id];
 			td [pcdata (string_of_int perc)]
 		]
-	) (List.filter (fun (_, _, p) -> p < 25) att_list))
+	) (List.sort (fun (_, _, x) (_, _, y) -> compare x y) (List.filter (fun (_, _, p) -> p < 25) att_list)))
 
 (* Handlers *)
 
