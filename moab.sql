@@ -19,6 +19,17 @@ CREATE SCHEMA ocsigen_start
 		email citext primary key,
 		userid bigint NOT NULL references users(userid),
 		validated boolean NOT NULL DEFAULT(false)
+	)
+
+	CREATE TABLE activation (
+		activationkey text primary key,
+		userid bigint NOT NULL references users(userid),
+		email citext NOT NULL,
+		autoconnect boolean NOT NULL,
+		validity bigint NOT NULL,
+		action text NOT NULL,
+		data text NOT NULL,
+		creationdate timestamptz NOT NULL default now()
 	);
 
 CREATE SCHEMA moab
