@@ -48,7 +48,7 @@ let get_attendance_list ayear learning_week =
 				"SELECT st.userid, COUNT(s.session_id) \
 					FROM moab.students st JOIN moab.sessions s ON \
 						st.group_number = s.group_number OR s.group_number IS NULL \
-					WHERE $week_nr BETWEEN joined_week AND left_week OR (joined_week >= $week_nr AND left_week IS NULL) \
+					WHERE $week_nr BETWEEN joined_week AND left_week OR (joined_week <= $week_nr AND left_week IS NULL) \
 						AND s.term_id = $t \
 					GROUP BY st.userid" >>=
 			fun p -> PGSQL(dbh)

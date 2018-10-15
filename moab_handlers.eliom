@@ -135,7 +135,7 @@ let%client preregister_handler =
 let%shared admin_dashboard () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
-	let%lwt sids = Moab_students.get_students (ayear, None) in
+	let%lwt sids = Moab_students.get_active_students (ayear, (match lw with None -> 0 | Some x -> x), None) in
 	let%lwt att_rep = Moab_attendance.attendance_report () in
 	let%lwt blog_rep = Moab_blogs.blog_report () in
 	Lwt.return [div ~a:[a_class ["content-box"]] [

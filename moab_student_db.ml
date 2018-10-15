@@ -74,3 +74,16 @@ let deactivate_student ayear uid week =
 		"UPDATE moab.students \
 			SET left_week = $week \
 			WHERE academic_year = $ayear AND userid = $uid")
+
+let get_active_students ayear week group_number =
+	full_transaction_block (fun dbh -> 
+		match group_number with
+		| None -> PGSQL(dbh) "SELECT userid \
+				FROM moab.students \
+				WHERE academic_year = $ayear \
+					AND ($week BETWEEN joined_week AND left_week) OR ($week >= joined_week AND left_week IS NULL)"
+		| Some g -> PGSQL(dbh) "SELECT userid \
+				FROM moab.students \
+				WHERE academic_year = $ayear \
+					AND ($week BETWEEN joined_week AND left_week) OR ($week >= joined_week AND left_week IS NULL) \
+					AND group_number = $g")
