@@ -41,6 +41,8 @@ let%shared attendance_tr uid =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
+	let%lwt (jw, lfw0) = Moab_students.get_active_period (ayear, uid) in
+	let lfw = match lfw0 with None -> (List.length weeks) + 1 | Some x -> x in
 	let%lwt week_list = Lwt_list.mapi_s (fun i (t, w, y) ->
 		let week_nr = i + 1 in
 		let%lwt (a, s) = get_week_attendance (uid, ayear, t, week_nr) in
@@ -49,6 +51,8 @@ let%shared attendance_tr uid =
 			| None -> []
 			| Some learning_week ->
 				if week_nr > learning_week then []
+				else if week_nr < jw then []
+				else if week_nr > lfw then []
 				else if a = s then ["dt-good"]
 				else if a = 0 then ["dt-bad"]
 				else ["dt-warning"] in

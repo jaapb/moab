@@ -102,6 +102,13 @@ let%client deactivate_student =
 	~%(Eliom_client.server_function [%derive.json : string * int64 * int]
 		(Os_session.connected_wrapper deactivate_student))
 
+let%server get_active_period (ayear, uid) =
+	Moab_student_db.get_active_period ayear uid
+
+let%client get_active_period =
+	~%(Eliom_client.server_function [%derive.json : string * int64]
+		(Os_session.connected_wrapper get_active_period))
+
 (* Handlers *)
 
 let%server do_add_students2 myid () (ayear, changes_list) =

@@ -180,8 +180,12 @@ let%shared student_dashboard myid =
 			pcdata (Printer.Date.sprint "%d %B %Y" pres_d);
 			pcdata "."
 		] in
+	let%lwt (jw, lfw) = Moab_students.get_active_period (ayear, myid) in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [pcdata [%i18n S.dashboard]];
+		p (match lfw with
+		| None -> []
+		| Some x -> [b [pcdata [%i18n S.deactivated_since]; pcdata " "; pcdata (string_of_int x); pcdata " "]]);
 		p [pcdata [%i18n S.dashboard_message]];
 		p [pcdata [%i18n S.learning_week ~capitalize:true]; pcdata ": ";
 		match lw with

@@ -63,12 +63,15 @@ let%shared blog_score uid =
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
 	let year = Date.year (Date.today ()) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
+	let%lwt (jw, lfw0) = Moab_students.get_active_period (ayear, uid) in
+	let lfw = match lfw0 with None -> List.length weeks | Some x -> x in
 	let learning_week = match lw with None -> 0 | Some x -> x in
 	let%lwt b = get_nr_blogs (uid, ayear, true) >|= Int64.to_int in
+	let period = lfw - jw + 1 in
 	let pred_score = 
 		if learning_week = 0
 		then 0
-		else max 0 ((List.length weeks * b / learning_week) - List.length weeks + 10) in
+		else max 0 ((period * b / (learning_week - jw + 1)) - period + 10) in
 	Lwt.return pred_score
 
 let%shared blog_tr uid =
@@ -76,6 +79,8 @@ let%shared blog_tr uid =
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
 	let year = Date.year (Date.today ()) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
+	let%lwt (jw, lfw0) = Moab_students.get_active_period (ayear, uid) in
+	let lfw = match lfw0 with None -> List.length weeks + 1 | Some x -> x in
 	let%lwt week_list = Lwt_list.mapi_s (fun i (_, w, y) ->
 		let week_nr = i + 1 in
 		let%lwt x = get_blog_opt (uid, ayear, week_nr) in
@@ -84,6 +89,8 @@ let%shared blog_tr uid =
 			| None -> []
 			| Some learning_week ->
 				if week_nr > learning_week then []
+				else if week_nr < jw then []
+				else if week_nr > lfw then []
 				else begin
 					match x with
 					| None -> ["dt-bad"]

@@ -7,3 +7,4 @@ val get_students: string -> int option -> int64 list Lwt.t
 val get_student_id: int64 -> string Lwt.t
 val deactivate_student: string -> int64 -> int -> unit Lwt.t
 val get_active_students: string -> int -> int option -> int64 list Lwt.t
+val get_active_period: string -> int64 -> (int * int option) Lwt.t

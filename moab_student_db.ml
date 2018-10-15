@@ -87,3 +87,13 @@ let get_active_students ayear week group_number =
 				WHERE academic_year = $ayear \
 					AND ($week BETWEEN joined_week AND left_week) OR ($week >= joined_week AND left_week IS NULL) \
 					AND group_number = $g")
+
+let get_active_period ayear uid =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"SELECT joined_week, left_week \
+			FROM moab.students \
+			WHERE academic_year = $ayear AND userid = $uid") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [x] -> Lwt.return x
+	| _ -> Lwt.fail (Invalid_argument "get_active_period found multiple users with same uid")
