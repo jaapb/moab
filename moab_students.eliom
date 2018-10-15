@@ -88,6 +88,13 @@ let%client set_group_number =
 	~%(Eliom_client.server_function [%derive.json : string * int64 * int option]
 		(Os_session.connected_wrapper set_group_number))
 
+let%server deactivate_student (ayear, uid, week) =
+	Moab_student_db.deactivate_student ayear uid week
+
+let%client deactivate_student =
+	~%(Eliom_client.server_function [%derive.json : string * int64 * int]
+		(Os_session.connected_wrapper deactivate_student))
+
 (* Handlers *)
 
 let%server do_add_students2 myid () (ayear, changes_list) =
@@ -98,8 +105,7 @@ let%server do_add_students2 myid () (ayear, changes_list) =
 				Scanf.sscanf act "group_%s" (fun g ->
 					match uid with
 					| None -> Lwt.fail (Invalid_argument "group_<nr> action, but no uid")
-					| Some u -> let gp = if g = "none" then None else Some (int_of_string g) in
-							set_group_number (ayear, u, gp));
+					| Some u -> set_group_number (ayear, u, Some (int_of_string g)));
 			with
 			| Scanf.Scan_failure _ ->
 			begin
@@ -109,7 +115,17 @@ let%server do_add_students2 myid () (ayear, changes_list) =
 						let%lwt () = set_student_info (uid, ayear, mdx_id, w) in
 						Lwt.return_unit)
 				with
-				| Scanf.Scan_failure _ -> Lwt.return_unit
+				| Scanf.Scan_failure _ -> 
+				begin
+					try%lwt
+						Scanf.sscanf act "deactivate_%d" (fun w ->
+							match uid with
+							| None -> Lwt.fail (Invalid_argument "deactivate_<nr> action, but no uid")
+							| Some u -> deactivate_student (ayear, u, w)
+						)
+					with
+					| Scanf.Scan_failure _ -> Lwt.return_unit
+				end
 			end
 		end
 		else
@@ -124,7 +140,12 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 		| Some x -> x in
 	let%lwt f = Lwt_io.open_file ~mode:Lwt_io.Input csv.Ocsigen_extensions.tmp_filename in
 	let%lwt c = Csv_lwt.of_channel f in
-	let%lwt act_list = Csv_lwt.fold_left (fun acc l ->
+	let%lwt stud_list = get_students (ayear_v, None) in
+	let rem_hashtbl = Hashtbl.create (List.length stud_list) in
+		List.iter (fun uid ->
+			Hashtbl.add rem_hashtbl uid ()
+		) stud_list;
+	let%lwt act_list0 = Csv_lwt.fold_left (fun acc l ->
 		let _::name::mdx_id::_::_::_::_::_::_::_::mail::[] = l in
 		Scanf.sscanf name "%s@, %s" (fun ln fn ->
 			let name = Printf.sprintf "%s %s" fn ln in
@@ -132,21 +153,29 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 				try%lwt
 					let%lwt uid = Moab_users.find_user e in
 					let%lwt st_group = get_group_number (ayear_v, uid) in
+					Hashtbl.remove rem_hashtbl uid;
 					if group <> "" then
 						match st_group with
 						| Some sg when group <> string_of_int sg ->
 							Lwt.return @@ (`To_group (int_of_string group), Some uid, fn, ln, mdx_id, e)::acc
-						| None -> Lwt.return @@ (`To_group (int_of_string group), Some uid,  fn, ln, mdx_id, e)::acc
+						| None -> Lwt.return @@ (`To_group (int_of_string group), Some uid, fn, ln, mdx_id, e)::acc
 						| _ -> Lwt.return @@ acc
 					else	
 						match st_group with
-						| Some _ -> Lwt.return @@ (`No_group, Some uid, fn, ln, mdx_id, e)::acc
+						| Some _ -> Lwt.return @@ acc 
 						| _ -> Lwt.return @@ acc
 				with
 				| Not_found -> Lwt.return @@ (`New lw, None, fn, ln, mdx_id, e)::acc
 			)
 		)
 	) [] c in
+	let%lwt act_list = Hashtbl.fold (fun uid () acc ->
+		let%lwt acc' = acc in
+		let%lwt mdx_id = get_student_id uid in 
+		let%lwt (_, fn, ln, _, _, _) = Os_db.User.user_of_userid uid in
+		let%lwt e = Os_db.User.email_of_userid uid in
+		Lwt.return @@ (`Deactivate lw, Some uid, fn, ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
+	rem_hashtbl (Lwt.return act_list0) in
 	let%lwt () = Csv_lwt.close_in c in
 	Moab_container.page (Some myid) 
 	[
@@ -165,16 +194,16 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "join_%d" x) Form.string;
 									pcdata [%i18n S.joining_week]; pcdata " "; pcdata (string_of_int x)
 								]
-							| `No_group -> (
-									pcdata [%i18n S.no_group]::
-									Form.input ~input_type:`Hidden ~name:act ~value:"group_none" Form.string::
+							| `To_group x -> (
+									pcdata [%i18n S.to_group]::pcdata " "::pcdata (string_of_int x)::
+									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "group_%d" x) Form.string::
 									(match uid_ov with
 									| None -> []
 									| Some u -> [Form.input ~input_type:`Hidden ~name:uid ~value:u Form.int64])
 								)
-							| `To_group x -> (
-									pcdata [%i18n S.to_group]::pcdata " "::pcdata (string_of_int x)::
-									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "group_%d" x) Form.string::
+							| `Deactivate x -> (
+									pcdata [%i18n S.deactivate]::
+									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "deactivate_%d" x) Form.string::
 									(match uid_ov with
 									| None -> []
 									| Some u -> [Form.input ~input_type:`Hidden ~name:uid ~value:u Form.int64])

@@ -68,3 +68,9 @@ let get_student_id uid =
 	| [] -> Lwt.fail Not_found
 	| [x] -> Lwt.return x
 	| _ -> Lwt.fail (Invalid_argument "get_name found multiple users with same uid")
+
+let deactivate_student ayear uid week =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"UPDATE moab.students \
+			SET left_week = $week \
+			WHERE academic_year = $ayear AND userid = $uid")

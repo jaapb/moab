@@ -5,3 +5,4 @@ val get_group_numbers: string -> int list Lwt.t
 val find_student: string -> int64 Lwt.t
 val get_students: string -> int option -> int64 list Lwt.t
 val get_student_id: int64 -> string Lwt.t
+val deactivate_student: string -> int64 -> int -> unit Lwt.t

@@ -98,4 +98,3 @@ let get_session_room session_id =
 	| [] -> Lwt.fail Not_found
 	| [r] -> Lwt.return r
 	| _ -> Lwt.fail (Invalid_argument "get_session_room found multiple session with the same ID")
-
