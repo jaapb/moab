@@ -1,5 +1,6 @@
 [%%shared
 	open Lwt.Infix
+	open Eliom_content.Html
 	open Eliom_content.Html.F
 	open Eliom_parameter
 	open CalendarLib
@@ -55,6 +56,20 @@ let%server get_approvable_blogs ayear =
 let%client get_approvable_blogs =
 	~%(Eliom_client.server_function [%derive.json: string]
 		(Os_session.connected_wrapper get_approvable_blogs))
+
+let%server approve_blog (ayear, uid, week) =
+	Moab_blog_db.set_blog_status ayear uid week true
+
+let%client approve_blog =
+	~%(Eliom_client.server_function [%derive.json: string * int64 * int]
+		(Os_session.connected_wrapper approve_blog))
+
+let%server disapprove_blog (ayear, uid, week) =
+	Moab_blog_db.set_blog_status ayear uid week false
+
+let%client disapprove_blog =
+	~%(Eliom_client.server_function [%derive.json: string * int64 * int]
+		(Os_session.connected_wrapper disapprove_blog))
 
 (* Utility functions *)
 
@@ -126,25 +141,61 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 	let uid = match opt_uid with
 	| None -> myid
 	| Some x -> x in
+	let%lwt tp = Moab_users.get_user_type myid in
+	let%lwt u = Os_user_proxy.get_data  uid in
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let approve_button = D.button ~a:[a_class ["button"; "approve"]] [pcdata [%i18n S.approve]] in
+	let disapprove_button = D.button ~a:[a_class ["button"; "disapprove"]] [pcdata [%i18n S.disapprove]] in
 	let display_blog week =
 		let%lwt x = get_blog_opt (uid, ayear, week) in
 		match x with
 		| None -> Lwt.return @@ p [pcdata [%i18n S.no_blog_for_week]]
 		| Some (title, text) -> Lwt.return @@
 			div ~a:[a_class ["content-box"]]
-			(
-				h1 [pcdata title]::
+			(List.flatten [
+				[h1 [pcdata title]];
+				(if myid <> uid then [i [pcdata "By "; pcdata u.fn; pcdata " "; pcdata u.ln]] else []);	
 				List.map (fun x ->
 					p [pcdata x]
-				) (List.filter (fun x -> x <> "") (String.split_on_char '\n' text))
-			)
+				) (List.filter (fun x -> x <> "") (String.split_on_char '\n' text));
+				[approve_button; disapprove_button]
+			])
 		in
 	let%lwt blog = match opt_week, lw with
 	| None, None -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]] 
 	| Some w, _ -> display_blog w
 	| _, Some w -> display_blog w in
+	ignore [%client ((Lwt.async @@ fun () ->
+		let button = Eliom_content.Html.To_dom.of_button ~%approve_button in
+		Lwt_js_events.clicks button @@ fun _ _ ->
+			match ~%opt_week with
+			| None ->
+				Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]);
+				Lwt.return_unit
+			| Some w ->
+				let ay = ~%ayear in
+				approve_blog (ay, ~%uid, w);
+				let%lwt l = get_approvable_blogs ay in
+				(match l with
+				| [] ->	Eliom_client.change_page ~service:Os_services.main_service () ()
+				| (u, _, w)::_ -> Eliom_client.change_page ~service:Moab_services.show_blog_service (Some u, Some w) ())
+	): unit)];
+	ignore [%client ((Lwt.async @@ fun () ->
+		let button = Eliom_content.Html.To_dom.of_button ~%disapprove_button in
+		Lwt_js_events.clicks button @@ fun _ _ ->
+			match ~%opt_week with
+			| None ->
+				Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]);
+				Lwt.return_unit
+			| Some w ->
+				let ay = ~%ayear in
+				disapprove_blog (ay, ~%uid, w);
+				let%lwt l = get_approvable_blogs ay in
+				(match l with
+				| [] ->	Eliom_client.change_page ~service:Os_services.main_service () ()
+				| (u, _, w)::_ -> Eliom_client.change_page ~service:Moab_services.show_blog_service (Some u, Some w) ())
+	): unit)];
 	Moab_container.page (Some myid) 
 	[
 		blog
