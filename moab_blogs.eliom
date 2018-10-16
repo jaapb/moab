@@ -115,7 +115,7 @@ let%shared blog_report () =
 		let%lwt (fn, ln) = Moab_users.get_name uid in
 		Lwt.return @@ tr [
 			td [pcdata fn; pcdata " "; pcdata ln];
-			td [pcdata title];
+			td [a ~service:Moab_services.show_blog_service [pcdata title] (Some uid, Some week)];
 			td [pcdata (string_of_int week)]
 		]) blogs in
 	Lwt.return @@ table (trs)
