@@ -74,6 +74,13 @@ let%server schedule_presentation_service =
 		~meth:(Get unit)
 		()
 
+let%server generate_attendance_report_service =
+	create
+		~name:"generate_attendance_report"
+		~path:(Path ["generate-attendance-report"])
+		~meth:(Get ((int "start_week" ** int "end_week")))
+		()
+
 let%client settings_service =
   ~%settings_service
 
@@ -106,6 +113,9 @@ let%client register_attendance_service =
 
 let%client schedule_presentation_service =
 	~%schedule_presentation_service
+
+let%client generate_attendance_report_service =
+	~%generate_attendance_report_service
 
 (* The OS lib needs access to the settings service to perform
    redirections to it. We need to register it *)

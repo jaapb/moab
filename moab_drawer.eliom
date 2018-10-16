@@ -2,6 +2,7 @@
    Feel free to use it, modify it, and redistribute it as you wish. *)
 
 [%%shared
+   open Eliom_content.Html
    open Eliom_content.Html.F
 ]
 
@@ -11,12 +12,35 @@ let%shared item text service =
   li [ a ~a:[ a_class ["os-drawer-item"] ] ~service [pcdata text] () ]
 
 let%shared admin_menu () =
+	let gars_item =
+		D.li ~a:[a_class ["os-drawer-item"]] [pcdata [%i18n S.generate_attendance_report]] in
+	let form =
+		D.Form.get_form ~service:Moab_services.generate_attendance_report_service
+		(fun (start_week, end_week) ->
+		[label [
+			pcdata "Start week";
+			Form.input ~name:start_week ~input_type:`Text Form.int
+			];
+		 label [
+			pcdata "End week";
+			Form.input ~name:end_week ~input_type:`Text Form.int
+			];
+		 Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Generate" Form.string
+		]) in
+	ignore [%client ((Lwt.async  @@ fun () ->
+		let gi = Eliom_content.Html.To_dom.of_li ~%gars_item in
+		Lwt_js_events.clicks gi @@ fun _ _ ->
+		let%lwt _ = Ot_popup.popup ~a:[a_class ["os-sign-up"]] ~close_button:[Os_icons.F.close ()]
+		(fun close -> Lwt.return @@ div [h2 [pcdata "blerp"]; ~%form]) in
+		Lwt.return_unit
+	): unit)];
   Lwt.return @@
 	[ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
 	; item [%i18n S.setup_terms] Moab_services.setup_terms_service
 	; item [%i18n S.setup_sessions ~capitalize:true] Moab_services.setup_sessions_service
 	; item [%i18n S.add_students ~capitalize:true] Moab_services.add_students_service
 	; item [%i18n S.register_attendance] Moab_services.register_attendance_service
+	; gars_item
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]

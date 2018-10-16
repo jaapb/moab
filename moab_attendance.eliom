@@ -91,6 +91,13 @@ let%shared attendance_report () =
 
 (* Handlers *)
 
+let%shared generate_report_handler myid (start_week, end_week) () =
+	Moab_container.page (Some myid)
+	[
+		p [pcdata (string_of_int start_week)];
+		p [pcdata (string_of_int end_week)]
+	]
+
 let%shared register_attendance_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt csids = Moab_sessions.get_current_sessions ayear in

@@ -171,8 +171,8 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 		let button = Eliom_content.Html.To_dom.of_button ~%approve_button in
 		Lwt_js_events.clicks button @@ fun _ _ ->
 			match ~%opt_week with
-			| None ->
-				Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]);
+			| None -> let%lwt _ =
+					Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]) in
 				Lwt.return_unit
 			| Some w ->
 				let ay = ~%ayear in
@@ -186,8 +186,8 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 		let button = Eliom_content.Html.To_dom.of_button ~%disapprove_button in
 		Lwt_js_events.clicks button @@ fun _ _ ->
 			match ~%opt_week with
-			| None ->
-				Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]);
+			| None -> let%lwt _ =
+					Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]) in
 				Lwt.return_unit
 			| Some w ->
 				let ay = ~%ayear in
