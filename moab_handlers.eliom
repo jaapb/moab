@@ -157,6 +157,7 @@ let%shared admin_dashboard () =
 	]]
 
 let%shared student_dashboard myid =
+	try%lwt
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt attendance_row = Moab_attendance.attendance_tr myid in
@@ -222,6 +223,8 @@ let%shared student_dashboard myid =
 		];
 		pres_row
 	]]
+	with
+	| Not_found -> Lwt.return [div [p [pcdata "NOt_found error in student dashboard"]]]
 
 let%shared examiner_dashboard () =
 	Lwt.return [div ~a:[a_class ["content-box"]] [
@@ -231,12 +234,15 @@ let%shared examiner_dashboard () =
 let%shared main_service_handler myid_o () () =
 	let%lwt contents = match myid_o with
 	| None -> Lwt.return [p [%i18n welcome_text1]]
-	| Some myid -> Moab_users.(
-		let%lwt tp = get_user_type myid in
-		match tp with
-		| Admin -> admin_dashboard ()
-		| Student -> student_dashboard myid
-		| Examiner -> examiner_dashboard ())
+	| Some myid ->
+		try%lwt
+			let%lwt tp = Moab_users.get_user_type myid in
+			match tp with
+			| Admin -> admin_dashboard ()
+			| Student -> student_dashboard myid
+			| Examiner -> examiner_dashboard ()
+		with
+		| Not_found -> Lwt.return [div [p [pcdata "Not_found error while trying to find user type"]]]
 	in
   Moab_container.page
     ~a:[ a_class ["os-page-main"] ]
