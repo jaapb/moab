@@ -108,8 +108,9 @@ let%shared blog_tr uid =
 				else if week_nr > lfw then []
 				else begin
 					match x with
-					| None -> ["dt-bad"]
-					| Some _ -> ["dt-good"]
+					| Some (_, _, Some true) -> ["dt-good"]
+					| Some (_, _, None) -> ["dt-warning"]
+					| _ -> ["dt-bad"]
 				end
 		in
 		Lwt.return @@	td ~a:[a_class att_class] [match x with
@@ -151,7 +152,7 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 		let%lwt x = get_blog_opt (uid, ayear, week) in
 		match x with
 		| None -> Lwt.return @@ p [pcdata [%i18n S.no_blog_for_week]]
-		| Some (title, text) -> Lwt.return @@
+		| Some (title, text, _)  -> Lwt.return @@
 			div ~a:[a_class ["content-box"]]
 			(List.flatten [
 				[h1 [pcdata title]];
@@ -222,7 +223,7 @@ let%shared real_edit_blog_handler myid () () =
 		let%lwt x = get_blog_opt (myid, ayear, learning_week) in
 		let (title_v, text_v) = match x with
 		| None -> ("", "")
-		| Some (tt, tx) -> (tt, tx) in
+		| Some (tt, tx, _) -> (tt, tx) in
 		Lwt.return [
 			p [pcdata [%i18n S.writing_blog_for_week]; pcdata " "; pcdata (string_of_int learning_week)];
 			p [pcdata [%i18n S.blog_message]];

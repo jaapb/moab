@@ -3,7 +3,7 @@ open Lwt
 
 let get_blog userid ayear week =
 	full_transaction_block (fun dbh ->
-		PGSQL(dbh) "SELECT title, text \
+		PGSQL(dbh) "SELECT title, text, approved \
 			FROM moab.blogs \
 			WHERE userid = $userid AND academic_year = $ayear AND learning_week = $week"
 	) >>=
