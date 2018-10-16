@@ -64,3 +64,15 @@ table.schedule-table tr:nth-child(odd) td.available
 {
 	background-color: palegreen;
 }
+
+button.approve
+{
+	background-color: green;
+	color: white;
+}
+
+button.disapprove
+{
+	background-color: red;
+	color: white;
+}

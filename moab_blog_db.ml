@@ -41,3 +41,10 @@ let get_approvable_blogs ayear =
 			FROM moab.blogs \
 			WHERE academic_year = $ayear AND approved IS NULL \
 			ORDER BY learning_week ASC")
+
+let set_blog_status ayear uid week status =
+	full_transaction_block (fun dbh -> PGSQL(dbh)
+		"UPDATE moab.blogs \
+			SET approved = $status \
+			WHERE academic_year = $ayear AND userid = $uid \
+				AND learning_week = $week")
