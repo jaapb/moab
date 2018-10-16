@@ -188,9 +188,9 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 			Hashtbl.fold (fun uid () acc ->
 			let%lwt acc' = acc in
 			let%lwt mdx_id = get_student_id uid in 
-			let%lwt (_, fn, ln, _, _, _) = Os_db.User.user_of_userid uid in
+			let%lwt u = Os_user_proxy.get_data uid in
 			let%lwt e = Os_db.User.email_of_userid uid in
-			Lwt.return @@ (`Deactivate lw, Some uid, fn, ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
+			Lwt.return @@ (`Deactivate lw, Some uid, u.fn, u.ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
 			rem_hashtbl (Lwt.return act_list0)
 		else
 			Lwt.return act_list0 in
