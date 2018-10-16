@@ -285,10 +285,8 @@ let%shared real_add_students_handler myid () () =
 	]
 
 let%server add_students_handler myid () () =
-	Moab_base.App.register ~scope:Eliom_common.default_session_scope
-		~service:add_students_action (Moab_page.connected_page do_add_students);
-	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
-		~service:add_students_action2 (Os_session.connected_fun do_add_students2);
+	Moab_base.App.register ~service:add_students_action (Moab_page.connected_page do_add_students);
+	Eliom_registration.Any.register ~service:add_students_action2 (Os_session.connected_fun do_add_students2);
 	real_add_students_handler myid () ()
 
 let%client add_students_handler =

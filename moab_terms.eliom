@@ -144,8 +144,7 @@ let%shared real_setup_terms_handler myid () () =
 	]
 
 let%server setup_terms_handler myid () () =
-	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
-		~service:setup_terms_action do_setup_terms;
+	Eliom_registration.Any.register ~service:setup_terms_action do_setup_terms;
 	real_setup_terms_handler myid () ()
 
 let%client setup_terms_handler =

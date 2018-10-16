@@ -297,8 +297,7 @@ let%shared real_setup_sessions_handler myid () () =
 	]
 
 let%server setup_sessions_handler myid () () =
-	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
-		~service:setup_sessions_action do_setup_sessions;
+	Eliom_registration.Any.register ~service:setup_sessions_action do_setup_sessions;
 	real_setup_sessions_handler myid () ()
 
 let%client setup_sessions_handler =

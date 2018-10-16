@@ -204,8 +204,7 @@ let%shared real_edit_blog_handler myid () () =
 	]
 
 let%server edit_blog_handler myid () () =
-	Eliom_registration.Any.register ~scope:Eliom_common.default_session_scope
-		~service:edit_blog_action (Os_session.connected_fun do_edit_blog);
+	Eliom_registration.Any.register ~service:edit_blog_action (Os_session.connected_fun do_edit_blog);
 	real_edit_blog_handler myid () ()
 
 let%client edit_blog_handler =
