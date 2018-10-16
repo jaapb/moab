@@ -39,4 +39,5 @@ let get_approvable_blogs ayear =
 	full_transaction_block (fun dbh -> PGSQL(dbh)
 		"SELECT userid, title, learning_week \
 			FROM moab.blogs \
-			WHERE academic_year = $ayear AND approved IS NULL")
+			WHERE academic_year = $ayear AND approved IS NULL \
+			ORDER BY learning_week ASC")
