@@ -143,7 +143,7 @@ let%shared schedule_table myid ayear gnr weekday =
 
 (* Handlers *)
 
-let%shared real_schedule_presentation_handler myid () () =
+let%shared schedule_presentation_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt gnr = Moab_students.get_group_number (ayear, myid) in
 	let%lwt sids = Moab_sessions.(find_sessions (ayear, Seminar, gnr)) in

@@ -78,7 +78,7 @@ let%server generate_attendance_report_service =
 	create
 		~name:"generate_attendance_report"
 		~path:(Path ["generate-attendance-report"])
-		~meth:(Get ((int "start_week" ** int "end_week")))
+		~meth:(Get unit)
 		()
 
 let%client settings_service =

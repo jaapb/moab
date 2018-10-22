@@ -173,7 +173,7 @@ val schedule_presentation_service :
 
 val generate_attendance_report_service :
   (
-    int * int,
+    unit,
     unit,
     Eliom_service.get,
     Eliom_service.att,
@@ -181,8 +181,7 @@ val generate_attendance_report_service :
     Eliom_service.non_ext,
     Eliom_service.reg,
     [ `WithoutSuffix ],
-    [ `One of int ] Eliom_parameter.param_name *
-		[ `One of int ] Eliom_parameter.param_name,
+    unit,
 		unit,
     Eliom_service.non_ocaml
   ) Eliom_service.t

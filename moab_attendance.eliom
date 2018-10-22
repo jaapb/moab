@@ -5,6 +5,16 @@
 	open CalendarLib
 ]
 
+(* Local services *)
+
+let%server generate_attendance_report_action = Eliom_service.create_attached_post
+	~fallback:Moab_services.generate_attendance_report_service
+	~post_params:(int "start_week" ** int "end_week")
+	()
+
+let%client generate_attendance_report_action = 
+	~%generate_attendance_report_action
+
 (* Database access *)
 
 let%server get_session_attendance (sid, lw) =
@@ -91,18 +101,10 @@ let%shared attendance_report () =
 
 (* Handlers *)
 
-let%server write_file csv =
-	let tmpnam = Filename.temp_file "moab_report" ".csv" in
-	let%lwt out_ch = Lwt_io.open_file ~flags:[O_WRONLY; O_CREAT; O_TRUNC] ~mode:Output tmpnam in
-	let csv_ch = Csv_lwt.to_channel out_ch in
-	let csv_header = ["Week number"; "Scheduled sessions"; "Student number"; "Sessions attended"; "Week starting"; "Tutor";
-		"Network name"; "First Name"; "Last Name"; "Email"; "Visa?"; "Foundation?"] in
-	let%lwt () = Csv_lwt.output_all csv_ch (csv_header::List.flatten csv) in
-	let%lwt () = Csv_lwt.close_out csv_ch in
-	Lwt.return tmpnam
-
-let%shared generate_report_handler (start_week, end_week) =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+(* we have to do this this way because Eliom_registration.File is not available on the
+ * client *)
+let%server do_generate_attendance_report myid () (start_week, end_week) =
+	let ayear = !Moab_config.current_academic_year in
 	let%lwt x = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let lw = match x with
 	| None -> 0
@@ -112,13 +114,47 @@ let%shared generate_report_handler (start_week, end_week) =
 	let%lwt csv = Lwt_list.mapi_s (fun n (_, w, y) ->
 		let i = n + 1 in
 		Lwt_list.map_s (fun uid ->
-			let%lwt (_, fn, ln, _, _, _) = Os_db.User.user_of_userid uid in
-			Lwt.return [string_of_int i; ""; ""; ""; ""; ""; ""; fn; ln; ""; ""; ""]	
+			let%lwt u = Os_user_proxy.get_data uid in
+			Lwt.return [string_of_int i; ""; ""; ""; ""; ""; ""; u.fn; u.ln; ""; ""; ""]	
 		) students
 	) lws in
-	let%lwt tmpnam = write_file csv in
+	let tmpnam = Filename.temp_file "moab_report" ".csv" in
+	let%lwt out_ch = Lwt_io.open_file ~flags:[O_WRONLY; O_CREAT; O_TRUNC] ~mode:Output tmpnam in
+	let csv_ch = Csv_lwt.to_channel out_ch in
+	let csv_header = ["Week number"; "Scheduled sessions"; "Student number"; "Sessions attended"; "Week starting"; "Tutor";
+		"Network name"; "First Name"; "Last Name"; "Email"; "Visa?"; "Foundation?"] in
+	let%lwt () = Csv_lwt.output_all csv_ch (csv_header::List.flatten csv) in
+	let%lwt () = Csv_lwt.close_out csv_ch in
 	Eliom_registration.File.send ~content_type:"text/csv" tmpnam
 
+let%shared real_generate_report_handler myid () () =
+	Moab_container.page (Some myid)
+	[
+		div ~a:[a_class ["content-box"]] [
+			h1 [pcdata [%i18n S.generate_attendance_report]];
+			Form.post_form ~service:generate_attendance_report_action
+			(fun (start_week, end_week) -> [
+				label [
+					pcdata "Start week";
+					Form.input ~name:start_week ~input_type:`Text Form.int
+				];
+				label [
+					pcdata "End week";
+					Form.input ~name:end_week ~input_type:`Text Form.int
+				];
+		 		Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Generate" Form.string
+			]) ()
+		]
+	]
+
+let%server generate_report_handler myid () () =
+	Eliom_registration.Any.register ~service:generate_attendance_report_action
+		(Os_session.connected_fun do_generate_attendance_report);
+	real_generate_report_handler myid () ()
+
+let%client generate_report_handler =
+	real_generate_report_handler
+	
 let%shared register_attendance_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt csids = Moab_sessions.get_current_sessions ayear in

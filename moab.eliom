@@ -85,9 +85,9 @@ let%shared () =
 		~service:Moab_services.schedule_presentation_service
 		(Moab_page.connected_page Moab_presentations.schedule_presentation_handler);
 
-	Eliom_registration.Any.register
+	Moab_base.App.register
 		~service:Moab_services.generate_attendance_report_service
-		Moab_attendance.generate_report_handler
+		(Moab_page.connected_page Moab_attendance.generate_report_handler)
 
 let%shared () =
 	CalendarLib.Printer.day_name :=
