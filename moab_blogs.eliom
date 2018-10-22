@@ -160,7 +160,7 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 				List.map (fun x ->
 					p [pcdata x]
 				) (List.filter (fun x -> x <> "") (String.split_on_char '\n' text));
-				[approve_button; disapprove_button]
+				(if tp = Admin then [approve_button; disapprove_button] else [])
 			])
 		in
 	let%lwt blog = match opt_week, lw with
