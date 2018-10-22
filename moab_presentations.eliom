@@ -158,9 +158,3 @@ let%shared real_schedule_presentation_handler myid () () =
 					schedule_table
 				]
 			]
-
-let%server schedule_presentation_handler myid () () =
-	real_schedule_presentation_handler myid () ()
-
-let%client schedule_presentation_handler =
-	real_schedule_presentation_handler

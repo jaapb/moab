@@ -91,12 +91,33 @@ let%shared attendance_report () =
 
 (* Handlers *)
 
-let%shared generate_report_handler myid (start_week, end_week) () =
-	Moab_container.page (Some myid)
-	[
-		p [pcdata (string_of_int start_week)];
-		p [pcdata (string_of_int end_week)]
-	]
+let%server write_file csv =
+	let tmpnam = Filename.temp_file "moab_report" ".csv" in
+	let%lwt out_ch = Lwt_io.open_file ~flags:[O_WRONLY; O_CREAT; O_TRUNC] ~mode:Output tmpnam in
+	let csv_ch = Csv_lwt.to_channel out_ch in
+	let csv_header = ["Week number"; "Scheduled sessions"; "Student number"; "Sessions attended"; "Week starting"; "Tutor";
+		"Network name"; "First Name"; "Last Name"; "Email"; "Visa?"; "Foundation?"] in
+	let%lwt () = Csv_lwt.output_all csv_ch (csv_header::List.flatten csv) in
+	let%lwt () = Csv_lwt.close_out csv_ch in
+	Lwt.return tmpnam
+
+let%shared generate_report_handler (start_week, end_week) =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt x = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let lw = match x with
+	| None -> 0
+	| Some l -> l in
+	let%lwt lws = Moab_terms.get_learning_weeks ayear in
+	let%lwt students = Moab_students.get_active_students (ayear, lw, None) in
+	let%lwt csv = Lwt_list.mapi_s (fun n (_, w, y) ->
+		let i = n + 1 in
+		Lwt_list.map_s (fun uid ->
+			let%lwt (_, fn, ln, _, _, _) = Os_db.User.user_of_userid uid in
+			Lwt.return [string_of_int i; ""; ""; ""; ""; ""; ""; fn; ln; ""; ""; ""]	
+		) students
+	) lws in
+	let%lwt tmpnam = write_file csv in
+	Eliom_registration.File.send ~content_type:"text/csv" tmpnam
 
 let%shared register_attendance_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in

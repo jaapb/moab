@@ -4,6 +4,13 @@
 	open CalendarLib
 ]
 
+(* Local types *)
+
+[%%shared
+	type to_do_type = Deactivate of int | New of int | To_group of int
+	[@@deriving json]
+]
+
 (* Local services *)
 
 let%server add_students_action =
@@ -111,7 +118,7 @@ let%client get_active_period =
 
 (* Handlers *)
 
-let%server do_add_students2 myid () (ayear, changes_list) =
+let%shared do_add_students2 myid () (ayear, changes_list) =
 	let%lwt () = Lwt_list.iter_s (fun (do_b, (act, (uid, (fn, (ln, (mdx_id, email)))))) ->
 		if do_b then
 		begin
@@ -147,12 +154,8 @@ let%server do_add_students2 myid () (ayear, changes_list) =
 	) changes_list	in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 			
-let%server do_add_students myid () (ayear_v, (group, csv)) =
-	let%lwt lwo = Moab_terms.learning_week_of_date ayear_v (Date.today ()) in
-	let lw = match lwo with
-		| None -> 1
-		| Some x -> x in
-	let%lwt f = Lwt_io.open_file ~mode:Lwt_io.Input csv.Ocsigen_extensions.tmp_filename in
+let%server read_students_csv_file (fn, ayear_v, group, lw) =
+	let%lwt f = Lwt_io.open_file ~mode:Lwt_io.Input fn in
 	let%lwt c = Csv_lwt.of_channel f in
 	let%lwt stud_list = get_students (ayear_v, None) in
 	let rem_hashtbl = Hashtbl.create (List.length stud_list) in
@@ -171,15 +174,15 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 					if group <> "" then
 						match st_group with
 						| Some sg when group <> string_of_int sg ->
-							Lwt.return @@ (`To_group (int_of_string group), Some uid, fn, ln, mdx_id, e)::acc
-						| None -> Lwt.return @@ (`To_group (int_of_string group), Some uid, fn, ln, mdx_id, e)::acc
+							Lwt.return @@ (To_group (int_of_string group), Some uid, fn, ln, mdx_id, e)::acc
+						| None -> Lwt.return @@ (To_group (int_of_string group), Some uid, fn, ln, mdx_id, e)::acc
 						| _ -> Lwt.return @@ acc
 					else	
 						match st_group with
 						| Some _ -> Lwt.return @@ acc 
 						| _ -> Lwt.return @@ acc
 				with
-				| Not_found -> Lwt.return @@ (`New lw, None, fn, ln, mdx_id, e)::acc
+				| Not_found -> Lwt.return @@ (New lw, None, fn, ln, mdx_id, e)::acc
 			)
 		)
 	) [] c in
@@ -190,11 +193,29 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 			let%lwt mdx_id = get_student_id uid in 
 			let%lwt u = Os_user_proxy.get_data uid in
 			let%lwt e = Os_db.User.email_of_userid uid in
-			Lwt.return @@ (`Deactivate lw, Some uid, u.fn, u.ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
+			Lwt.return @@ (Deactivate lw, Some uid, u.fn, u.ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
 			rem_hashtbl (Lwt.return act_list0)
 		else
 			Lwt.return act_list0 in
 	let%lwt () = Csv_lwt.close_in c in
+	Lwt.return act_list
+
+let%client read_students_csv_file =
+	~%(Eliom_client.server_function [%derive.json: string * string * string * int]
+		read_students_csv_file)
+
+let%server filename_of f =
+	Eliom_request_info.get_tmp_filename f
+
+let%client filename_of f =
+	Js.to_string f##.name
+ 
+let%shared do_add_students myid () (ayear_v, (group, csv)) =
+	let%lwt lwo = Moab_terms.learning_week_of_date ayear_v (Date.today ()) in
+	let lw = match lwo with
+		| None -> 1
+		| Some x -> x in
+	let%lwt act_list = read_students_csv_file (filename_of csv, ayear_v, group, lw) in
 	Moab_container.page (Some myid) 
 	[
 		div ~a:[a_class ["content-box"]]
@@ -208,18 +229,18 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 						tr [
 							td [Form.bool_checkbox_one ~checked:true ~name:do_b ()];
 							td (match act_v with
-							| `New x -> [
+							| New x -> [
 									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "join_%d" x) Form.string;
 									pcdata [%i18n S.joining_week]; pcdata " "; pcdata (string_of_int x)
 								]
-							| `To_group x -> (
+							| To_group x -> (
 									pcdata [%i18n S.to_group]::pcdata " "::pcdata (string_of_int x)::
 									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "group_%d" x) Form.string::
 									(match uid_ov with
 									| None -> []
 									| Some u -> [Form.input ~input_type:`Hidden ~name:uid ~value:u Form.int64])
 								)
-							| `Deactivate x -> (
+							| Deactivate x -> (
 									pcdata [%i18n S.deactivate]::
 									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "deactivate_%d" x) Form.string::
 									(match uid_ov with
@@ -248,7 +269,9 @@ let%server do_add_students myid () (ayear_v, (group, csv)) =
 		]
 	]
 
-let%shared real_add_students_handler myid () () =
+let%shared add_students_handler myid () () =
+	Moab_base.App.register ~service:add_students_action (Moab_page.connected_page do_add_students);
+	Eliom_registration.Any.register ~service:add_students_action2 (Os_session.connected_fun do_add_students2);
 	let%lwt student_form = Form.lwt_post_form ~service:add_students_action (fun (ayear, (group, csv)) ->
 		let%lwt ayear_widget = Moab_terms.academic_year_select_widget (`Param ayear) in
 		Lwt.return [
@@ -283,11 +306,3 @@ let%shared real_add_students_handler myid () () =
 			student_form
 		]
 	]
-
-let%server add_students_handler myid () () =
-	Moab_base.App.register ~service:add_students_action (Moab_page.connected_page do_add_students);
-	Eliom_registration.Any.register ~service:add_students_action2 (Os_session.connected_fun do_add_students2);
-	real_add_students_handler myid () ()
-
-let%client add_students_handler =
-	real_add_students_handler

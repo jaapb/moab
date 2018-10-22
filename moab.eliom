@@ -2,15 +2,12 @@
    Feel free to use it, modify it, and redistribute it as you wish. *)
 
 let%server () =
-	(* Eliom_service.unregister Os_services.connect_service *)
 	Os_db.pwd_crypt_ref :=
 		((fun password -> Bcrypt.string_of_hash (Bcrypt.hash ~variant:Bcrypt.A password)),
 		 (fun _ password1 password2 ->
 				Bcrypt.verify password1 (Bcrypt.hash_of_string password2)))
 
 let%shared () =
-  (* Registering services. Feel free to customize handlers. *)
-
   Eliom_registration.Action.register
     ~service:Os_services.set_personal_data_service
     Moab_handlers.set_personal_data_handler;
@@ -88,9 +85,9 @@ let%shared () =
 		~service:Moab_services.schedule_presentation_service
 		(Moab_page.connected_page Moab_presentations.schedule_presentation_handler);
 
-	Moab_base.App.register
+	Eliom_registration.Any.register
 		~service:Moab_services.generate_attendance_report_service
-		(Moab_page.connected_page Moab_attendance.generate_report_handler)
+		Moab_attendance.generate_report_handler
 
 let%shared () =
 	CalendarLib.Printer.day_name :=

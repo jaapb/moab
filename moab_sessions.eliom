@@ -108,7 +108,7 @@ let%shared session_select_widget ?current_sid ayear =
 		
 (* Handlers *)
 
-let%server do_setup_sessions () params =
+let%shared do_setup_sessions () params =
 	let ayear = List.assoc "academic_year" params in
 	let h = Hashtbl.create (List.length params) in
 	let sid_list = ref [] in
@@ -170,7 +170,8 @@ let%shared time_or_empty = function
 | None -> ""
 | Some t -> Printer.Time.sprint "%H:%M" t
 	
-let%shared real_setup_sessions_handler myid () () =
+let%shared setup_sessions_handler myid () () =
+	Eliom_registration.Any.register ~service:setup_sessions_action do_setup_sessions;
 	let%lwt ayears = Moab_terms.get_academic_years () in
 	let%lwt terms = match ayears with
 	| [] -> Lwt.return []
@@ -295,10 +296,3 @@ let%shared real_setup_sessions_handler myid () () =
 			session_form
 		]
 	]
-
-let%server setup_sessions_handler myid () () =
-	Eliom_registration.Any.register ~service:setup_sessions_action do_setup_sessions;
-	real_setup_sessions_handler myid () ()
-
-let%client setup_sessions_handler =
-	real_setup_sessions_handler

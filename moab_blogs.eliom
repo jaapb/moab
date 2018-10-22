@@ -202,8 +202,8 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 		blog
 	]
 
-let do_edit_blog myid () (title, text) =
-	let ayear = !Moab_config.current_academic_year in
+let%shared do_edit_blog myid () (title, text) =
+	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt () =
 		match lw with
@@ -214,7 +214,8 @@ let do_edit_blog myid () (title, text) =
 			update_blog (myid, ayear, learning_week, title, text) in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
-let%shared real_edit_blog_handler myid () () =
+let%shared edit_blog_handler myid () () =
+	Eliom_registration.Any.register ~service:edit_blog_action (Os_session.connected_fun do_edit_blog);
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt blog_content = match lw with
@@ -254,10 +255,3 @@ let%shared real_edit_blog_handler myid () () =
 			blog_content
 		)
 	]
-
-let%server edit_blog_handler myid () () =
-	Eliom_registration.Any.register ~service:edit_blog_action (Os_session.connected_fun do_edit_blog);
-	real_edit_blog_handler myid () ()
-
-let%client edit_blog_handler =
-	real_edit_blog_handler
