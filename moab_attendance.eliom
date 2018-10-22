@@ -111,11 +111,24 @@ let%server do_generate_attendance_report myid () (start_week, end_week) =
 	| Some l -> l in
 	let%lwt lws = Moab_terms.get_learning_weeks ayear in
 	let%lwt students = Moab_students.get_active_students (ayear, lw, None) in
-	let%lwt csv = Lwt_list.mapi_s (fun n (_, w, y) ->
-		let i = n + 1 in
+	let%lwt csv = Lwt_list.mapi_s (fun i (t, w, y) ->
+		let week_nr = i + 1 in
 		Lwt_list.map_s (fun uid ->
 			let%lwt u = Os_user_proxy.get_data uid in
-			Lwt.return [string_of_int i; ""; ""; ""; ""; ""; ""; u.fn; u.ln; ""; ""; ""]	
+			let%lwt (a, s) = get_week_attendance (uid, ayear, t, week_nr) in
+			let%lwt student_id = Moab_students.get_student_id uid in
+			let%lwt email = Os_db.User.email_of_userid uid in
+			Lwt.return [string_of_int week_nr;
+				string_of_int s;
+				student_id;
+				string_of_int a;
+				"";
+				"";
+				(match email with None -> "" | Some x -> x);
+				u.fn; u.ln;
+				(match email with None -> "" | Some x -> x);
+				"";
+				""]	
 		) students
 	) lws in
 	let tmpnam = Filename.temp_file "moab_report" ".csv" in
