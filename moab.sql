@@ -85,7 +85,7 @@ CREATE SCHEMA moab
 
 	CREATE TABLE presentation_schedule (
 		academic_year varchar(8) not null,
-		group_number smallint,
+		group_number smallint not null,
 		learning_week smallint not null,
 		first_presenter boolean not null default true,
 		userid bigint not null references ocsigen_start.users(userid),

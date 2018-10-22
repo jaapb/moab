@@ -48,11 +48,11 @@ let%client get_schedule =
 	~%(Eliom_client.server_function [%derive.json: string * int]
 			(Os_session.connected_wrapper get_schedule))
 
-let%server schedule_presentation (ayear, learning_week, first, userid) =
-	Moab_presentation_db.schedule_presentation ayear learning_week first userid
+let%server schedule_presentation (ayear, learning_week, gnr, first, userid) =
+	Moab_presentation_db.schedule_presentation ayear learning_week gnr first userid
 
 let%client schedule_presentation =
-	~%(Eliom_client.server_function [%derive.json: string * int * bool * int64]
+	~%(Eliom_client.server_function [%derive.json: string * int * int * bool * int64]
 			(Os_session.connected_wrapper schedule_presentation))
 
 let%server find_presentation (ayear, userid) =
@@ -100,7 +100,7 @@ let%shared schedule_table myid ayear gnr weekday =
 						[pcdata [%i18n S.confirm ~capitalize:true]] 
 						[pcdata [%i18n S.cancel ~capitalize:true]] in
 					if ok then
-						let%lwt () = schedule_presentation (~%ayear, lw, order = "first", ~%myid) in
+						let%lwt () = schedule_presentation (~%ayear, lw, ~%gnr, order = "first", ~%myid) in
 						Os_lib.reload ()
 					else
 						Lwt.return_unit)
@@ -142,9 +142,6 @@ let%shared schedule_table myid ayear gnr weekday =
 	)
 
 (* Handlers *)
-
-let%server do_schedule_presentation () () =
-	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared real_schedule_presentation_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in

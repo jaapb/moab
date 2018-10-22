@@ -21,15 +21,16 @@ let get_schedule ayear group_number =
 	| _ -> Lwt.fail (Invalid_argument "get_schedule found null week")
 	)
 
-let schedule_presentation ayear learning_week first userid =
+let schedule_presentation ayear learning_week gnr first userid =
 	full_transaction_block (fun dbh -> PGSQL(dbh)
 		"INSERT INTO moab.presentation_schedule \
-			(academic_year, learning_week, first_presenter, userid) \
+			(academic_year, learning_week, group_number, first_presenter, userid) \
 			VALUES \
-			($ayear, $learning_week, $first, $userid) \
-			ON CONFLICT (academic_year, userid) DO UPDATE \
+			($ayear, $learning_week, $gnr, $first, $userid) \
+			ON CONFLICT (userid, academic_year) DO UPDATE \
 				SET learning_week = EXCLUDED.learning_week, \
-				first_presenter = EXCLUDED.first_presenter")
+				first_presenter = EXCLUDED.first_presenter,
+				group_number = EXCLUDED.group_number")
 
 let find_presentation ayear userid =
 	full_transaction_block (fun dbh -> PGSQL(dbh)
