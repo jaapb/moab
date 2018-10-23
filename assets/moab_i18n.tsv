@@ -146,3 +146,6 @@ deactivated_since	You have left this module in learning week	Vous avez quitté c
 approve	Approve	Approuver
 disapprove	Disapprove	Désapprouver
 generate_attendance_report	Generate attendance report	Générer compte rendu de présence
+start_week	Start week	Semaine de début
+end_week	End week	Semaine de fin
+generate	Generate	Générer

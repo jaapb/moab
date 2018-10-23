@@ -3,6 +3,7 @@
 	open Eliom_content.Html.F
 	open Eliom_parameter
 	open CalendarLib
+	open Lwt.Infix
 ]
 
 (* Local services *)
@@ -113,23 +114,31 @@ let%server do_generate_attendance_report myid () (start_week, end_week) =
 	let%lwt students = Moab_students.get_active_students (ayear, lw, None) in
 	let%lwt csv = Lwt_list.mapi_s (fun i (t, w, y) ->
 		let week_nr = i + 1 in
-		Lwt_list.map_s (fun uid ->
-			let%lwt u = Os_user_proxy.get_data uid in
-			let%lwt (a, s) = get_week_attendance (uid, ayear, t, week_nr) in
-			let%lwt student_id = Moab_students.get_student_id uid in
-			let%lwt email = Os_db.User.email_of_userid uid in
-			Lwt.return [string_of_int week_nr;
-				string_of_int s;
-				student_id;
-				string_of_int a;
-				"";
-				"";
-				(match email with None -> "" | Some x -> x);
-				u.fn; u.ln;
-				(match email with None -> "" | Some x -> x);
-				"";
-				""]	
-		) students
+		if week_nr < start_week || week_nr > end_week then
+			Lwt.return []
+		else
+			Lwt_list.map_s (fun uid ->
+				let%lwt u = Os_user_proxy.get_data uid in
+				let%lwt (a, s) = get_week_attendance (uid, ayear, t, week_nr) in
+				let%lwt student_id = Moab_students.get_student_id uid in
+				let%lwt email = Os_db.User.email_of_userid uid >|= (function None -> "" | Some x -> x) in
+				let nw_id = Scanf.ksscanf email
+					(fun _ _ -> "")
+					"%s@@live.mdx.ac.uk"
+					(fun uid -> uid) in
+				let (sw, _) = Date.week_first_last (Int32.to_int w) y in
+				Lwt.return [string_of_int week_nr;
+					string_of_int s;
+					student_id;
+					string_of_int a;
+					Printer.Date.sprint "%Y-%m-%d" sw;
+					"";
+					nw_id;
+					u.fn; u.ln;
+					email;
+					"";
+					""]
+			) students
 	) lws in
 	let tmpnam = Filename.temp_file "moab_report" ".csv" in
 	let%lwt out_ch = Lwt_io.open_file ~flags:[O_WRONLY; O_CREAT; O_TRUNC] ~mode:Output tmpnam in
@@ -147,15 +156,17 @@ let%shared real_generate_report_handler myid () () =
 			h1 [pcdata [%i18n S.generate_attendance_report]];
 			Form.post_form ~service:generate_attendance_report_action
 			(fun (start_week, end_week) -> [
-				label [
-					pcdata "Start week";
-					Form.input ~name:start_week ~input_type:`Text Form.int
+				table [
+					tr [
+						td [label [pcdata [%i18n S.start_week]; pcdata " "; Form.input ~name:start_week ~input_type:`Text Form.int]]
+					];
+					tr [
+						td [label [pcdata [%i18n S.end_week]; pcdata " "; Form.input ~name:end_week ~input_type:`Text Form.int]]
+					];
+					tr [
+						td [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.generate] Form.string]
+					]
 				];
-				label [
-					pcdata "End week";
-					Form.input ~name:end_week ~input_type:`Text Form.int
-				];
-		 		Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:"Generate" Form.string
 			]) ()
 		]
 	]
