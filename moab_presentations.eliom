@@ -53,7 +53,8 @@ let%client get_random_unoccupied_student =
 let%shared schedule_table av_clicked myid ayear gnr weekday =
 	let sw = ~%(!Moab_config.presentation_start_week) in
 	let%lwt schedule = get_schedule (ayear, gnr) >|= drop (sw - 1) in
-	let%lwt group_members = Moab_students.get_students (ayear, Some gnr) in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let%lwt group_members = Moab_students.get_students (ayear, Some gnr, lw) in
 	let%lwt learning_weeks = Moab_terms.get_learning_weeks ayear >|= drop (sw - 1) in
 	let%lwt trs = map2i_s (fun i (week, uid1, uid2) (_, w, y) ->
 		let id_string lw f =

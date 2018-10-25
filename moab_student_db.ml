@@ -48,16 +48,25 @@ let find_student student_id =
 	| [x] -> Lwt.return x
 	| _ -> Lwt.fail (Invalid_argument "find_student found multiple students with same student_id")
 
-let get_students ayear group_number =
+let get_students ayear group_number lw =
 	full_transaction_block (fun dbh -> 
-		match group_number with
-		| None -> PGSQL(dbh) "SELECT userid \
+		match group_number, lw with
+		| None, None -> PGSQL(dbh) "SELECT userid \
 				FROM moab.students \
 				WHERE academic_year = $ayear"
-		| Some g -> PGSQL(dbh) "SELECT userid \
+		| None, Some lw -> PGSQL(dbh) "SELECT userid \
+				FROM moab.students \
+				WHERE academic_year = $ayear AND
+					($lw BETWEEN joined_week AND left_week OR (joined_week <= $lw AND left_week IS NULL))"
+		| Some g, None -> PGSQL(dbh) "SELECT userid \
 				FROM moab.students \
 				WHERE academic_year = $ayear \
-					AND group_number = $g")
+					AND group_number = $g"
+		| Some g, Some lw -> PGSQL(dbh) "SELECT userid \
+				FROM moab.students \
+				WHERE academic_year = $ayear \
+					AND group_number = $g AND \
+					($lw BETWEEN joined_week AND left_week OR (joined_week <= $lw AND left_week IS NULL))")
 
 let get_student_id uid = 
 	full_transaction_block (fun dbh -> PGSQL(dbh)

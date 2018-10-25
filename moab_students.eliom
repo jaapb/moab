@@ -58,11 +58,11 @@ let%client find_student_opt =
 	~%(Eliom_client.server_function [%derive.json : string]
 			(Os_session.connected_wrapper find_student_opt))
 
-let%server get_students (ayear, gnr) =
-	Moab_student_db.get_students ayear gnr
+let%server get_students (ayear, gnr, lw) =
+	Moab_student_db.get_students ayear gnr lw
 
 let%client get_students =
-	~%(Eliom_client.server_function [%derive.json : string * int option]
+	~%(Eliom_client.server_function [%derive.json : string * int option * int option]
 			(Os_session.connected_wrapper get_students))
 
 let%server get_student_id uid =
@@ -157,7 +157,7 @@ let%shared do_add_students2 myid () (ayear, changes_list) =
 let%server read_students_csv_file (fn, ayear_v, group, lw) =
 	let%lwt f = Lwt_io.open_file ~mode:Lwt_io.Input fn in
 	let%lwt c = Csv_lwt.of_channel f in
-	let%lwt stud_list = get_students (ayear_v, None) in
+	let%lwt stud_list = get_students (ayear_v, None, lw) in
 	let rem_hashtbl = Hashtbl.create (List.length stud_list) in
 		List.iter (fun uid ->
 			Hashtbl.add rem_hashtbl uid ()
@@ -182,7 +182,7 @@ let%server read_students_csv_file (fn, ayear_v, group, lw) =
 						| Some _ -> Lwt.return @@ acc 
 						| _ -> Lwt.return @@ acc
 				with
-				| Not_found -> Lwt.return @@ (New lw, None, fn, ln, mdx_id, e)::acc
+				| Not_found -> Lwt.return @@ (New (match lw with None -> 1 | Some x -> x), None, fn, ln, mdx_id, e)::acc
 			)
 		)
 	) [] c in
@@ -193,7 +193,7 @@ let%server read_students_csv_file (fn, ayear_v, group, lw) =
 			let%lwt mdx_id = get_student_id uid in 
 			let%lwt u = Os_user_proxy.get_data uid in
 			let%lwt e = Os_db.User.email_of_userid uid in
-			Lwt.return @@ (Deactivate lw, Some uid, u.fn, u.ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
+			Lwt.return @@ (Deactivate (match lw with None -> 1 | Some x -> x), Some uid, u.fn, u.ln, mdx_id, match e with None -> "" | Some x -> x)::acc')
 			rem_hashtbl (Lwt.return act_list0)
 		else
 			Lwt.return act_list0 in
@@ -201,7 +201,7 @@ let%server read_students_csv_file (fn, ayear_v, group, lw) =
 	Lwt.return act_list
 
 let%client read_students_csv_file =
-	~%(Eliom_client.server_function [%derive.json: string * string * string * int]
+	~%(Eliom_client.server_function [%derive.json: string * string * string * int option]
 		read_students_csv_file)
 
 let%server filename_of f =
@@ -211,10 +211,7 @@ let%client filename_of f =
 	Js.to_string f##.name
  
 let%shared do_add_students myid () (ayear_v, (group, csv)) =
-	let%lwt lwo = Moab_terms.learning_week_of_date ayear_v (Date.today ()) in
-	let lw = match lwo with
-		| None -> 1
-		| Some x -> x in
+	let%lwt lw = Moab_terms.learning_week_of_date ayear_v (Date.today ()) in
 	let%lwt act_list = read_students_csv_file (filename_of csv, ayear_v, group, lw) in
 	Moab_container.page (Some myid) 
 	[
