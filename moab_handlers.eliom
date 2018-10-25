@@ -264,8 +264,8 @@ let connect_handler () ((login, pwd), keepmeloggedin) =
 	let student_nwid_regexp = Re.Str.regexp "[A-Za-z][A-Za-z][0-9]+" in
 	let login_true =
 		if Re.Str.string_match student_nwid_regexp login 0 = true
-		then Printf.sprintf "%s@live.mdx.ac.uk" login in
-		else login
+		then Printf.sprintf "%s@live.mdx.ac.uk" login
+		else login in
 	try%lwt
 		Ocsigen_messages.console (fun () -> Printf.sprintf "verifying [%s] [%s]" login_true pwd);
 		let%lwt userid = Moab_users.verify_password login_true pwd in
