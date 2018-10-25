@@ -42,7 +42,7 @@ let get_attendance_list ayear learning_week =
 	Moab_term_db.get_learning_weeks ayear >>=
 	Lwt_list.iteri_s (fun i (t, _, _) ->
 		let week_nr = i + 1 in
-		if week_nr <= learning_week then
+		if week_nr >= learning_week - 4 && week_nr <= learning_week then
 		begin
 			full_transaction_block (fun dbh -> PGSQL(dbh)
 				"SELECT st.userid, COUNT(s.session_id) \
