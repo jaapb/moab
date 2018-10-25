@@ -41,40 +41,20 @@ let%client find_presentation_opt =
 	~%(Eliom_client.server_function [%derive.json: string * int64]
 			(Os_session.connected_wrapper find_presentation_opt))
 
+let%server get_random_unoccupied_student (ayear, gnr, lw) =
+	Moab_presentation_db.get_random_unoccupied_student ayear gnr lw
+
+let%client get_random_unoccupied_student =
+	~%(Eliom_client.server_function [%derive.json: string * int * int]
+			(Os_session.connected_wrapper get_random_unoccupied_student))
+
 (* Utility functions *)
 
-let%shared schedule_table myid ayear gnr weekday =
+let%shared schedule_table av_clicked myid ayear gnr weekday =
 	let sw = ~%(!Moab_config.presentation_start_week) in
 	let%lwt schedule = get_schedule (ayear, gnr) >|= drop (sw - 1) in
 	let%lwt group_members = Moab_students.get_students (ayear, Some gnr) in
 	let%lwt learning_weeks = Moab_terms.get_learning_weeks ayear >|= drop (sw - 1) in
-	let av_clicked = [%client fun ev -> 
-		Js.Opt.case (ev##.target)
-			(fun () -> ())
-			(fun e -> Scanf.sscanf (Js.to_string (e##.id)) "%d-%s" (fun lw order ->
-				Lwt.async (fun () ->
-					let%lwt date = Moab_terms.date_of_learning_week ~%ayear lw (Date.day_of_int ~%weekday) in
-					let%lwt ok = Ot_popup.confirm [
-							p [
-								pcdata [%i18n S.schedule_message1];
-								pcdata " ";
-								pcdata (Printer.Date.sprint "%-d %B %Y" date);
-								pcdata "."
-							];
-							p [
-								pcdata [%i18n S.schedule_message2]
-							]
-						]
-						[pcdata [%i18n S.confirm ~capitalize:true]] 
-						[pcdata [%i18n S.cancel ~capitalize:true]] in
-					if ok then
-						let%lwt () = schedule_presentation (~%ayear, lw, ~%gnr, order = "first", ~%myid) in
-						Os_lib.reload ()
-					else
-						Lwt.return_unit)
-			)
-		)
-	] in
 	let%lwt trs = map2i_s (fun i (week, uid1, uid2) (_, w, y) ->
 		let id_string lw f =
 			Printf.sprintf "%d%s" lw (if f then "-first" else "-second") in
@@ -114,11 +94,38 @@ let%shared schedule_table myid ayear gnr weekday =
 let%shared schedule_presentation_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt gnr = Moab_students.get_group_number (ayear, myid) in
-	let%lwt sids = Moab_sessions.(find_sessions (ayear, Seminar, gnr)) in
+	let%lwt sids = Moab_sessions.find_sessions (ayear, Seminar, gnr) in
 	let%lwt weekday = Moab_sessions.get_session_weekday (List.hd sids) in
+	let av_clicked g = [%client fun ev -> 
+		Js.Opt.case (ev##.target)
+			(fun () -> ())
+			(fun e -> Scanf.sscanf (Js.to_string (e##.id)) "%d-%s" (fun lw order ->
+				Lwt.async (fun () ->
+					let%lwt date = Moab_terms.date_of_learning_week ~%ayear lw (Date.day_of_int ~%weekday) in
+					let%lwt ok = Ot_popup.confirm [
+							p [
+								pcdata [%i18n S.schedule_message1];
+								pcdata " ";
+								pcdata (Printer.Date.sprint "%-d %B %Y" date);
+								pcdata "."
+							];
+							p [
+								pcdata [%i18n S.schedule_message2]
+							]
+						]
+						[pcdata [%i18n S.confirm ~capitalize:true]] 
+						[pcdata [%i18n S.cancel ~capitalize:true]] in
+					if ok then
+						let%lwt () = schedule_presentation (~%ayear, lw, ~%g, order = "first", ~%myid) in
+						Os_lib.reload ()
+					else
+						Lwt.return_unit)
+			)
+		)
+	] in
 	match gnr with
 	| None -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_group_number]]]
-	| Some g -> let%lwt schedule_table = schedule_table myid ayear g weekday in
+	| Some g -> let%lwt schedule_table = schedule_table (av_clicked g) myid ayear g weekday in
 			Moab_container.page (Some myid) [
 				div ~a:[a_class ["content-box"]] [
 					h1 [pcdata [%i18n S.schedule_presentation]];
@@ -126,3 +133,38 @@ let%shared schedule_presentation_handler myid () () =
 					schedule_table
 				]
 			]
+
+let%shared view_schedule_handler myid (gnr) () =
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt sids = Moab_sessions.find_sessions (ayear, Seminar, Some gnr) in
+	let%lwt weekday = Moab_sessions.get_session_weekday (List.hd sids) in
+	let%lwt current_lw = Moab_terms.learning_week_of_date ayear (Date.today ()) >|= function None -> 0 | Some x -> x in
+	let av_clicked = [%client (fun ev ->
+		Js.Opt.case (ev##.target)
+			(fun () -> ())
+			(fun e -> Scanf.ksscanf (Js.to_string (e##.id))
+				(fun _ _ -> ())
+				"%d-%s"
+				(fun lw order ->
+					Lwt.async (fun () ->
+						let ayear = ~%ayear in
+						let gnr = ~%gnr in
+						let%lwt x = get_random_unoccupied_student (ayear, gnr, ~%current_lw) in
+						match x with
+						| None -> Lwt.return_unit
+						| Some uid ->
+							let%lwt () = schedule_presentation (ayear, lw, gnr, order = "first", uid) in
+							Os_lib.reload ()
+					)
+				)	 
+			)
+		)
+	] in
+	let%lwt schedule_table = schedule_table av_clicked myid ayear gnr weekday in
+	Moab_container.page (Some myid) [
+		div ~a:[a_class ["content-box"]] [
+			h1 [pcdata [%i18n S.schedule_for_group]; pcdata " "; pcdata (string_of_int gnr)];
+			schedule_table
+		]
+	]
+	

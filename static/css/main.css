@@ -58,11 +58,13 @@ table.schedule-table tr:nth-child(even)
 table.schedule-table tr:nth-child(even) td.available
 {
 	background-color: lightgreen;
+	cursor: pointer;
 }
 
 table.schedule-table tr:nth-child(odd) td.available
 {
 	background-color: palegreen;
+	cursor: pointer;
 }
 
 button.approve
