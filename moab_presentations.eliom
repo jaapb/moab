@@ -4,39 +4,7 @@
 	open Eliom_parameter
 	open CalendarLib
 	open Lwt
-]
-
-[%%shared
-
-let rec map2_s (f: 'a -> 'b -> 'c Lwt.t) (l1: 'a list) (l2: 'b list): 'c list Lwt.t =
-	match l1, l2 with
-	| [], [] -> Lwt.return []
-	| h1::t1, h2::t2 ->
-		let%lwt h = f h1 h2 in
-		let%lwt r = map2_s f t1 t2 in
-		Lwt.return @@ h::r
-	| _, _ -> Lwt.fail (Invalid_argument "map2_s")
-
-let map2i_s (f: int -> 'a -> 'b -> 'c Lwt.t) (l1: 'a list) (l2: 'b list): 'c list Lwt.t =
-	let rec map2i_s_aux f c l1 l2 =
-		match l1, l2 with
-		| [], [] -> Lwt.return []
-		| h1::t1, h2::t2 ->
-			let%lwt h = f c h1 h2 in
-			let%lwt r = map2i_s_aux f (c+1) t1 t2 in
-			Lwt.return @@ h::r
-		| _, _ -> Lwt.fail (Invalid_argument "map2i_s") in
-	map2i_s_aux f 0 l1 l2
-
-let rec take n l =
-	match l with
-	| [] -> []
-	| h::t -> if n = 0 then [] else h::take (n-1) t
-
-let rec drop n l =
-	match l with
-	| [] -> []
-	| h::t -> if n = 0 then l else drop (n-1) t
+	open Moab_base
 ]
 
 (* Database access *)
