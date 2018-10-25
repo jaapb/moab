@@ -261,11 +261,11 @@ let%client update_language_handler () language =
 (* Connection *)
 
 let connect_handler () ((login, pwd), keepmeloggedin) =
-	let email_regexp = Re.Str.regexp "[a-zA-Z0-9]*@\(live\.\)?mdx\.ac\.uk" in
+	let student_nwid_regexp = Re.Str.regexp "[A-Za-z][A-Za-z][0-9]+" in
 	let login_true =
-		if Re.Str.string_match email_regexp login 0 = true
-		then login
-		else Printf.sprintf "%s@live.mdx.ac.uk" login in
+		if Re.Str.string_match student_nwid_regexp login 0 = true
+		then Printf.sprintf "%s@live.mdx.ac.uk" login in
+		else login
 	try%lwt
 		Ocsigen_messages.console (fun () -> Printf.sprintf "verifying [%s] [%s]" login_true pwd);
 		let%lwt userid = Moab_users.verify_password login_true pwd in
