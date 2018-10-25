@@ -227,7 +227,7 @@ let%shared edit_blog_handler myid () () =
 		| Some (tt, tx, _) -> (tt, tx) in
 		Lwt.return [
 			p [pcdata [%i18n S.writing_blog_for_week]; pcdata " "; pcdata (string_of_int learning_week)];
-			p [pcdata [%i18n S.blog_message]];
+			p [b [pcdata [%i18n S.blog_message1]]; pcdata " "; pcdata [%i18n S.blog_message2]];
 			Form.post_form ~service:edit_blog_action (fun (title, text) -> [
 				table [
 					tr [
