@@ -94,10 +94,14 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 
 let%shared schedule_presentation_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
+	let sc = ~%(!Moab_config.schedule_closed) in
 	let%lwt gnr = Moab_students.get_group_number (ayear, myid) in
 	let%lwt sids = Moab_sessions.find_sessions (ayear, Seminar, gnr) in
 	let%lwt weekday = Moab_sessions.get_session_weekday (List.hd sids) in
 	let av_clicked g = [%client fun ev -> 
+		if ~%sc then
+			Os_msg.msg ~level:`Err [%i18n S.schedule_closed]
+		else
 		Js.Opt.case (ev##.target)
 			(fun () -> ())
 			(fun e -> Scanf.sscanf (Js.to_string (e##.id)) "%d-%s" (fun lw order ->

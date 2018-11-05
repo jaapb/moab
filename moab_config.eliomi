@@ -20,3 +20,4 @@ val os_db: Ocsigen_extensions.Configuration.element *)
 
 val current_academic_year: string ref
 val presentation_start_week: int ref
+val schedule_closed: bool ref

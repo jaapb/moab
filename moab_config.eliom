@@ -35,6 +35,7 @@ let os_db_unix_domain_socket_dir = ref None
 
 let current_academic_year = ref ""
 let presentation_start_week = ref 1
+let schedule_closed = ref false
 
 (* Get variables values from the ocsigenserver configuration file *)
 
@@ -85,7 +86,9 @@ let moab = Ocsigen_extensions.Configuration.(
 		element ~obligatory:true ~name:"academic-year"
 			~pcdata:(fun t -> current_academic_year := t) ();
 		element ~obligatory:true ~name:"presentation-start"
-			~pcdata:(fun t -> presentation_start_week := int_of_string t) ()
+			~pcdata:(fun t -> presentation_start_week := int_of_string t) ();
+		element ~name:"schedule-closed"
+			~init:(fun () -> prerr_endline "[closing scheduule]"; schedule_closed := true) ()
 	] in
 
 	element ~name:"moab" ~obligatory:true ~elements ()
