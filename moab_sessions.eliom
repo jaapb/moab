@@ -15,6 +15,7 @@
 (* Local services *)
 
 let%server setup_sessions_action = Eliom_service.create_attached_post
+	~name:"setup_sessions_action"
 	~fallback:Moab_services.setup_sessions_service
 	~post_params:(any)
 	()

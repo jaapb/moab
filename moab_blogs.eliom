@@ -9,6 +9,7 @@
 (* Local services *)
 
 let%server edit_blog_action = Eliom_service.create_attached_post
+	~name:"edit_blog_action"
 	~fallback:Moab_services.edit_blog_service
 	~post_params:(string "title" ** string "text")
 	()

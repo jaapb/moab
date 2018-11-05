@@ -15,6 +15,7 @@
 
 let%server add_students_action =
 	Eliom_service.create_attached_post
+		~name:"add_students_action"
 		~fallback:Moab_services.add_students_service
 		~post_params:(string "academic_year" ** string "group" ** file "csv")
 		()
@@ -24,6 +25,7 @@ let%client add_students_action =
 
 let%server add_students_action2 =
 	Eliom_service.create_attached_post
+		~name:"add_students_action2"
 		~fallback:Moab_services.add_students_service
 		~post_params:(string "academic_year" ** list "changes" (bool "do" ** string "action" ** opt (int64 "uid") ** string "first_name" ** string "last_name" ** string "mdx_id" ** string "email"))
 		()

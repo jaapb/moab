@@ -7,6 +7,7 @@
 ]
 
 let%server settings_service = create
+	~name:"settings"
   ~path:(Path ["settings"])
   ~meth:(Get unit)
   ()
@@ -34,42 +35,49 @@ let%server connect_service =
 
 let%server add_students_service =
 	create
+		~name:"add_students"
 		~path:(Path ["add-students"])
 		~meth:(Get unit)
 		()
 
 let%server setup_terms_service =
 	create
+		~name:"setup_terms"
 		~path:(Path ["setup-terms"])
 		~meth:(Get unit)
 		()
 
 let%server setup_sessions_service =
 	create
+		~name:"setup_session"
 		~path:(Path ["setup-sessions"])
 		~meth:(Get unit)
 		()
 
 let%server edit_blog_service =
 	create
+		~name:"edit_blog"
 		~path:(Path ["edit-blog"])
 		~meth:(Get unit)
 		()
 
 let%server show_blog_service =
 	create
+		~name:"show_blog"
 		~path:(Path ["show-blog"])
 		~meth:(Get (suffix (opt (int64 "uid") ** opt (int "week"))))
 		()
 
 let%server register_attendance_service =
 	create
+		~name:"register_attendance"
 		~path:(Path ["register-attendance"])
 		~meth:(Get unit)
 		()
 
 let%server schedule_presentation_service =
 	create
+		~name:"schedule_presentation"
 		~path:(Path ["schedule-presentation"])
 		~meth:(Get unit)
 		()
@@ -83,7 +91,7 @@ let%server generate_attendance_report_service =
 
 let%server view_schedule_service =
 	create
-		~name:"view_schedule_report"
+		~name:"view_schedule"
 		~path:(Path ["view-schedule"])
 		~meth:(Get (suffix (int "group")))
 		()

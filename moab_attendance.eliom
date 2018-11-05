@@ -9,6 +9,7 @@
 (* Local services *)
 
 let%server generate_attendance_report_action = Eliom_service.create_attached_post
+	~name:"generate_attendance_report_action"
 	~fallback:Moab_services.generate_attendance_report_service
 	~post_params:(int "start_week" ** int "end_week")
 	()

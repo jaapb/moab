@@ -9,6 +9,7 @@
 
 let%server setup_terms_action =
 	Eliom_service.create_attached_post
+		~name:"setup_terms_action"
 		~fallback:Moab_services.setup_terms_service
 		~post_params:(string "new_ayear" ** string "start1" ** string "end1" ** string "start2" ** string "end2" ** string "start3" ** string "end3")
 		()
