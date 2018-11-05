@@ -78,3 +78,7 @@ button.disapprove
 	background-color: red;
 	color: white;
 }
+
+.os-drawer-item input.group-input
+{ width: 50px;
+}

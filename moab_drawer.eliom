@@ -19,6 +19,14 @@ let%shared admin_menu () =
 	; item [%i18n S.add_students ~capitalize:true] Moab_services.add_students_service
 	; item [%i18n S.register_attendance] Moab_services.register_attendance_service
 	; item [%i18n S.generate_attendance_report] Moab_services.generate_attendance_report_service
+	; li [Form.get_form ~service:Moab_services.view_schedule_service (fun gp ->
+			[
+				span ~a:[a_class ["os-drawer-item"]] [
+					Form.input ~input_type:`Submit ~value:[%i18n S.view_presentation_schedule] Form.string;
+					Form.input ~a:[a_class ["group-input"]; a_size 2] ~input_type:`Number ~name:gp ~value:1 Form.int
+				]
+			]
+		)]
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]
