@@ -157,3 +157,20 @@ unassigned_students	Unassigned students	Étudiants non affectés
 submit_report	Submit report	Soumettre un rapport
 submit_report_or_draft	Submit report (or draft)	Soumettre un rapport (ou brouillon)
 submit_report	Submit report (or draft)	Soumettre rapport (ou brouillon)
+draft	Draft	Brouillon
+final_version	Final version	Version définitive
+quality	Quality	Qualité
+independence	Independence	Indépendance
+communication	Communication	Communication
+text	Text	Texte
+evidence	Evidence	Preuves
+introduction	Introduction	Introduction
+introduction_text	Write your introduction here	Écrivez ici votre introduction
+quality_text	Explain here how you meet the quality criterion	Expliquez ici comment vous avez satisfait le critère de qualité
+independence_text	Explain here how you meet the independence criterion	Expliquez ici comment vous avez satisfait le critère d'indépendance
+communication_text	Explain here how you meet the communication criterion	Expliquez ici comment vous avez satisfait le critère de comminication
+yes	Yes	Oui
+no	No	Non
+final_version_warning1	This will submit your version for eventual assessment.	Vous allez soumettre votre version pour évaluation.
+final_version_warning2	You can continue submitting new versions until the deadline; only the latest version you submit will be assessed.	Vous pourrez soumettre des nouvelles versions jusqu'à la date limite; seulement la dernière version que vous avez soumise sera évaluée.
+final_version_warning3	Are you sure you want to submit now?	Êtes-vous sûr que vous voulez soumettre maintenant?
