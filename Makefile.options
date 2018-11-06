@@ -37,7 +37,8 @@ SERVER_FILES          := moab.eliom \
 	moab_attendance.eliom \
 	moab_attendance_db.ml moab_attendance_db.mli \
 	moab_presentations.eliom \
-	moab_presentation_db.ml moab_presentation_db.mli
+	moab_presentation_db.ml moab_presentation_db.mli \
+	moab_reports.eliom
 
 # Source files for the client. By default, it's all eliom and eliomi files
 # in the project root directory.
@@ -59,7 +60,8 @@ CLIENT_FILES          := moab.eliom \
 	moab_blogs.eliom \
 	moab_sessions.eliom \
 	moab_attendance.eliom \
-	moab_presentations.eliom
+	moab_presentations.eliom \
+	moab_reports.eliom
 
 # OCamlfind packages for the server (for modules which defines services)
 SERVER_ELIOM_PACKAGES := ocsigen-start.server
