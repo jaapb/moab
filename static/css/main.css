@@ -82,3 +82,23 @@ button.disapprove
 .os-drawer-item input.group-input
 { width: 50px;
 }
+
+table.unassigned-students-table
+{
+	margin-left: 20px;
+}
+
+table.unassigned-students-table tr:nth-child(even)
+{
+	background-color: darkgray;
+}
+
+.flex-container
+{
+	display: flex;
+}
+
+.flex-row
+{
+	flex-direction: row;
+}

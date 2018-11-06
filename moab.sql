@@ -89,5 +89,6 @@ CREATE SCHEMA moab
 		learning_week smallint not null,
 		first_presenter boolean not null default true,
 		userid bigint not null references ocsigen_start.users(userid),
+		assigned boolean not null default false,
 		primary key (academic_year, userid)
 	);

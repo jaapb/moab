@@ -41,12 +41,19 @@ let%client find_presentation_opt =
 	~%(Eliom_client.server_function [%derive.json: string * int64]
 			(Os_session.connected_wrapper find_presentation_opt))
 
-let%server get_random_unoccupied_student (ayear, gnr, lw) =
-	Moab_presentation_db.get_random_unoccupied_student ayear gnr lw
+let%server get_random_unassigned_student (ayear, gnr, lw) =
+	Moab_presentation_db.get_random_unassigned_student ayear gnr lw
 
-let%client get_random_unoccupied_student =
+let%client get_random_unassigned_student =
 	~%(Eliom_client.server_function [%derive.json: string * int * int]
-			(Os_session.connected_wrapper get_random_unoccupied_student))
+			(Os_session.connected_wrapper get_random_unassigned_student))
+
+let%server get_unassigned_students (ayear, gnr, lw) =
+	Moab_presentation_db.get_unassigned_students ayear gnr lw
+
+let%client get_unassigned_students =
+	~%(Eliom_client.server_function [%derive.json: string * int * int]
+			(Os_session.connected_wrapper get_unassigned_students))
 
 (* Utility functions *)
 
@@ -60,7 +67,7 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 		let id_string lw f =
 			Printf.sprintf "%d%s" lw (if f then "-first" else "-second") in
 		let create_field first uid = match uid with
-		| None -> 
+		| None ->
 				if (2*i) < List.length group_members then
 					Lwt.return @@
 					td ~a:[a_class ["available"]; a_onclick av_clicked; a_id (id_string (i+sw) first)]
@@ -98,7 +105,7 @@ let%shared schedule_presentation_handler myid () () =
 	let%lwt gnr = Moab_students.get_group_number (ayear, myid) in
 	let%lwt sids = Moab_sessions.find_sessions (ayear, Seminar, gnr) in
 	let%lwt weekday = Moab_sessions.get_session_weekday (List.hd sids) in
-	let av_clicked g = [%client fun ev -> 
+	let av_clicked g = [%client fun ev ->
 		if ~%sc then
 			Os_msg.msg ~level:`Err [%i18n S.schedule_closed]
 		else
@@ -118,7 +125,7 @@ let%shared schedule_presentation_handler myid () () =
 								pcdata [%i18n S.schedule_message2]
 							]
 						]
-						[pcdata [%i18n S.confirm ~capitalize:true]] 
+						[pcdata [%i18n S.confirm ~capitalize:true]]
 						[pcdata [%i18n S.cancel ~capitalize:true]] in
 					if ok then
 						let%lwt () = schedule_presentation (~%ayear, lw, ~%g, order = "first", ~%myid) in
@@ -154,22 +161,39 @@ let%shared view_schedule_handler myid (gnr) () =
 					Lwt.async (fun () ->
 						let ayear = ~%ayear in
 						let gnr = ~%gnr in
-						let%lwt x = get_random_unoccupied_student (ayear, gnr, ~%current_lw) in
+						let%lwt x = get_random_unassigned_student (ayear, gnr, ~%current_lw) in
 						match x with
 						| None -> Lwt.return_unit
 						| Some uid ->
 							let%lwt () = schedule_presentation (ayear, lw, gnr, order = "first", uid) in
+							(* let tr_o = Dom_html.getElementById_opt (Printf.sprintf "s%Ld" uid) in
+							begin
+								match tr_o with
+								| None -> ()
+								| Some tr -> let td::_ = Dom.list_of_nodeList tr##.childNodes in
+									Dom.removeChild tr td
+							end; *)
 							Os_lib.reload ()
 					)
-				)	 
+				)
 			)
 		)
 	] in
 	let%lwt schedule_table = schedule_table av_clicked myid ayear gnr weekday in
+	let%lwt student_trs = get_unassigned_students (ayear, gnr, current_lw) >>=
+		Lwt_list.map_s (fun uid -> let%lwt u = Os_user_proxy.get_data uid in
+			Lwt.return @@ tr ~a:[a_id (Printf.sprintf "s%Ld" uid)] [
+				td [pcdata (Printf.sprintf "%s %s" u.fn u.ln)]
+			]
+		) in
 	Moab_container.page (Some myid) [
 		div ~a:[a_class ["content-box"]] [
 			h1 [pcdata [%i18n S.schedule_for_group]; pcdata " "; pcdata (string_of_int gnr)];
-			schedule_table
+			div ~a:[a_class ["flex-container"; "flex-row"]]
+			[
+				schedule_table;
+				table ~a:[a_class ["unassigned-students-table"]] (tr [th [pcdata [%i18n S.unassigned_students]]]::student_trs)
+			]
 		]
 	]
 	

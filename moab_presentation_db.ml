@@ -43,18 +43,21 @@ let find_presentation ayear userid =
 	| [x] -> Lwt.return x
 	| _ -> Lwt.fail (Invalid_argument "find_presentation found multiple presentations for one userid")
 
-let get_random_unoccupied_student ayear gnr lw =
+let get_unassigned_students ayear gnr lw =
 	full_transaction_block (fun dbh -> PGSQL(dbh)
-		"SELECT COUNT(s.userid) \
-			FROM moab.students s LEFT JOIN moab.presentation_schedule ps ON
+		"SELECT s.userid \
+			FROM moab.students s LEFT JOIN moab.presentation_schedule ps ON \
 				s.userid = ps.userid AND s.academic_year = ps.academic_year \
 			WHERE ($lw BETWEEN joined_week AND left_week OR (joined_week <= $lw AND left_week IS NULL)) \
 			AND s.academic_year = $ayear AND s.group_number = $gnr \
-			AND ps.learning_week IS NULL" >>=
-		function
-		| [Some x] -> let n = Int64.to_float x in
-			(PGSQL(dbh) "SELECT s.userid \
-			FROM moab.students s LEFT JOIN moab.presentation_schedule ps ON
+			AND ps.learning_week IS NULL")
+
+let get_random_unassigned_student ayear gnr lw =
+	full_transaction_block (fun dbh ->
+		get_unassigned_students ayear gnr lw >>=
+		fun x -> let n = float_of_int (List.length x) in
+			PGSQL(dbh) "SELECT s.userid \
+			FROM moab.students s LEFT JOIN moab.presentation_schedule ps ON \
 				s.userid  = ps.userid AND s.academic_year = ps.academic_year \
 				WHERE ($lw BETWEEN joined_week AND left_week OR (joined_week <= $lw AND left_week IS NULL)) \
 				AND s.academic_year = $ayear AND s.group_number = $gnr \
@@ -64,5 +67,5 @@ let get_random_unoccupied_student ayear gnr lw =
 			function
 			| [] -> Lwt.return_none	
 			| [uid] -> Lwt.return_some uid
-			| _ -> Lwt.fail (Invalid_argument "get_random_unoccupied_student: strange random result"))
-		| _ -> Lwt.fail (Invalid_argument "get_random_unoccupied_student: COUNT returned strange value"))
+			| _ -> Lwt.fail (Invalid_argument "get_random_unassigned_student: strange random result")
+	)
