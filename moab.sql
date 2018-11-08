@@ -60,7 +60,7 @@ CREATE SCHEMA moab
 		title text not null,
 		text text not null,
 		approved boolean,
-		primary key (userid, academic_year, week)
+		primary key (userid, academic_year, learning_week)
 	)
 
 	CREATE TABLE sessions (
