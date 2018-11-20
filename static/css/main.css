@@ -102,3 +102,55 @@ table.unassigned-students-table tr:nth-child(even)
 {
 	flex-direction: row;
 }
+
+tr.grade-descriptions td
+{
+	font-size: small;
+}
+
+tr.grades th
+{
+	text-align: center;
+}
+
+tr .grade-button
+{
+	text-align: center;
+	width: 50px;
+}
+
+tr th.description
+{
+	font-size: small;
+	font-style: italic;
+}
+
+td.grade-0
+{
+	background-color: red;
+}
+
+td.grade-1
+{
+	background-color: orange;
+}
+
+td.grade-2
+{
+	background-color: yellow;
+}
+
+td.grade-3
+{
+	background-color: lightgreen;
+}
+
+td.grade-4
+{
+	background-color: green;
+}
+
+td.grade-5
+{
+	background-color: darkgreen;
+}

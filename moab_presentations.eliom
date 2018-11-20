@@ -13,7 +13,7 @@ let%server presentation_feedback_action =
 	Eliom_service.create_attached_post
 		~name:"presentation_feedback_action"
 		~fallback:Moab_services.presentation_feedback_service
-		~post_params:(radio int64 "presenter_id" ** list "scores" (int64 "criterion_id"))
+		~post_params:(radio int64 "presenter_id" ** list "scores" (int64 "criterion_id" ** radio int "score" ** string "comment"))
 		()
 
 let%client presentation_feedback_action =
@@ -240,34 +240,66 @@ let%shared presentation_feedback_handler myid () () =
 		let%lwt crits = get_criteria ayear in
 		let pres_radio param uid fn ln =
 			label [Form.radio ~name:param ~value:uid Form.int64; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
-		let pres_select presenter_id = match p1, p2 with
-			| None, None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
-			| Some u1, None ->	
-					let%lwt (fn, ln) = Moab_users.get_name u1 in
-					Lwt.return [td [pres_radio presenter_id u1 fn ln]]
-			| None, Some u2 ->	
-					let%lwt (fn, ln) = Moab_users.get_name u2 in
-					Lwt.return [td [pres_radio presenter_id u2 fn ln]]
-			| Some u1, Some u2 ->
-					let%lwt (fn1, ln1) = Moab_users.get_name u1 in
-					let%lwt (fn2, ln2) = Moab_users.get_name u2 in
-					Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]] in
+		let grade_button param grade =
+			td ~a:[a_class [Printf.sprintf "grade-%d" grade; "grade-button"]; a_rowspan 2] [
+				Form.radio ~name:param ~value:grade Form.int
+			] in
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, scores) ->
-			let%lwt ps = pres_select presenter_id in
+			let%lwt ps = match p1, p2 with
+				| None, None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+				| Some u1, None ->	
+						let%lwt (fn, ln) = Moab_users.get_name u1 in
+						Lwt.return [td [pres_radio presenter_id u1 fn ln]]
+				| None, Some u2 ->	
+						let%lwt (fn, ln) = Moab_users.get_name u2 in
+						Lwt.return [td [pres_radio presenter_id u2 fn ln]]
+				| Some u1, Some u2 ->
+						let%lwt (fn1, ln1) = Moab_users.get_name u1 in
+						let%lwt (fn2, ln2) = Moab_users.get_name u2 in
+						Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]]
+			in
 			Lwt.return [
 				table [
 					tr (ps)
 				];
-				table (scores.it (fun (crit_id) (id, text, descr) init ->
-					tr [
-						th [Form.input ~input_type:`Hidden ~name:crit_id ~value:id Form.int64; pcdata text]
+				table (
+					tr ~a:[a_class ["grade-descriptions"]] [
+						td [];
+						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.nonexistent]];
+						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.poor]];
+						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.barely_sufficient]];
+						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.ok]];
+						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.good]];
+						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.excellent]];
+						td []
 					]::
-					tr [
-						th ~a:[a_class ["crit-description"]] [pcdata (match descr with None -> "" | Some x -> x)]
+					tr ~a:[a_class ["grades"]] [
+						th [];
+						th ~a:[a_class ["grade-button"]] [pcdata "0"];
+						th ~a:[a_class ["grade-button"]] [pcdata "1"];
+						th ~a:[a_class ["grade-button"]] [pcdata "2"];
+						th ~a:[a_class ["grade-button"]] [pcdata "3"];
+						th ~a:[a_class ["grade-button"]] [pcdata "4"];
+						th ~a:[a_class ["grade-button"]] [pcdata "5"];
+						th [pcdata [%i18n S.comment]]
 					]::
-					init	
-				) crits [])
+					scores.it (fun (crit_id, (score, comment)) (id, text, descr) init ->
+						tr [
+							th [Form.input ~input_type:`Hidden ~name:crit_id ~value:id Form.int64; pcdata text];
+							grade_button score 0;
+							grade_button score 1;
+							grade_button score 2;
+							grade_button score 3;
+							grade_button score 4;
+							grade_button score 5;
+							td ~a:[a_rowspan 2] [Form.input ~input_type:`Text ~name:comment Form.string]
+						]::
+						tr [
+							th ~a:[a_class ["crit-description"]] [pcdata (match descr with None -> "" | Some x -> x)]
+						]::
+						init
+					) crits [])
 			]) () in
 		Moab_container.page (Some myid) [
 			div ~a:[a_class ["content-box"]] [

@@ -92,3 +92,10 @@ CREATE SCHEMA moab
 		assigned boolean not null default false,
 		primary key (academic_year, userid)
 	);
+
+	CREATE TABLE presentation_criteria (
+		academic_year varchar(8) not null,
+		id bigserial not null,
+		criterion text not null,
+		description text
+	);	
