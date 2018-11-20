@@ -6,11 +6,17 @@
 
 (* Local services *)
 
-let%server submit_report_action = Eliom_service.create_attached_post
+let submit_report_action = Eliom_service.create_attached_post
 	~name:"submit_report_action"
 	~fallback:Moab_services.submit_report_service
 	~post_params:(any)
 	()
+
+let report_upload_service = Eliom_registration.Ocaml.create
+	~name:"report_upload_service"
+	~path:Eliom_service.No_path
+	~meth:(Eliom_service.Post (unit, file "f"))
+	(fun () f -> Lwt.return_unit)
 
 let%client submit_report_action = 
 	~%submit_report_action
@@ -31,6 +37,20 @@ let%client handle_add_url input_element rl_handle () =
 		input##.value := Js.string ""
 	end;
 	Lwt.return_unit
+
+let%client handle_add_file input_element rl_handle () =
+	let input = Eliom_content.Html.To_dom.of_input input_element in
+	Lwt_js_events.changes input @@ fun _ _ ->
+	Js.Optdef.case (input##.files)
+	Lwt.return
+	(fun files ->
+		Js.Opt.case (files##(item (0)))
+		Lwt.return
+		(fun f ->
+			Eliom_client.call_ocaml_service
+				~service:~%report_upload_service () f
+		)
+	)
 
 (* Handlers *)
 
@@ -55,10 +75,16 @@ let%shared submit_report_handler myid () () =
 	let quality_url = D.Raw.input ~a:[a_input_type `Url; a_name "quality_url"] () in
 	let quality_file =	D.Raw.input ~a:[a_input_type `File; a_name "quality_file"; a_class ["ot-pup-input"]; a_accept ["text/*"]] () in
 	let (quality_l, quality_h) = Eliom_shared.ReactiveData.RList.create [] in
-	let submit = D.button ~a:[a_button_type `Submit; a_class ["button"]] [pcdata [%i18n S.submit]] in
-
 
 	(* client side handlers *)
+
+	(* do not submit on enter *)
+	ignore [%client ((Lwt.async @@ fun () ->
+		Lwt_js_events.keydowns Dom_html.window @@ fun ev _ ->
+		Dom.preventDefault ev;
+		Lwt.return_unit
+	): unit)];
+
 	(* click final version radio confirmation *)
 	ignore [%client ((Lwt.async @@ fun () ->
 		let d = Eliom_content.Html.To_dom.of_input ~%draft in
@@ -80,24 +106,14 @@ let%shared submit_report_handler myid () () =
 	(* add evidence URLs *)
 	ignore [%client (Lwt.async (handle_add_url ~%quality_url ~%quality_h): unit)];
 
+	(* add evidence file *)
+	ignore [%client (Lwt.async (handle_add_file ~%quality_file ~%quality_h): unit)];
+
 	let quality_lis = Eliom_shared.ReactiveData.RList.map
 		[%shared ((function
-			| `URL url -> li [a ~service:(Eliom_service.extern ~prefix:url ~path:[] ~meth:(Get unit) ()) [pcdata url] ()]
+			| `URL url -> li [pcdata url]
 			| _ -> li [pcdata "summat else"]
 		): _ -> _)] quality_l in
-
-	(* disable the enter key entirely *)
-	ignore [%client ((Lwt.async @@ fun () ->
-		Lwt_js_events.keydowns ~use_capture:true Dom_html.window @@ fun ev _ ->
-			if ev##.keyCode = 13 then
-				Js.Opt.case (ev##.target)
-					(fun () -> ())
-					(fun e ->
-						if e##.nodeType != TEXT then
-							Dom.preventDefault ev
-					);
-			Lwt.return_unit
-		): unit)];
 
 	Moab_container.page (Some myid)
 	[
@@ -143,11 +159,6 @@ let%shared submit_report_handler myid () () =
 						td [button ~a:[a_button_type `Submit; a_class ["button"]] [pcdata [%i18n S.submit]]]
 					]
 				]
-			]) () in
-	Moab_container.page (Some myid)
-	[
-		div ~a:[a_class ["content-box"]] [
-			h1 [pcdata [%i18n S.submit_report]];
-			form
+			]) ()
 		]
 	]
