@@ -103,6 +103,13 @@ let%server submit_report_service =
 		~meth:(Get unit)
 		()
 
+let%server presentation_feedback_service =
+	create
+		~name:"presentation_feedback"
+		~path:(Path ["presentation-feedback"])
+		~meth:(Get unit)
+		()
+
 let%client settings_service =
   ~%settings_service
 
@@ -144,6 +151,9 @@ let%client view_schedule_service =
 
 let%client submit_report_service =
 	~%submit_report_service
+
+let%client presentation_feedback_service =
+	~%presentation_feedback_service
 
 (* The OS lib needs access to the settings service to perform
    redirections to it. We need to register it *)

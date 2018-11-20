@@ -17,7 +17,7 @@ let get_schedule ayear group_number =
 			LEFT JOIN moab.students s2 ON ps2.userid = s2.userid \
 		ORDER BY gs.week ASC") >>=
 	Lwt_list.map_s (function
-	| (Some w, uid1, uid2) -> Lwt.return (w, uid1, uid2)
+	| (Some w, uid1, uid2) -> Lwt.return (w, (uid1, uid2))
 	| _ -> Lwt.fail (Invalid_argument "get_schedule found null week")
 	)
 

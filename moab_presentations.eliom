@@ -7,6 +7,18 @@
 	open Moab_base
 ]
 
+(* Local services *)
+
+let%server presentation_feedback_action =
+	Eliom_service.create_attached_post
+		~name:"presentation_feedback_action"
+		~fallback:Moab_services.presentation_feedback_service
+		~post_params:(radio int64 "presenter_id")
+		()
+
+let%client presentation_feedback_action =
+	~%presentation_feedback_action
+
 (* Database access *)
 
 let%server get_schedule (ayear, gnr) =
@@ -63,7 +75,7 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt group_members = Moab_students.get_students (ayear, Some gnr, lw) in
 	let%lwt learning_weeks = Moab_terms.get_learning_weeks ayear >|= drop (sw - 1) in
-	let%lwt trs = map2i_s (fun i (week, uid1, uid2) (_, w, y) ->
+	let%lwt trs = map2i_s (fun i (week, (uid1, uid2)) (_, w, y) ->
 		let id_string lw f =
 			Printf.sprintf "%d%s" lw (if f then "-first" else "-second") in
 		let create_field first uid = match uid with
@@ -98,6 +110,9 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 	)
 
 (* Handlers *)
+
+let%shared do_presentation_feedback () (presenter_id) =
+	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared schedule_presentation_handler myid () () =
 	let ayear = ~%(!Moab_config.current_academic_year) in
@@ -196,4 +211,53 @@ let%shared view_schedule_handler myid (gnr) () =
 			]
 		]
 	]
-	
+
+let%shared presentation_feedback_handler myid () () =
+	Eliom_registration.Any.register ~service:presentation_feedback_action
+		do_presentation_feedback;
+	try%lwt
+		let ayear = ~%(!Moab_config.current_academic_year) in
+		let%lwt l = Moab_terms.learning_week_of_date ayear (Date.today ())	in
+		let%lwt lw = match l with
+			| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+			| Some x -> Lwt.return x in
+		let%lwt g = Moab_students.get_group_number (ayear, myid) in
+		let%lwt gnr = match g with
+			| None -> Lwt.fail_with [%i18n S.no_group_number]	
+			| Some x -> Lwt.return x in
+		let%lwt s = get_schedule (ayear, gnr) in
+		let%lwt (p1, p2) = match List.assoc_opt (Int32.of_int lw) s with
+		| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+		| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+		| Some (u1, u2) -> Lwt.return (u1, u2) in	
+		let pres_radio param uid fn ln =
+			label [Form.radio ~name:param ~value:uid Form.int64; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
+		let pres_select presenter_id = match p1, p2 with
+			| None, None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+			| Some u1, None ->	
+					let%lwt (fn, ln) = Moab_users.get_name u1 in
+					Lwt.return [td [pres_radio presenter_id u1 fn ln]]
+			| None, Some u2 ->	
+					let%lwt (fn, ln) = Moab_users.get_name u2 in
+					Lwt.return [td [pres_radio presenter_id u2 fn ln]]
+			| Some u1, Some u2 ->
+					let%lwt (fn1, ln1) = Moab_users.get_name u1 in
+					let%lwt (fn2, ln2) = Moab_users.get_name u2 in
+					Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]] in
+		let%lwt form = 
+			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id) ->
+			let%lwt ps = pres_select presenter_id in
+			Lwt.return [
+				table [
+					tr (ps)
+				]
+			]) () in
+		Moab_container.page (Some myid) [
+			div ~a:[a_class ["content-box"]] [
+				h1 [pcdata [%i18n S.presentation_feedback]];
+				form
+			]
+		]
+	with
+	| Failure x -> Moab_container.page (Some myid) [p [pcdata x]]
+	| e -> Lwt.fail e

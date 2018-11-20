@@ -140,9 +140,14 @@ let%shared submit_report_handler myid () () =
 				table [
 					tr [
 						td [button ~a:[a_button_type `Button; a_class ["button"]] [pcdata [%i18n S.save]]];
-						td [submit]
+						td [button ~a:[a_button_type `Submit; a_class ["button"]] [pcdata [%i18n S.submit]]]
 					]
 				]
-			]) ()
+			]) () in
+	Moab_container.page (Some myid)
+	[
+		div ~a:[a_class ["content-box"]] [
+			h1 [pcdata [%i18n S.submit_report]];
+			form
 		]
 	]
