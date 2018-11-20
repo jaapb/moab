@@ -13,7 +13,7 @@ let%server presentation_feedback_action =
 	Eliom_service.create_attached_post
 		~name:"presentation_feedback_action"
 		~fallback:Moab_services.presentation_feedback_service
-		~post_params:(radio int64 "presenter_id")
+		~post_params:(radio int64 "presenter_id" ** list "scores" (int64 "criterion_id"))
 		()
 
 let%client presentation_feedback_action =
@@ -66,6 +66,13 @@ let%server get_unassigned_students (ayear, gnr, lw) =
 let%client get_unassigned_students =
 	~%(Eliom_client.server_function [%derive.json: string * int * int]
 			(Os_session.connected_wrapper get_unassigned_students))
+
+let%server get_criteria ayear =
+	Moab_presentation_db.get_criteria ayear
+
+let%client get_criteria =
+	~%(Eliom_client.server_function [%derive.json: string]
+			(Os_session.connected_wrapper get_criteria))
 
 (* Utility functions *)
 
@@ -230,6 +237,7 @@ let%shared presentation_feedback_handler myid () () =
 		| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 		| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 		| Some (u1, u2) -> Lwt.return (u1, u2) in	
+		let%lwt crits = get_criteria ayear in
 		let pres_radio param uid fn ln =
 			label [Form.radio ~name:param ~value:uid Form.int64; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
 		let pres_select presenter_id = match p1, p2 with
@@ -245,12 +253,21 @@ let%shared presentation_feedback_handler myid () () =
 					let%lwt (fn2, ln2) = Moab_users.get_name u2 in
 					Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]] in
 		let%lwt form = 
-			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id) ->
+			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, scores) ->
 			let%lwt ps = pres_select presenter_id in
 			Lwt.return [
 				table [
 					tr (ps)
-				]
+				];
+				table (scores.it (fun (crit_id) (id, text, descr) init ->
+					tr [
+						th [Form.input ~input_type:`Hidden ~name:crit_id ~value:id Form.int64; pcdata text]
+					]::
+					tr [
+						th ~a:[a_class ["crit-description"]] [pcdata (match descr with None -> "" | Some x -> x)]
+					]::
+					init	
+				) crits [])
 			]) () in
 		Moab_container.page (Some myid) [
 			div ~a:[a_class ["content-box"]] [

@@ -69,3 +69,11 @@ let get_random_unassigned_student ayear gnr lw =
 			| [uid] -> Lwt.return_some uid
 			| _ -> Lwt.fail (Invalid_argument "get_random_unassigned_student: strange random result")
 	)
+
+let get_criteria ayear =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT id, criterion, description \
+			FROM moab.presentation_criteria \
+			WHERE academic_year = $ayear \
+			ORDER BY id"
+	)
