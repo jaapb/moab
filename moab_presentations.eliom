@@ -74,6 +74,13 @@ let%client get_criteria =
 	~%(Eliom_client.server_function [%derive.json: string]
 			(Os_session.connected_wrapper get_criteria))
 
+let%server set_score (scorer_id, presenter_id, crit_id, score, comment) =
+	Moab_presentation_db.set_score scorer_id presenter_id crit_id score comment
+
+let%client set_score =
+	~%(Eliom_client.server_function [%derive.json: int64 * int64 * int64 * int * string]
+			(Os_session.connected_wrapper set_score))
+
 (* Utility functions *)
 
 let%shared schedule_table av_clicked myid ayear gnr weekday =
@@ -118,7 +125,15 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 
 (* Handlers *)
 
-let%shared do_presentation_feedback () (presenter_id) =
+let%shared do_presentation_feedback myid () (presenter_id, scores) =
+	let%lwt () = match presenter_id with
+	| None -> Lwt.return_unit
+	| Some p_id ->
+		Lwt_list.iter_s (fun (crit_id, (score, (comment: string))) ->
+			match score with
+			| None -> Lwt.return_unit
+			| Some s -> set_score (myid, p_id, crit_id, s, comment)
+		) scores in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared schedule_presentation_handler myid () () =
@@ -188,13 +203,6 @@ let%shared view_schedule_handler myid (gnr) () =
 						| None -> Lwt.return_unit
 						| Some uid ->
 							let%lwt () = schedule_presentation (ayear, lw, gnr, order = "first", uid) in
-							(* let tr_o = Dom_html.getElementById_opt (Printf.sprintf "s%Ld" uid) in
-							begin
-								match tr_o with
-								| None -> ()
-								| Some tr -> let td::_ = Dom.list_of_nodeList tr##.childNodes in
-									Dom.removeChild tr td
-							end; *)
 							Os_lib.reload ()
 					)
 				)
@@ -221,7 +229,7 @@ let%shared view_schedule_handler myid (gnr) () =
 
 let%shared presentation_feedback_handler myid () () =
 	Eliom_registration.Any.register ~service:presentation_feedback_action
-		do_presentation_feedback;
+		(Os_session.connected_fun do_presentation_feedback);
 	try%lwt
 		let ayear = ~%(!Moab_config.current_academic_year) in
 		let%lwt l = Moab_terms.learning_week_of_date ayear (Date.today ())	in
@@ -240,10 +248,32 @@ let%shared presentation_feedback_handler myid () () =
 		let%lwt crits = get_criteria ayear in
 		let pres_radio param uid fn ln =
 			label [Form.radio ~name:param ~value:uid Form.int64; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
-		let grade_button param grade =
+		let radios = Hashtbl.create 5 in
+		let grade_button crit_id param grade =
+			let new_radio = D.Form.radio ~name:param ~value:grade Form.int in
+			let (cn, l) = Hashtbl.find radios crit_id in
+			Hashtbl.replace radios crit_id (cn, new_radio::l);
 			td ~a:[a_class [Printf.sprintf "grade-%d" grade; "grade-button"]; a_rowspan 2] [
-				Form.radio ~name:param ~value:grade Form.int
+				new_radio
 			] in
+		let submit =
+			D.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] Form.string in
+		ignore [%client ((Lwt.async @@ fun () ->
+			let s = Eliom_content.Html.To_dom.of_input ~%submit in
+			Lwt_js_events.clicks s @@ fun ev _ ->
+			Hashtbl.iter (fun id (name, l) ->
+				let is = List.fold_left (fun acc cb ->
+					let inp = Eliom_content.Html.To_dom.of_input cb in
+					(Js.to_bool inp##.checked) || acc
+				) false l in
+				if not is then
+				begin
+					Os_msg.msg ~level:`Err [%i18n S.no_score_for ~n:name];
+					Dom.preventDefault ev
+				end
+			) ~%radios;
+			Lwt.return_unit
+		): unit)];
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, scores) ->
 			let%lwt ps = match p1, p2 with
@@ -263,7 +293,7 @@ let%shared presentation_feedback_handler myid () () =
 				table [
 					tr (ps)
 				];
-				table (
+				table ~a:[a_class ["feedback-table"]] (
 					tr ~a:[a_class ["grade-descriptions"]] [
 						td [];
 						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.nonexistent]];
@@ -285,21 +315,29 @@ let%shared presentation_feedback_handler myid () () =
 						th [pcdata [%i18n S.comment]]
 					]::
 					scores.it (fun (crit_id, (score, comment)) (id, text, descr) init ->
+						Hashtbl.add radios crit_id (text, []);
+						let new_comment = D.Form.input ~input_type:`Text ~name:comment Form.string in
 						tr [
 							th [Form.input ~input_type:`Hidden ~name:crit_id ~value:id Form.int64; pcdata text];
-							grade_button score 0;
-							grade_button score 1;
-							grade_button score 2;
-							grade_button score 3;
-							grade_button score 4;
-							grade_button score 5;
-							td ~a:[a_rowspan 2] [Form.input ~input_type:`Text ~name:comment Form.string]
+							grade_button crit_id score 0;
+							grade_button crit_id score 1;
+							grade_button crit_id score 2;
+							grade_button crit_id score 3;
+							grade_button crit_id score 4;
+							grade_button crit_id score 5;
+							td ~a:[a_rowspan 2] [new_comment]
 						]::
 						tr [
 							th ~a:[a_class ["crit-description"]] [pcdata (match descr with None -> "" | Some x -> x)]
 						]::
 						init
-					) crits [])
+					) crits
+					[tr [
+						td ~a:[a_colspan 8] [
+							submit
+						]
+					]]
+				)
 			]) () in
 		Moab_container.page (Some myid) [
 			div ~a:[a_class ["content-box"]] [

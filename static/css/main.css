@@ -103,54 +103,59 @@ table.unassigned-students-table tr:nth-child(even)
 	flex-direction: row;
 }
 
-tr.grade-descriptions td
+table.feedback-table th
+{
+	text-align: left;
+}
+
+table.feedback-table tr.grade-descriptions td
 {
 	font-size: small;
 }
 
-tr.grades th
+table.feedback-table tr.grades th
 {
 	text-align: center;
 }
 
-tr .grade-button
+table.feedback-table .grade-button
 {
 	text-align: center;
 	width: 50px;
 }
 
-tr th.description
+table.feedback-table th.crit-description
 {
 	font-size: small;
 	font-style: italic;
 }
 
-td.grade-0
+table.feedback-table td.grade-0
 {
 	background-color: red;
 }
 
-td.grade-1
+table.feedback-table td.grade-1
 {
 	background-color: orange;
 }
 
-td.grade-2
+table.feedback-table td.grade-2
 {
 	background-color: yellow;
 }
 
-td.grade-3
+table.feedback-table td.grade-3
 {
 	background-color: lightgreen;
 }
 
-td.grade-4
+table.feedback-table td.grade-4
 {
 	background-color: green;
 }
 
-td.grade-5
+table.feedback-table td.grade-5
 {
 	background-color: darkgreen;
 }

@@ -77,3 +77,13 @@ let get_criteria ayear =
 			WHERE academic_year = $ayear \
 			ORDER BY id"
 	)
+
+let set_score scorer_id presenter_id crit_id score comment =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "INSERT INTO moab.presentation_scores \
+			(scorer_id, presenter_id, criterion_id, score, comment) \
+			VALUES \
+			($scorer_id, $presenter_id, $crit_id, $score, $comment) \
+			ON CONFLICT (scorer_id, presenter_id, criterion_id) DO UPDATE \
+				SET score = EXCLUDED.score, comment = EXCLUDED.comment"
+	)
