@@ -81,6 +81,13 @@ let%client set_score =
 	~%(Eliom_client.server_function [%derive.json: string * int64 * int64 * int64 * int * string]
 			(Os_session.connected_wrapper set_score))
 
+let%server get_scores (ayear, scorer_id, presenter_id) =
+	Moab_presentation_db.get_scores ayear scorer_id presenter_id
+
+let%client get_scores =
+	~%(Eliom_client.server_function [%derive.json: string * int64 * int64]
+			(Os_session.connected_wrapper get_scores))
+
 (* Utility functions *)
 
 let%shared schedule_table av_clicked myid ayear gnr weekday =
@@ -247,14 +254,14 @@ let%shared presentation_feedback_handler myid () () =
 		let%lwt crits = get_criteria ayear in
 		let pres_radios = ref [] in
 		let pres_radio ?(checked = false) param uid fn ln =
-			let new_radio = D.Form.radio ~name:param ~value:uid ~checked Form.int64 in
+			let new_radio = D.Form.radio ~a:[a_id (Int64.to_string uid)] ~name:param ~value:uid ~checked Form.int64 in
 			pres_radios := new_radio::!pres_radios;
 			label [new_radio; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
-		let crit_radios = Hashtbl.create 5 in
+		let crit_rows = Hashtbl.create 5 in
 		let grade_button crit_id param grade =
 			let new_radio = D.Form.radio ~name:param ~value:grade Form.int in
-			let (cn, l) = Hashtbl.find crit_radios crit_id in
-			Hashtbl.replace crit_radios crit_id (cn, new_radio::l);
+			let (cn, cm, l) = Hashtbl.find crit_rows crit_id in
+			Hashtbl.replace crit_rows crit_id (cn, cm, new_radio::l);
 			td ~a:[a_class [Printf.sprintf "grade-%d" grade; "grade-button"]; a_rowspan 2] [
 				new_radio
 			] in
@@ -263,7 +270,7 @@ let%shared presentation_feedback_handler myid () () =
 		ignore [%client ((Lwt.async @@ fun () ->
 			let s = Eliom_content.Html.To_dom.of_input ~%submit in
 			Lwt_js_events.clicks s @@ fun ev _ ->
-			Hashtbl.iter (fun id (name, l) ->
+			Hashtbl.iter (fun id (name, _, l) ->
 				let is = List.fold_left (fun acc cb ->
 					let inp = Eliom_content.Html.To_dom.of_input cb in
 					(Js.to_bool inp##.checked) || acc
@@ -273,7 +280,7 @@ let%shared presentation_feedback_handler myid () () =
 					Os_msg.msg ~level:`Err [%i18n S.no_score_for ~n:name];
 					Dom.preventDefault ev
 				end
-			) ~%crit_radios;
+			) ~%crit_rows;
 			let ps = List.fold_left (fun acc pb ->
 				let inp = Eliom_content.Html.To_dom.of_input pb in
 				(Js.to_bool inp##.checked) || acc
@@ -284,6 +291,22 @@ let%shared presentation_feedback_handler myid () () =
 				Dom.preventDefault ev
 			end;
 			Lwt.return_unit
+		): unit)];
+		ignore [%client ((Lwt.async @@ fun () ->
+			let ps = List.map Eliom_content.Html.To_dom.of_input !(~%pres_radios) in
+			Moab_base.seq_loop_pick Lwt_js_events.click ps @@ fun ev _ ->
+			Js.Opt.case (ev##.target)
+				(fun () -> Lwt.return_unit)
+				(fun e -> let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js.to_string e##.id)) in
+					Eliom_lib.alert "pres_id %Ld, scores %d" (Int64.of_string (Js.to_string e##.id)) (List.length sl);
+					List.iter (fun (id, score, comment) ->
+						let (_, cm_w, l) = Hashtbl.find ~%crit_rows id in
+						let cm = Eliom_content.Html.To_dom.of_input cm_w in
+						Eliom_lib.alert "id %Ld, comment %s" id (Moab_base.default "" comment);
+						cm##.value := Js.string (Moab_base.default "" comment)
+					) sl;
+					Lwt.return_unit
+				)
 		): unit)];
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, scores) ->
@@ -332,16 +355,16 @@ let%shared presentation_feedback_handler myid () () =
 						th [pcdata [%i18n S.comment]]
 					]::
 					scores.it (fun (crit_id, (score, comment)) (id, text, descr) init ->
-						Hashtbl.add crit_radios crit_id (text, []);
 						let new_comment = D.Form.input ~input_type:`Text ~name:comment Form.string in
+						Hashtbl.add crit_rows id (text, new_comment, []);
 						tr [
 							th [Form.input ~input_type:`Hidden ~name:crit_id ~value:id Form.int64; pcdata text];
-							grade_button crit_id score 0;
-							grade_button crit_id score 1;
-							grade_button crit_id score 2;
-							grade_button crit_id score 3;
-							grade_button crit_id score 4;
-							grade_button crit_id score 5;
+							grade_button id score 0;
+							grade_button id score 1;
+							grade_button id score 2;
+							grade_button id score 3;
+							grade_button id score 4;
+							grade_button id score 5;
 							td ~a:[a_rowspan 2] [new_comment]
 						]::
 						tr [

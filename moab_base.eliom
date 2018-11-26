@@ -39,6 +39,7 @@ let%client _ = Eliom_client.persist_document_head ()
 (* Utility functions *)
 
 [%%shared.start]
+open Lwt.Infix
 
 let rec map2_s (f: 'a -> 'b -> 'c Lwt.t) (l1: 'a list) (l2: 'b list): 'c list Lwt.t =
 	match l1, l2 with
@@ -70,3 +71,47 @@ let rec drop n l =
 	| [] -> []
 	| h::t -> if n = 0 then l else drop (n-1) t
 
+let default s o =
+	match o with
+	| None -> s
+	| Some x -> x
+
+let catch_cancel f x =
+  Lwt.catch
+    (fun () -> f x)
+    (function
+    | Lwt.Canceled -> Lwt.return ()
+    | e -> Lwt.fail e)
+
+let with_error_log f x =
+  Lwt.catch
+    (fun () -> f x)
+    (fun e -> Lwt.return ())
+
+let seq_loop_pick evh ?(cancel_handler = false) ?use_capture targets handler =
+  let cancelled = ref false in
+  let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
+  (* Using Lwt.fail as default, to be polymorphic *)
+  let cur_handler = ref (Lwt.return ()) in
+  let lt, _lw = Lwt.task () in
+  Lwt.on_cancel lt
+    (fun () ->
+      Lwt.cancel !cur;
+      if cancel_handler then Lwt.cancel !cur_handler;
+      cancelled := true);
+  let rec aux () =
+    if not !cancelled (* In the case it has been cancelled
+                         during the previous handler,
+                         we do not reinstall the event handler *)
+    then begin
+			let ts = List.map (fun t -> evh ?use_capture t) targets in
+      let t = Lwt.pick ts in
+      cur := t;
+      t >>= fun e ->
+      cur_handler := with_error_log (handler e) lt;
+      !cur_handler >>= aux
+    end
+    else Lwt.return ()
+  in
+  Lwt.async (catch_cancel aux);
+  lt

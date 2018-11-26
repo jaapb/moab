@@ -87,3 +87,12 @@ let set_score ayear scorer_id presenter_id crit_id score comment =
 			ON CONFLICT (academic_year, scorer_id, presenter_id, criterion_id) DO UPDATE \
 				SET score = EXCLUDED.score, comment = EXCLUDED.comment"
 	)
+
+let get_scores ayear scorer_id presenter_id =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT criterion_id, score, comment \
+			FROM moab.presentation_scores \
+			WHERE academic_year = $ayear \
+			AND scorer_id = $scorer_id \
+			AND presenter_id = $presenter_id"
+	)
