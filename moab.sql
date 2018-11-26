@@ -91,7 +91,7 @@ CREATE SCHEMA moab
 		userid bigint not null references ocsigen_start.users(userid),
 		assigned boolean not null default false,
 		primary key (academic_year, userid)
-	);
+	)
 
 	CREATE TABLE presentation_criteria (
 		academic_year varchar(8) not null,
@@ -99,7 +99,7 @@ CREATE SCHEMA moab
 		criterion text not null,
 		description text,
 		primary key (id)
-	);	
+	)	
 
 	CREATE TABLE presentation_scores (
 		scorer_id bigint not null references ocsigen_start.users(userid),
