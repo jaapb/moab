@@ -245,13 +245,16 @@ let%shared presentation_feedback_handler myid () () =
 		| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 		| Some (u1, u2) -> Lwt.return (u1, u2) in	
 		let%lwt crits = get_criteria ayear in
+		let pres_radios = ref [] in
 		let pres_radio ?(checked = false) param uid fn ln =
-			label [Form.radio ~name:param ~value:uid ~checked Form.int64; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
-		let radios = Hashtbl.create 5 in
+			let new_radio = D.Form.radio ~name:param ~value:uid ~checked Form.int64 in
+			pres_radios := new_radio::!pres_radios;
+			label [new_radio; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
+		let crit_radios = Hashtbl.create 5 in
 		let grade_button crit_id param grade =
 			let new_radio = D.Form.radio ~name:param ~value:grade Form.int in
-			let (cn, l) = Hashtbl.find radios crit_id in
-			Hashtbl.replace radios crit_id (cn, new_radio::l);
+			let (cn, l) = Hashtbl.find crit_radios crit_id in
+			Hashtbl.replace crit_radios crit_id (cn, new_radio::l);
 			td ~a:[a_class [Printf.sprintf "grade-%d" grade; "grade-button"]; a_rowspan 2] [
 				new_radio
 			] in
@@ -270,7 +273,16 @@ let%shared presentation_feedback_handler myid () () =
 					Os_msg.msg ~level:`Err [%i18n S.no_score_for ~n:name];
 					Dom.preventDefault ev
 				end
-			) ~%radios;
+			) ~%crit_radios;
+			let ps = List.fold_left (fun acc pb ->
+				let inp = Eliom_content.Html.To_dom.of_input pb in
+				(Js.to_bool inp##.checked) || acc
+			) false !(~%pres_radios) in
+			if not ps then
+			begin
+				Os_msg.msg ~level:`Err [%i18n S.no_presenter_selected];
+				Dom.preventDefault ev
+			end;
 			Lwt.return_unit
 		): unit)];
 		let%lwt form = 
@@ -320,7 +332,7 @@ let%shared presentation_feedback_handler myid () () =
 						th [pcdata [%i18n S.comment]]
 					]::
 					scores.it (fun (crit_id, (score, comment)) (id, text, descr) init ->
-						Hashtbl.add radios crit_id (text, []);
+						Hashtbl.add crit_radios crit_id (text, []);
 						let new_comment = D.Form.input ~input_type:`Text ~name:comment Form.string in
 						tr [
 							th [Form.input ~input_type:`Hidden ~name:crit_id ~value:id Form.int64; pcdata text];
