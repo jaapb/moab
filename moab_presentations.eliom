@@ -245,8 +245,8 @@ let%shared presentation_feedback_handler myid () () =
 		| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 		| Some (u1, u2) -> Lwt.return (u1, u2) in	
 		let%lwt crits = get_criteria ayear in
-		let pres_radio param uid fn ln =
-			label [Form.radio ~name:param ~value:uid Form.int64; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
+		let pres_radio ?(checked = false) param uid fn ln =
+			label [Form.radio ~name:param ~value:uid ~checked Form.int64; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
 		let radios = Hashtbl.create 5 in
 		let grade_button crit_id param grade =
 			let new_radio = D.Form.radio ~name:param ~value:grade Form.int in
@@ -278,16 +278,16 @@ let%shared presentation_feedback_handler myid () () =
 			let%lwt ps = match p1, p2 with
 				| Some u1, None when u1 <> myid ->	
 						let%lwt (fn, ln) = Moab_users.get_name u1 in
-						Lwt.return [td [pres_radio presenter_id u1 fn ln]]
+						Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
 				| Some u1, Some u2 when u2 = myid ->
 						let%lwt (fn, ln) = Moab_users.get_name u1 in
-						Lwt.return [td [pres_radio presenter_id u1 fn ln]]
+						Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
 				| None, Some u2 when u2 <> myid ->	
 						let%lwt (fn, ln) = Moab_users.get_name u2 in
-						Lwt.return [td [pres_radio presenter_id u2 fn ln]]
+						Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
 				| Some u1, Some u2 when u1 = myid ->
 						let%lwt (fn, ln) = Moab_users.get_name u2 in
-						Lwt.return [td [pres_radio presenter_id u2 fn ln]]
+						Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
 				| Some u1, Some u2 ->
 						let%lwt (fn1, ln1) = Moab_users.get_name u1 in
 						let%lwt (fn2, ln2) = Moab_users.get_name u2 in
