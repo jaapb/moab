@@ -4,7 +4,7 @@ CREATE EXTENSION citext;
 CREATE EXTENSION pgcrypto;
 
 CREATE SCHEMA ocsigen_start
-  CREATE TABLE users (
+	CREATE TABLE users (
 		userid bigserial primary key,
 		firstname text NOT NULL,
 		lastname text NOT NULL,
@@ -13,7 +13,7 @@ CREATE SCHEMA ocsigen_start
 		avatar text,
 		language text,
 		user_type char(1) NOT NULL DEFAULT('S')
-  )
+	)
 
 	CREATE TABLE emails (
 		email citext primary key,
@@ -47,20 +47,21 @@ CREATE SCHEMA moab
 		academic_year varchar(8) not null,
 		student_id varchar(9) not null,
 		joined_week smallint not null,
-    left_week smallint,
+		left_week smallint,
 		group_number smallint,
 		primary key (userid, academic_year),
 		unique (student_id, academic_year)
 	)
 
 	CREATE TABLE blogs (
-		userid bigint not null references ocsigen_start.users(userid),
+		userid bigint not null,
 		academic_year varchar(8) not null,
 		learning_week smallint not null,
 		title text not null,
 		text text not null,
 		approved boolean,
-		primary key (userid, academic_year, learning_week)
+		primary key (userid, academic_year, learning_week),
+		foreign key (userid, academic_year) references students (userid, academic_year)
 	)
 
 	CREATE TABLE sessions (
@@ -88,9 +89,10 @@ CREATE SCHEMA moab
 		group_number smallint not null,
 		learning_week smallint not null,
 		first_presenter boolean not null default true,
-		userid bigint not null references ocsigen_start.users(userid),
+		userid bigint not null,
 		assigned boolean not null default false,
-		primary key (academic_year, userid)
+		primary key (academic_year, userid),
+		foreign key (userid, academic_year) references students(userid, academic_year)
 	)
 
 	CREATE TABLE presentation_criteria (
@@ -103,10 +105,12 @@ CREATE SCHEMA moab
 
 	CREATE TABLE presentation_scores (
 		academic_year varchar(8) not null,
-		scorer_id bigint not null references ocsigen_start.users(userid),
-		presenter_id bigint not null references ocsigen_start.users(userid),
+		scorer_id bigint not null,
+		presenter_id bigint not null,
 		criterion_id bigint not null references presentation_criteria(id),
 		score smallint not null,
 		comment text,
-		primary key (academic_year, scorer_id, presenter_id, criterion_id)
+		primary key (academic_year, scorer_id, presenter_id, criterion_id),
+		foreign key (scorer_id, academic_year) references students(userid, academic_year),
+		foreign key (presenter_id, academic_year) references students(userid, academic_year)
 	);
