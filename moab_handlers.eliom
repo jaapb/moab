@@ -133,7 +133,7 @@ let%client preregister_handler =
   fun () -> preregister_rpc
 
 let%shared admin_dashboard () =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt sids = Moab_students.get_active_students (ayear, (match lw with None -> 0 | Some x -> x), None) in
 	let%lwt att_rep = Moab_attendance.attendance_report () in
@@ -157,7 +157,7 @@ let%shared admin_dashboard () =
 	]]
 
 let%shared student_dashboard myid =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt attendance_row = Moab_attendance.attendance_tr myid in
 	let%lwt blog_row = Moab_blogs.blog_tr myid in

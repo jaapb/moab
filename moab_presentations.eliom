@@ -84,7 +84,7 @@ let%client set_score =
 (* Utility functions *)
 
 let%shared schedule_table av_clicked myid ayear gnr weekday =
-	let sw = ~%(!Moab_config.presentation_start_week) in
+	let sw = !(~%Moab_config.presentation_start_week) in
 	let%lwt schedule = get_schedule (ayear, gnr) >|= drop (sw - 1) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt group_members = Moab_students.get_students (ayear, Some gnr, lw) in
@@ -126,7 +126,7 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 (* Handlers *)
 
 let%shared do_presentation_feedback myid () (presenter_id, scores) =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt () = match presenter_id with
 	| None -> Lwt.return_unit
 	| Some p_id ->
@@ -138,8 +138,8 @@ let%shared do_presentation_feedback myid () (presenter_id, scores) =
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared schedule_presentation_handler myid () () =
-	let ayear = ~%(!Moab_config.current_academic_year) in
-	let sc = ~%(!Moab_config.schedule_closed) in
+	let ayear = !(~%Moab_config.current_academic_year) in
+	let sc = !(~%Moab_config.schedule_closed) in
 	let%lwt gnr = Moab_students.get_group_number (ayear, myid) in
 	let%lwt sids = Moab_sessions.find_sessions (ayear, Seminar, gnr) in
 	let%lwt weekday = Moab_sessions.get_session_weekday (List.hd sids) in
@@ -185,7 +185,7 @@ let%shared schedule_presentation_handler myid () () =
 			]
 
 let%shared view_schedule_handler myid (gnr) () =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt sids = Moab_sessions.find_sessions (ayear, Seminar, Some gnr) in
 	let%lwt weekday = Moab_sessions.get_session_weekday (List.hd sids) in
 	let%lwt current_lw = Moab_terms.learning_week_of_date ayear (Date.today ()) >|= function None -> 0 | Some x -> x in
@@ -230,7 +230,7 @@ let%shared view_schedule_handler myid (gnr) () =
 
 let%shared presentation_feedback_handler myid () () =
 	try%lwt
-		let ayear = ~%(!Moab_config.current_academic_year) in
+		let ayear = !(~%Moab_config.current_academic_year) in
 		let%lwt l = Moab_terms.learning_week_of_date ayear (Date.today ())	in
 		let%lwt lw = match l with
 			| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]

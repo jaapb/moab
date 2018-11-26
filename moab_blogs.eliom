@@ -75,7 +75,7 @@ let%client disapprove_blog =
 (* Utility functions *)
 
 let%shared blog_score uid =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
 	let year = Date.year (Date.today ()) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
@@ -91,7 +91,7 @@ let%shared blog_score uid =
 	Lwt.return pred_score
 
 let%shared blog_tr uid =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
 	let year = Date.year (Date.today ()) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
@@ -126,7 +126,7 @@ let%shared blog_tr uid =
 	)
 
 let%shared blog_report () =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt blogs = get_approvable_blogs ayear in
 	let%lwt trs = Lwt_list.map_s (fun (uid, title, week) ->
 		let%lwt (fn, ln) = Moab_users.get_name uid in
@@ -145,7 +145,7 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 	| Some x -> x in
 	let%lwt tp = Moab_users.get_user_type myid in
 	let%lwt u = Os_user_proxy.get_data  uid in
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let approve_button = D.button ~a:[a_class ["button"; "approve"]] [pcdata [%i18n S.approve]] in
 	let disapprove_button = D.button ~a:[a_class ["button"; "disapprove"]] [pcdata [%i18n S.disapprove]] in
@@ -204,7 +204,7 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 	]
 
 let%shared do_edit_blog myid () (title, text) =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt () =
 		match lw with
@@ -217,7 +217,7 @@ let%shared do_edit_blog myid () (title, text) =
 
 let%shared edit_blog_handler myid () () =
 	Eliom_registration.Any.register ~service:edit_blog_action (Os_session.connected_fun do_edit_blog);
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt blog_content = match lw with
 	| None -> Lwt.return [p [pcdata [%i18n S.no_blog_needed]]]

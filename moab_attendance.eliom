@@ -50,7 +50,7 @@ let%client get_attendance_list =
 (* Utility functions *)
 
 let%shared attendance_tr uid =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt weeks = Moab_terms.get_learning_weeks ayear in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in 
 	let%lwt (jw, lfw0) = Moab_students.get_active_period (ayear, uid) in
@@ -80,7 +80,7 @@ let%shared attendance_report () =
 		match lfw with
 		| None -> jw <= lw
 		| Some x -> jw <= lw && lw <= x in
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt x = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let lw = match x with
 	| None -> 0 
@@ -181,7 +181,7 @@ let%client generate_report_handler =
 	real_generate_report_handler
 	
 let%shared register_attendance_handler myid () () =
-	let ayear = ~%(!Moab_config.current_academic_year) in
+	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt csids = Moab_sessions.get_current_sessions ayear in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let learning_week = match lw with
