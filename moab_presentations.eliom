@@ -235,6 +235,23 @@ let%shared view_schedule_handler myid (gnr) () =
 		]
 	]
 
+let%client fill_table sl crit_rows =
+	(* Eliom_lib.alert "pres_id %Ld, scores %d" (Int64.of_string (Js.to_string e##.id)) (List.length sl); *)
+	List.iter (fun (id, score, comment) ->
+		let (_, cm_w, l) = Hashtbl.find crit_rows id in
+		let cm = Eliom_content.Html.To_dom.of_input cm_w in
+		(* Eliom_lib.alert "id %Ld, comment %s" id (Moab_base.default "" comment); *)
+		cm##.value := Js.string (Moab_base.default "" comment);
+		List.iter (fun r_w ->
+			let r = Eliom_content.Html.To_dom.of_input r_w in
+			if r##.id = Js.string (string_of_int score) then
+			(* begin
+				Eliom_lib.alert "found"; *)
+				r##.checked := Js.bool true
+			(* end *)
+		) l
+	) sl
+
 let%shared presentation_feedback_handler myid () () =
 	try%lwt
 		let ayear = !(~%Moab_config.current_academic_year) in
@@ -259,7 +276,8 @@ let%shared presentation_feedback_handler myid () () =
 			label [new_radio; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
 		let crit_rows = Hashtbl.create 5 in
 		let grade_button crit_id param grade =
-			let new_radio = D.Form.radio ~name:param ~value:grade Form.int in
+			let new_radio = D.Form.radio ~a:[a_id (string_of_int grade)] ~name:param
+				~value:grade Form.int in
 			let (cn, cm, l) = Hashtbl.find crit_rows crit_id in
 			Hashtbl.replace crit_rows crit_id (cn, cm, new_radio::l);
 			td ~a:[a_class [Printf.sprintf "grade-%d" grade; "grade-button"]; a_rowspan 2] [
@@ -297,16 +315,11 @@ let%shared presentation_feedback_handler myid () () =
 			Moab_base.seq_loop_pick Lwt_js_events.click ps @@ fun ev _ ->
 			Js.Opt.case (ev##.target)
 				(fun () -> Lwt.return_unit)
-				(fun e -> let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js.to_string e##.id)) in
-					Eliom_lib.alert "pres_id %Ld, scores %d" (Int64.of_string (Js.to_string e##.id)) (List.length sl);
-					List.iter (fun (id, score, comment) ->
-						let (_, cm_w, l) = Hashtbl.find ~%crit_rows id in
-						let cm = Eliom_content.Html.To_dom.of_input cm_w in
-						Eliom_lib.alert "id %Ld, comment %s" id (Moab_base.default "" comment);
-						cm##.value := Js.string (Moab_base.default "" comment)
-					) sl;
+				(fun e ->
+					let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js.to_string e##.id)) in
+					fill_table sl ~%crit_rows;
 					Lwt.return_unit
-				)
+				)	
 		): unit)];
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, scores) ->
@@ -379,7 +392,18 @@ let%shared presentation_feedback_handler myid () () =
 					]]
 				)
 			]) () in
-		Moab_container.page (Some myid) [
+		Moab_container.page ~a:[a_onload [%client (fun _ ->
+			((Lwt.async @@ fun () ->
+			match !(~%pres_radios) with
+			| [p_w] ->
+				let p = Eliom_content.Html.To_dom.of_input p_w in
+				let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js.to_string p##.id)) in
+				fill_table sl ~%crit_rows;
+				Lwt.return_unit
+			| _ -> Lwt.return_unit
+			): unit)
+		)]]
+		(Some myid) [
 			div ~a:[a_class ["content-box"]] [
 				h1 [pcdata [%i18n S.presentation_feedback]];
 				form
