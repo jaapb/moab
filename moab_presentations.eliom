@@ -74,11 +74,11 @@ let%client get_criteria =
 	~%(Eliom_client.server_function [%derive.json: string]
 			(Os_session.connected_wrapper get_criteria))
 
-let%server set_score (scorer_id, presenter_id, crit_id, score, comment) =
-	Moab_presentation_db.set_score scorer_id presenter_id crit_id score comment
+let%server set_score (ayear, scorer_id, presenter_id, crit_id, score, comment) =
+	Moab_presentation_db.set_score ayear scorer_id presenter_id crit_id score comment
 
 let%client set_score =
-	~%(Eliom_client.server_function [%derive.json: int64 * int64 * int64 * int * string]
+	~%(Eliom_client.server_function [%derive.json: string * int64 * int64 * int64 * int * string]
 			(Os_session.connected_wrapper set_score))
 
 (* Utility functions *)
@@ -126,13 +126,14 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 (* Handlers *)
 
 let%shared do_presentation_feedback myid () (presenter_id, scores) =
+	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt () = match presenter_id with
 	| None -> Lwt.return_unit
 	| Some p_id ->
 		Lwt_list.iter_s (fun (crit_id, (score, (comment: string))) ->
 			match score with
 			| None -> Lwt.return_unit
-			| Some s -> set_score (myid, p_id, crit_id, s, comment)
+			| Some s -> set_score (ayear, myid, p_id, crit_id, s, comment)
 		) scores in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
@@ -228,8 +229,6 @@ let%shared view_schedule_handler myid (gnr) () =
 	]
 
 let%shared presentation_feedback_handler myid () () =
-	Eliom_registration.Any.register ~service:presentation_feedback_action
-		(Os_session.connected_fun do_presentation_feedback);
 	try%lwt
 		let ayear = ~%(!Moab_config.current_academic_year) in
 		let%lwt l = Moab_terms.learning_week_of_date ayear (Date.today ())	in
@@ -277,17 +276,23 @@ let%shared presentation_feedback_handler myid () () =
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, scores) ->
 			let%lwt ps = match p1, p2 with
-				| None, None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
-				| Some u1, None ->	
+				| Some u1, None when u1 <> myid ->	
 						let%lwt (fn, ln) = Moab_users.get_name u1 in
 						Lwt.return [td [pres_radio presenter_id u1 fn ln]]
-				| None, Some u2 ->	
+				| Some u1, Some u2 when u2 = myid ->
+						let%lwt (fn, ln) = Moab_users.get_name u1 in
+						Lwt.return [td [pres_radio presenter_id u1 fn ln]]
+				| None, Some u2 when u2 <> myid ->	
+						let%lwt (fn, ln) = Moab_users.get_name u2 in
+						Lwt.return [td [pres_radio presenter_id u2 fn ln]]
+				| Some u1, Some u2 when u1 = myid ->
 						let%lwt (fn, ln) = Moab_users.get_name u2 in
 						Lwt.return [td [pres_radio presenter_id u2 fn ln]]
 				| Some u1, Some u2 ->
 						let%lwt (fn1, ln1) = Moab_users.get_name u1 in
 						let%lwt (fn2, ln2) = Moab_users.get_name u2 in
 						Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]]
+				| _, _ -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 			in
 			Lwt.return [
 				table [
@@ -348,3 +353,7 @@ let%shared presentation_feedback_handler myid () () =
 	with
 	| Failure x -> Moab_container.page (Some myid) [p [pcdata x]]
 	| e -> Lwt.fail e
+
+let%shared () =
+	Eliom_registration.Any.register ~service:presentation_feedback_action 
+		(Os_session.connected_fun do_presentation_feedback);

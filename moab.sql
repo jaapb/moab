@@ -102,10 +102,11 @@ CREATE SCHEMA moab
 	)	
 
 	CREATE TABLE presentation_scores (
+		academic_year varchar(8) not null,
 		scorer_id bigint not null references ocsigen_start.users(userid),
 		presenter_id bigint not null references ocsigen_start.users(userid),
 		criterion_id bigint not null references presentation_criteria(id),
 		score smallint not null,
 		comment text,
-		primary key (scorer_id, presenter_id, criterion_id)
+		primary key (academic_year, scorer_id, presenter_id, criterion_id)
 	);
