@@ -16,9 +16,6 @@ let%server presentation_feedback_action =
 		~post_params:(radio int64 "presenter_id" ** list "scores" (int64 "criterion_id" ** radio int "score" ** string "comment"))
 		()
 
-let%client presentation_feedback_action =
-	~%presentation_feedback_action
-
 (* Database access *)
 
 let%server get_schedule (ayear, gnr) =
@@ -132,8 +129,8 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 
 (* Handlers *)
 
-let%shared do_presentation_feedback myid () (presenter_id, scores) =
-	let ayear = !(~%Moab_config.current_academic_year) in
+let%server do_presentation_feedback myid () (presenter_id, scores) =
+	let ayear = !Moab_config.current_academic_year in
 	let%lwt () = match presenter_id with
 	| None -> Lwt.return_unit
 	| Some p_id ->
@@ -252,9 +249,9 @@ let%client fill_table sl crit_rows =
 		) l
 	) sl
 
-let%shared presentation_feedback_handler myid () () =
+let%server presentation_feedback_handler myid () () =
 	try%lwt
-		let ayear = !(~%Moab_config.current_academic_year) in
+		let ayear = !Moab_config.current_academic_year in
 		let%lwt l = Moab_terms.learning_week_of_date ayear (Date.today ())	in
 		let%lwt lw = match l with
 			| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
@@ -285,7 +282,7 @@ let%shared presentation_feedback_handler myid () () =
 			] in
 		let submit =
 			D.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] Form.string in
-		ignore [%client ((Lwt.async @@ fun () ->
+(*		ignore [%client ((Lwt.async @@ fun () ->
 			let s = Eliom_content.Html.To_dom.of_input ~%submit in
 			Lwt_js_events.clicks s @@ fun ev _ ->
 			Hashtbl.iter (fun id (name, _, l) ->
@@ -302,7 +299,7 @@ let%shared presentation_feedback_handler myid () () =
 			let ps = List.fold_left (fun acc pb ->
 				let inp = Eliom_content.Html.To_dom.of_input pb in
 				(Js.to_bool inp##.checked) || acc
-			) false !(~%pres_radios) in
+			) false ~%(!pres_radios) in
 			if not ps then
 			begin
 				Os_msg.msg ~level:`Err [%i18n S.no_presenter_selected];
@@ -311,7 +308,7 @@ let%shared presentation_feedback_handler myid () () =
 			Lwt.return_unit
 		): unit)];
 		ignore [%client ((Lwt.async @@ fun () ->
-			let ps = List.map Eliom_content.Html.To_dom.of_input !(~%pres_radios) in
+			let ps = List.map Eliom_content.Html.To_dom.of_input ~%(!pres_radios) in
 			Moab_base.seq_loop_pick Lwt_js_events.click ps @@ fun ev _ ->
 			Js.Opt.case (ev##.target)
 				(fun () -> Lwt.return_unit)
@@ -320,7 +317,7 @@ let%shared presentation_feedback_handler myid () () =
 					fill_table sl ~%crit_rows;
 					Lwt.return_unit
 				)	
-		): unit)];
+		): unit)]; *)
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, scores) ->
 			let%lwt ps = match p1, p2 with
@@ -392,17 +389,11 @@ let%shared presentation_feedback_handler myid () () =
 					]]
 				)
 			]) () in
-		Moab_container.page ~a:[a_onload [%client (fun _ ->
-			((Lwt.async @@ fun () ->
-			match !(~%pres_radios) with
-			| [p_w] ->
-				let p = Eliom_content.Html.To_dom.of_input p_w in
-				let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js.to_string p##.id)) in
-				fill_table sl ~%crit_rows;
-				Lwt.return_unit
-			| _ -> Lwt.return_unit
-			): unit)
-		)]]
+		Moab_container.page (* ~a:[a_onload [%client (fun _ ->
+			match ~%(!pres_radios) with
+			| [p_w] -> ()
+			| _ -> ()
+		)]] *)
 		(Some myid) [
 			div ~a:[a_class ["content-box"]] [
 				h1 [pcdata [%i18n S.presentation_feedback]];
@@ -413,6 +404,6 @@ let%shared presentation_feedback_handler myid () () =
 	| Failure x -> Moab_container.page (Some myid) [p [pcdata x]]
 	| e -> Lwt.fail e
 
-let%shared () =
+let%server () =
 	Eliom_registration.Any.register ~service:presentation_feedback_action 
 		(Os_session.connected_fun do_presentation_feedback);

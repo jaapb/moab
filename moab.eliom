@@ -5,7 +5,11 @@ let%server () =
 	Os_db.pwd_crypt_ref :=
 		((fun password -> Bcrypt.string_of_hash (Bcrypt.hash ~variant:Bcrypt.A password)),
 		 (fun _ password1 password2 ->
-				Bcrypt.verify password1 (Bcrypt.hash_of_string password2)))
+				Bcrypt.verify password1 (Bcrypt.hash_of_string password2)));
+
+	Moab_base.App.register
+		~service:Moab_services.presentation_feedback_service
+		(Moab_page.connected_page Moab_presentations.presentation_feedback_handler)
 
 let%shared () =
   Eliom_registration.Action.register
@@ -95,11 +99,7 @@ let%shared () =
 
 	Moab_base.App.register
 		~service:Moab_services.submit_report_service
-		(Moab_page.connected_page Moab_reports.submit_report_handler);
-
-	Moab_base.App.register
-		~service:Moab_services.presentation_feedback_service
-		(Moab_page.connected_page Moab_presentations.presentation_feedback_handler)
+		(Moab_page.connected_page Moab_reports.submit_report_handler)
 
 let%shared () =
 	CalendarLib.Printer.day_name :=
