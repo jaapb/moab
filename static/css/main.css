@@ -159,3 +159,13 @@ table.feedback-table td.grade-5
 {
 	background-color: darkgreen;
 }
+
+.warning-paragraph
+{
+	border: solid darkred thin;
+	background-color: red;
+	color: white;
+	margin-left: 10px;
+	margin-right: 10px;
+	padding: 5px;
+}

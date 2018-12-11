@@ -206,17 +206,25 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 let%shared do_edit_blog myid () (title, text) =
 	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
-	let%lwt () =
+	let%lwt d =
 		match lw with
 		| None ->
-			Os_msg.msg ~level:`Msg ~onload:true [%i18n S.no_blog_needed];
-			Lwt.return_unit
+			Lwt.return @@
+				div ~a:[a_class ["content-box"]] [
+					h1 [pcdata [%i18n S.error ~capitalize:true]];
+					p [pcdata [%i18n S.no_blog_needed]]
+				]
 		| Some learning_week ->
-			update_blog (myid, ayear, learning_week, title, text) in
-	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
+			let%lwt () = update_blog (myid, ayear, learning_week, title, text) in
+			Lwt.return @@
+				div ~a:[a_class ["content-box"]] [
+					h1 [pcdata [%i18n S.success]];
+					p [pcdata [%i18n S.blog_stored]]
+				] in
+	Moab_container.page (Some myid) [d]
 
 let%shared edit_blog_handler myid () () =
-	Eliom_registration.Any.register ~service:edit_blog_action (Os_session.connected_fun do_edit_blog);
+	Moab_base.App.register ~service:edit_blog_action (Moab_page.connected_page do_edit_blog);
 	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt blog_content = match lw with
@@ -229,6 +237,7 @@ let%shared edit_blog_handler myid () () =
 		Lwt.return [
 			p [pcdata [%i18n S.writing_blog_for_week]; pcdata " "; pcdata (string_of_int learning_week)];
 			p [b [pcdata [%i18n S.blog_message1]]; pcdata " "; pcdata [%i18n S.blog_message2]];
+			p ~a:[a_class ["warning-paragraph"]] [pcdata [%i18n S.blog_message3]];
 			Form.post_form ~service:edit_blog_action (fun (title, text) -> [
 				table [
 					tr [

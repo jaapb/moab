@@ -187,6 +187,9 @@ excellent	Excellent	Excellent
 comment	Comment	Remarque
 no_score_for	No score for {{n}}.	Pas de score pour {{n}}.
 no_presenter_selected	No presenter selected	Pas de présentateur sélectionné
+success	Success	Succès
+blog_stored	Your blog has been stored.	Votre blog a été sauvegardé.
+blog_message3	Please note that there is a bug in the web framework; when you submit the blog, it may just reload the page, erasing your blog. A workaround is to copy the blog text before submitting, so you can paste it back if the bug occurs. You will still have to retype the title, unfortunately. Please note that your blog has not been submitted until you get the message that your blog has been stored. The current week will then be orange on your dashboard.	Veuillez noter qu'il y a un bug dans le site web; quand vous soumettez votre blog, il est possible que la page sera simplement rechargée, ce qui fera disparaître votre blog. Une solution temporaire est de copier le texte du blog avant de soumettre; si le bug se produit, vous n'avez qu'à recoller le texte. Le titre vous devriez retaper vous-même, malheureusement. Votre blog ne sera soumis que si vous voyez le message que le blog a été sauvegardé. La semaine en cours sera alors en orange sur le tableau de bord.
 topic	Topic	Sujet
 duration	Duration	Durée
 putative_grade	Putative grade	Note provisionnelle
