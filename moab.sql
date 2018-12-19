@@ -111,6 +111,6 @@ CREATE SCHEMA moab
 		score smallint not null,
 		comment text,
 		primary key (academic_year, scorer_id, presenter_id, criterion_id),
-		foreign key (scorer_id, academic_year) references students(userid, academic_year),
+		foreign key (scorer_id) references ocsigen_start.users(userid),
 		foreign key (presenter_id, academic_year) references students(userid, academic_year)
 	);
