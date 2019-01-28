@@ -61,6 +61,14 @@ let map2i_s (f: int -> 'a -> 'b -> 'c Lwt.t) (l1: 'a list) (l2: 'b list): 'c lis
 		| _, _ -> Lwt.fail (Invalid_argument "map2i_s") in
 	map2i_s_aux f 0 l1 l2
 
+let rec iter2_s (f: 'a -> 'b -> unit Lwt.t) (l1: 'a list) (l2: 'b list): unit Lwt.t =
+	match l1, l2 with
+	| [], [] -> Lwt.return ()
+	| h1::t1, h2::t2 ->
+		let%lwt () = f h1 h2 in
+		iter2_s f t1 t2
+	| _, _ -> Lwt.fail (Invalid_argument "iter2_s")
+
 let rec take n l =
 	match l with
 	| [] -> []
