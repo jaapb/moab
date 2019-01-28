@@ -1,7 +1,8 @@
 [%%shared
-	open Eliom_content.Html.F
 	open Eliom_parameter
 	open CalendarLib
+	open Eliom_content.Html
+	open Eliom_content.Html.F
 ]
 
 (* Local types *)
@@ -117,6 +118,25 @@ let%server get_active_period (ayear, uid) =
 let%client get_active_period =
 	~%(Eliom_client.server_function [%derive.json : string * int64]
 		(Os_session.connected_wrapper get_active_period))
+
+(* Widgets *)
+let%shared student_select_widget param =
+	let student_opt (id, fn, ln) =
+		D.Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false) in
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt current_lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
+	let%lwt students = get_students (ayear, None, current_lw) in
+	let%lwt sns = Lwt_list.map_s (fun uid ->
+		let%lwt (fn, ln) = Moab_users.get_name uid in
+		Lwt.return (uid, fn, ln)
+	) students in
+	match sns with
+	| [] -> Lwt.return (pcdata [%i18n S.no_students_yet])
+	| h::t -> begin
+		match param with
+		| `Param p -> Lwt.return @@ D.Form.select ~name:p Form.int64 (student_opt h) (List.map student_opt t)
+		| `String s -> Lwt.return @@ D.Raw.select ~a:[a_name s] (List.map (fun (id, fn, ln) -> option ~a:[a_value (Int64.to_string id)] (pcdata (Printf.sprintf "%s %s" fn ln))) (h::t))
+	end
 
 (* Handlers *)
 

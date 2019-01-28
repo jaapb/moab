@@ -324,24 +324,29 @@ let%shared presentation_feedback_handler myid () () =
 		): unit)];
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, c5)))))))))) ->
-			let%lwt ps = match p1, p2 with
-				| Some u1, None when u1 <> myid ->	
-						let%lwt (fn, ln) = Moab_users.get_name u1 in
-						Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
-				| Some u1, Some u2 when u2 = myid ->
-						let%lwt (fn, ln) = Moab_users.get_name u1 in
-						Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
-				| None, Some u2 when u2 <> myid ->	
-						let%lwt (fn, ln) = Moab_users.get_name u2 in
-						Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
-				| Some u1, Some u2 when u1 = myid ->
-						let%lwt (fn, ln) = Moab_users.get_name u2 in
-						Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
-				| Some u1, Some u2 ->
-						let%lwt (fn1, ln1) = Moab_users.get_name u1 in
-						let%lwt (fn2, ln2) = Moab_users.get_name u2 in
-						Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]]
-				| _, _ -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+			let%lwt t = Moab_users.get_user_type myid in
+			let%lwt ps = match t with
+				| Admin -> Moab_students.student_select_widget (`Param presenter_id)
+				| _ -> begin
+					match p1, p2 with
+					| Some u1, None when u1 <> myid ->	
+							let%lwt (fn, ln) = Moab_users.get_name u1 in
+							Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
+					| Some u1, Some u2 when u2 = myid ->
+							let%lwt (fn, ln) = Moab_users.get_name u1 in
+							Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
+					| None, Some u2 when u2 <> myid ->	
+							let%lwt (fn, ln) = Moab_users.get_name u2 in
+							Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
+					| Some u1, Some u2 when u1 = myid ->
+							let%lwt (fn, ln) = Moab_users.get_name u2 in
+							Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
+					| Some u1, Some u2 ->
+							let%lwt (fn1, ln1) = Moab_users.get_name u1 in
+							let%lwt (fn2, ln2) = Moab_users.get_name u2 in
+							Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]]
+					| _, _ -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+				end
 			in
 			Lwt.return [
 				table [
