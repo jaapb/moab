@@ -427,10 +427,10 @@ let%shared presentation_feedback_handler myid () () =
 					]) crits [s1, c1; s2, c2; s3, c3; s4, c4; s5, c5]);
 					(match t with
 					| Admin -> [
-							tr [td [pcdata "Topic"]; td ~a:[a_colspan 7] [topic_input]];
-							tr [td [pcdata "Duration"]; td ~a:[a_colspan 7] [duration_input]];
-							tr [td [pcdata "Putative grade"]; td ~a:[a_colspan 7] [grade_input]];
-							tr [td ~a:[a_colspan 8] [pcdata "Tutor comments"]];
+							tr [td [pcdata [%i18n S.topic]]; td ~a:[a_colspan 7] [topic_input]];
+							tr [td [pcdata [%i18n S.duration]]; td ~a:[a_colspan 7] [duration_input]];
+							tr [td [pcdata [%i18n S.putative_grade]]; td ~a:[a_colspan 7] [grade_input]];
+							tr [td ~a:[a_colspan 8] [pcdata [%i18n S.tutor_comments]]];
 							tr [td ~a:[a_colspan 8] [comments_ta]]
 						]
 					| _ -> []);
