@@ -96,3 +96,14 @@ let get_scores ayear scorer_id presenter_id =
 			AND scorer_id = $scorer_id \
 			AND presenter_id = $presenter_id"
 	)
+
+let set_admin_scores ayear presenter_id topic duration grade comments =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "INSERT INTO moab.presentation_admin_scores \
+			(academic_year, presenter_id, topic, duration, grade, comments) \
+			VALUES \
+			($ayear, $presenter_id, $topic, $duration, $grade, $comments) \
+			ON CONFLICT (academic_year, presenter_id) DO UPDATE \
+				SET topic = EXCLUDED.topic, duration = EXCLUDED.duration, \
+				grade = EXCLUDED.grade, comments = EXCLUDED.comments"
+	)

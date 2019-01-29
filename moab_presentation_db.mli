@@ -6,3 +6,4 @@ val get_random_unassigned_student: string -> int -> int -> int64 option Lwt.t
 val get_criteria: string -> (int64 * string * string option) list Lwt.t
 val set_score: string -> int64 -> int64 -> int64 -> int -> string -> unit Lwt.t
 val get_scores: string -> int64 -> int64 -> (int64 * int * string option) list Lwt.t
+val set_admin_scores: string -> int64 -> string -> int -> string -> string -> unit Lwt.t

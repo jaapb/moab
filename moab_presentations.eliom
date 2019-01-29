@@ -13,7 +13,7 @@ let%server presentation_feedback_action =
 	Eliom_service.create_attached_post
 		~name:"presentation_feedback_action"
 		~fallback:Moab_services.presentation_feedback_service
-		~post_params:(sum (radio int64 "presenter_id") (int64 "presenter_id") ** radio int "score1" ** string "comment1" ** radio int "score2" ** string "comment2" ** radio int "score3" ** string "comment3" ** radio int "score4" ** string "comment4" ** radio int "score5" ** string "comment5")
+		~post_params:(sum (radio int64 "presenter_id") (int64 "presenter_id") ** radio int "score1" ** string "comment1" ** radio int "score2" ** string "comment2" ** radio int "score3" ** string "comment3" ** radio int "score4" ** string "comment4" ** radio int "score5" ** string "comment5" ** opt (string "topic" ** int "duration" ** string "grade" ** string "comments"))
 		()
 
 let%client presentation_feedback_action =
@@ -88,6 +88,13 @@ let%client get_scores =
 	~%(Eliom_client.server_function [%derive.json: string * int64 * int64]
 			(Os_session.connected_wrapper get_scores))
 
+let%server set_admin_scores (ayear, presenter_id, topic, duration, grade, comments) =
+	Moab_presentation_db.set_admin_scores ayear presenter_id topic duration grade comments
+
+let%client set_admin_scores =
+	~%(Eliom_client.server_function [%derive.json: string * int64 * string * int * string * string]
+			(Os_session.connected_wrapper set_admin_scores))
+
 (* Utility functions *)
 
 let%shared schedule_table av_clicked myid ayear gnr weekday =
@@ -132,7 +139,7 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 
 (* Handlers *)
 
-let%shared do_presentation_feedback myid () (pres_id, (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, c5)))))))))) =
+let%shared do_presentation_feedback myid () (pres_id, (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, (c5, admin))))))))))) =
 	let presenter_id = match pres_id with
 		| Inj1 x -> x
 		| Inj2 x -> Some x in
@@ -141,11 +148,16 @@ let%shared do_presentation_feedback myid () (pres_id, (s1, (c1, (s2, (c2, (s3, (
 	let%lwt () = match presenter_id with
 	| None -> Lwt.return_unit
 	| Some p_id ->
-		Moab_base.iter2_s (fun (crit_id, _, _) (s, comment) -> 
+		let%lwt () = Moab_base.iter2_s (fun (crit_id, _, _) (s, comment) -> 
 			match s with
 			| None -> Lwt.return_unit
 			| Some score -> set_score (ayear, myid, p_id, crit_id, score, comment)
 		) crits [s1, c1; s2, c2; s3, c3; s4, c4; s5, c5] in
+		begin
+			match admin with
+			| None -> Lwt.return_unit
+			| Some (t, (d, (g, c))) -> set_admin_scores (ayear, p_id, t, d, g, c)
+		end in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared schedule_presentation_handler myid () () =
@@ -320,8 +332,12 @@ let%shared presentation_feedback_handler myid () () =
 				)	
 		): unit)];
 		let%lwt form = 
-			Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, c5)))))))))) ->
+			Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, (c5, (topic, (duration, (grade, comments)))))))))))))) ->
 			let%lwt t = Moab_users.get_user_type myid in
+			let topic_input = D.Form.input ~input_type:`Text ~name:topic Form.string in
+			let duration_input = D.Form.input ~input_type:`Number ~name:duration Form.int in
+			let grade_input = D.Form.input ~input_type:`Text ~name:grade Form.string in
+			let comments_ta = D.Form.textarea ~a:[a_rows 8; a_cols 80] ~name:comments () in
 			let%lwt ps = match t with
 				| Admin -> let%lwt sw = Moab_students.student_select_widget (`Param pid) in
 						ignore [%client ((Lwt.async @@ fun () ->
@@ -329,6 +345,8 @@ let%shared presentation_feedback_handler myid () () =
 							Lwt_js_events.changes s @@ fun _ _ ->
 							let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js_of_ocaml.Js.to_string s##.value)) in
 							fill_table sl ~%crit_rows;
+							let t = Eliom_content.Html.To_dom.of_input ~%topic_input in
+							t##.value := Js.string "blerp";
 							Lwt.return_unit
 						): unit)];
 						Lwt.return [td [sw]]
@@ -407,6 +425,15 @@ let%shared presentation_feedback_handler myid () () =
 							th ~a:[a_class ["crit-description"]] [pcdata (match descr with None -> "" | Some x -> x)]
 						]
 					]) crits [s1, c1; s2, c2; s3, c3; s4, c4; s5, c5]);
+					(match t with
+					| Admin -> [
+							tr [td [pcdata "Topic"]; td ~a:[a_colspan 7] [topic_input]];
+							tr [td [pcdata "Duration"]; td ~a:[a_colspan 7] [duration_input]];
+							tr [td [pcdata "Putative grade"]; td ~a:[a_colspan 7] [grade_input]];
+							tr [td ~a:[a_colspan 8] [pcdata "Tutor comments"]];
+							tr [td ~a:[a_colspan 8] [comments_ta]]
+						]
+					| _ -> []);
 					[tr [
 						td ~a:[a_colspan 8] [
 							submit

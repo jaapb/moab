@@ -113,4 +113,15 @@ CREATE SCHEMA moab
 		primary key (academic_year, scorer_id, presenter_id, criterion_id),
 		foreign key (scorer_id) references ocsigen_start.users(userid),
 		foreign key (presenter_id, academic_year) references students(userid, academic_year)
+	)
+	
+	CREATE TABLE presentation_admin_scores (
+		academic_year varchar(8) not null,
+		presenter_id bigint not null,
+		topic text not null,
+		duration smallint not null,
+		grade text not null,
+		comments text not null,
+		primary key (academic_year, presenter_id),
+		foreign key (academic_year, presenter_id) references students(academic_year, userid)
 	);
