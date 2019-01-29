@@ -240,19 +240,22 @@ let%shared view_schedule_handler myid (gnr) () =
 	]
 
 let%client fill_table sl crit_rows =
-	(* Eliom_lib.alert "pres_id %Ld, scores %d" (Int64.of_string (Js_of_ocaml.Js.to_string e##.id)) (List.length sl); *)
+	Hashtbl.iter (fun id (_, cm_w, l) ->
+		let cm = Eliom_content.Html.To_dom.of_input cm_w in
+		cm##.value := Js_of_ocaml.Js.string "";
+		List.iter (fun r_w ->
+			let r = Eliom_content.Html.To_dom.of_input r_w in
+			r##.checked := Js_of_ocaml.Js.bool false
+		) l
+	) crit_rows;
 	List.iter (fun (id, score, comment) ->
 		let (_, cm_w, l) = Hashtbl.find crit_rows id in
 		let cm = Eliom_content.Html.To_dom.of_input cm_w in
-		(* Eliom_lib.alert "id %Ld, comment %s" id (Moab_base.default "" comment); *)
 		cm##.value := Js_of_ocaml.Js.string (Moab_base.default "" comment);
 		List.iter (fun r_w ->
 			let r = Eliom_content.Html.To_dom.of_input r_w in
 			if r##.id = Js_of_ocaml.Js.string (string_of_int score) then
-			(* begin
-				Eliom_lib.alert "found"; *)
 				r##.checked := Js_of_ocaml.Js.bool true
-			(* end *)
 		) l
 	) sl
 
@@ -263,15 +266,6 @@ let%shared presentation_feedback_handler myid () () =
 		let%lwt lw = match l with
 			| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 			| Some x -> Lwt.return x in
-		let%lwt g = Moab_students.get_group_number (ayear, myid) in
-		let%lwt gnr = match g with
-			| None -> Lwt.fail_with [%i18n S.no_group_number]	
-			| Some x -> Lwt.return x in
-		let%lwt s = get_schedule (ayear, gnr) in
-		let%lwt (p1, p2) = match List.assoc_opt (Int32.of_int lw) s with
-		| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
-		| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
-		| Some (u1, u2) -> Lwt.return (u1, u2) in	
 		let%lwt crits = get_criteria ayear in
 		let pres_radios = ref [] in
 		let pres_radio ?(checked = false) param uid fn ln =
@@ -330,8 +324,24 @@ let%shared presentation_feedback_handler myid () () =
 			let%lwt t = Moab_users.get_user_type myid in
 			let%lwt ps = match t with
 				| Admin -> let%lwt sw = Moab_students.student_select_widget (`Param pid) in
+						ignore [%client ((Lwt.async @@ fun () ->
+							let s = Eliom_content.Html.To_dom.of_select ~%sw in
+							Lwt_js_events.changes s @@ fun _ _ ->
+							let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js_of_ocaml.Js.to_string s##.value)) in
+							fill_table sl ~%crit_rows;
+							Lwt.return_unit
+						): unit)];
 						Lwt.return [td [sw]]
 				| _ -> begin
+					let%lwt g = Moab_students.get_group_number (ayear, myid) in
+					let%lwt gnr = match g with
+					| None -> Lwt.fail_with [%i18n S.no_group_number]	
+					| Some x -> Lwt.return x in
+					let%lwt s = get_schedule (ayear, gnr) in
+					let%lwt (p1, p2) = match List.assoc_opt (Int32.of_int lw) s with
+					| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+					| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+					| Some (u1, u2) -> Lwt.return (u1, u2) in	
 					match p1, p2 with
 					| Some u1, None when u1 <> myid ->	
 							let%lwt (fn, ln) = Moab_users.get_name u1 in
@@ -388,7 +398,7 @@ let%shared presentation_feedback_handler myid () () =
 							grade_button id s 4;
 							grade_button id s 5;
 							td ~a:[a_rowspan 2] [
-								let new_comment = Form.input ~input_type:`Text ~name:c Form.string in
+								let new_comment = D.Form.input ~input_type:`Text ~name:c Form.string in
 								Hashtbl.add crit_rows id (text, new_comment, []);
 								new_comment
 							]

@@ -131,7 +131,7 @@ let%shared student_select_widget param =
 		Lwt.return (uid, fn, ln)
 	) students in
 	match sns with
-	| [] -> Lwt.return (pcdata [%i18n S.no_students_yet])
+	| [] -> Lwt.return (D.Raw.select [])
 	| h::t -> begin
 		match param with
 		| `Param p -> Lwt.return @@ D.Form.select ~name:p Form.int64 (student_opt h) (List.map student_opt t)
