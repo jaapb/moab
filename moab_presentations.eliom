@@ -13,7 +13,7 @@ let%server presentation_feedback_action =
 	Eliom_service.create_attached_post
 		~name:"presentation_feedback_action"
 		~fallback:Moab_services.presentation_feedback_service
-		~post_params:(radio int64 "presenter_id" ** radio int "score1" ** string "comment1" ** radio int "score2" ** string "comment2" ** radio int "score3" ** string "comment3" ** radio int "score4" ** string "comment4" ** radio int "score5" ** string "comment5")
+		~post_params:(sum (radio int64 "presenter_id") (int64 "presenter_id") ** radio int "score1" ** string "comment1" ** radio int "score2" ** string "comment2" ** radio int "score3" ** string "comment3" ** radio int "score4" ** string "comment4" ** radio int "score5" ** string "comment5")
 		()
 
 let%client presentation_feedback_action =
@@ -132,7 +132,10 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 
 (* Handlers *)
 
-let%shared do_presentation_feedback myid () (presenter_id, (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, c5)))))))))) =
+let%shared do_presentation_feedback myid () (pres_id, (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, c5)))))))))) =
+	let presenter_id = match pres_id with
+		| Inj1 x -> x
+		| Inj2 x -> Some x in
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt crits = get_criteria ayear in
 	let%lwt () = match presenter_id with
@@ -323,28 +326,29 @@ let%shared presentation_feedback_handler myid () () =
 				)	
 		): unit)];
 		let%lwt form = 
-			Form.lwt_post_form ~service:presentation_feedback_action (fun (presenter_id, (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, c5)))))))))) ->
+			Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, c5)))))))))) ->
 			let%lwt t = Moab_users.get_user_type myid in
 			let%lwt ps = match t with
-				| Admin -> Moab_students.student_select_widget (`Param presenter_id)
+				| Admin -> let%lwt sw = Moab_students.student_select_widget (`Param pid) in
+						Lwt.return [td [sw]]
 				| _ -> begin
 					match p1, p2 with
 					| Some u1, None when u1 <> myid ->	
 							let%lwt (fn, ln) = Moab_users.get_name u1 in
-							Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
+							Lwt.return [td [pres_radio ~checked:true pid_radio u1 fn ln]]
 					| Some u1, Some u2 when u2 = myid ->
 							let%lwt (fn, ln) = Moab_users.get_name u1 in
-							Lwt.return [td [pres_radio ~checked:true presenter_id u1 fn ln]]
+							Lwt.return [td [pres_radio ~checked:true pid_radio u1 fn ln]]
 					| None, Some u2 when u2 <> myid ->	
 							let%lwt (fn, ln) = Moab_users.get_name u2 in
-							Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
+							Lwt.return [td [pres_radio ~checked:true pid_radio u2 fn ln]]
 					| Some u1, Some u2 when u1 = myid ->
 							let%lwt (fn, ln) = Moab_users.get_name u2 in
-							Lwt.return [td [pres_radio ~checked:true presenter_id u2 fn ln]]
+							Lwt.return [td [pres_radio ~checked:true pid_radio u2 fn ln]]
 					| Some u1, Some u2 ->
 							let%lwt (fn1, ln1) = Moab_users.get_name u1 in
 							let%lwt (fn2, ln2) = Moab_users.get_name u2 in
-							Lwt.return [td [pres_radio presenter_id u1 fn1 ln1]; td [pres_radio presenter_id u2 fn2 ln2]]
+							Lwt.return [td [pres_radio pid_radio u1 fn1 ln1]; td [pres_radio pid_radio u2 fn2 ln2]]
 					| _, _ -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 				end
 			in
