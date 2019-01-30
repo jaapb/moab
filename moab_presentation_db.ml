@@ -107,3 +107,15 @@ let set_admin_scores ayear presenter_id topic duration grade comments =
 				SET topic = EXCLUDED.topic, duration = EXCLUDED.duration, \
 				grade = EXCLUDED.grade, comments = EXCLUDED.comments"
 	)
+
+let get_admin_scores ayear presenter_id =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT topic, duration, grade, comments \
+			FROM moab.presentation_admin_scores \
+			WHERE academic_year = $ayear \
+				AND presenter_id = $presenter_id"
+	) >>=	
+	function
+	| [] -> Lwt.fail Not_found
+	| [x] -> Lwt.return x
+	| _ -> Lwt.fail (Invalid_argument "get_admin_scores: found multiple results")

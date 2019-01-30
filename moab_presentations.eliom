@@ -95,6 +95,13 @@ let%client set_admin_scores =
 	~%(Eliom_client.server_function [%derive.json: string * int64 * string * int * string * string]
 			(Os_session.connected_wrapper set_admin_scores))
 
+let%server get_admin_scores (ayear, presenter_id) =
+	Moab_presentation_db.get_admin_scores ayear presenter_id
+
+let%client get_admin_scores =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+			(Os_session.connected_wrapper get_admin_scores))
+
 (* Utility functions *)
 
 let%shared schedule_table av_clicked myid ayear gnr weekday =
@@ -279,12 +286,8 @@ let%shared presentation_feedback_handler myid () () =
 			| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 			| Some x -> Lwt.return x in
 		let%lwt crits = get_criteria ayear in
-		let pres_radios = ref [] in
-		let pres_radio ?(checked = false) param uid fn ln =
-			let new_radio = D.Form.radio ~a:[a_id (Int64.to_string uid)] ~name:param ~value:uid ~checked Form.int64 in
-			pres_radios := new_radio::!pres_radios;
-			label [new_radio; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
 		let crit_rows = Hashtbl.create 5 in
+		let pres_radios = ref [] in
 		let grade_button crit_id param grade =
 			let new_radio = D.Form.radio ~a:[a_id (string_of_int grade)] ~name:param
 				~value:grade Form.int in
@@ -295,42 +298,6 @@ let%shared presentation_feedback_handler myid () () =
 			] in
 		let submit =
 			D.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] Form.string in
-		ignore [%client ((Lwt.async @@ fun () ->
-			let s = Eliom_content.Html.To_dom.of_input ~%submit in
-			Lwt_js_events.clicks s @@ fun ev _ ->
-			Hashtbl.iter (fun id (name, _, l) ->
-				let is = List.fold_left (fun acc cb ->
-					let inp = Eliom_content.Html.To_dom.of_input cb in
-					(Js_of_ocaml.Js.to_bool inp##.checked) || acc
-				) false l in
-				if not is then
-				begin
-					Os_msg.msg ~level:`Err [%i18n S.no_score_for ~n:name];
-					Js_of_ocaml.Dom.preventDefault ev
-				end
-			) ~%crit_rows;
-			let ps = List.fold_left (fun acc pb ->
-				let inp = Eliom_content.Html.To_dom.of_input pb in
-				(Js_of_ocaml.Js.to_bool inp##.checked) || acc
-			) false !(~%pres_radios) in
-			if not ps then
-			begin
-				Os_msg.msg ~level:`Err [%i18n S.no_presenter_selected];
-				Js_of_ocaml.Dom.preventDefault ev
-			end;
-			Lwt.return_unit
-		): unit)];
-		ignore [%client ((Lwt.async @@ fun () ->
-			let ps = List.map Eliom_content.Html.To_dom.of_input ~%(!pres_radios) in
-			Moab_base.seq_loop_pick Lwt_js_events.click ps @@ fun ev _ ->
-			Js_of_ocaml.Js.Opt.case (ev##.target)
-				(fun () -> Lwt.return_unit)
-				(fun e ->
-					let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js_of_ocaml.Js.to_string e##.id)) in
-					fill_table sl ~%crit_rows;
-					Lwt.return_unit
-				)	
-		): unit)];
 		let%lwt form = 
 			Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, (c5, (topic, (duration, (grade, comments)))))))))))))) ->
 			let%lwt t = Moab_users.get_user_type myid in
@@ -343,11 +310,21 @@ let%shared presentation_feedback_handler myid () () =
 						ignore [%client ((Lwt.async @@ fun () ->
 							let s = Eliom_content.Html.To_dom.of_select ~%sw in
 							Lwt_js_events.changes s @@ fun _ _ ->
-							let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js_of_ocaml.Js.to_string s##.value)) in
+							let pres_id = Int64.of_string (Js_of_ocaml.Js.to_string s##.value) in
+							let%lwt sl = get_scores (~%ayear, ~%myid, pres_id) in
 							fill_table sl ~%crit_rows;
-							let t = Eliom_content.Html.To_dom.of_input ~%topic_input in
-							t##.value := Js.string "blerp";
-							Lwt.return_unit
+							try%lwt
+								let%lwt (t, d, g, c) = get_admin_scores (~%ayear, pres_id) in
+								let ti = Eliom_content.Html.To_dom.of_input ~%topic_input in
+								ti##.value := Js.string	t;
+								let di = Eliom_content.Html.To_dom.of_input ~%duration_input in
+								di##.value := Js.string	(string_of_int d);
+								let gi = Eliom_content.Html.To_dom.of_input ~%grade_input in
+								gi##.value := Js.string	g;
+								let ca = Eliom_content.Html.To_dom.of_textarea ~%comments_ta in
+								ca##.value := Js.string	c;
+								Lwt.return_unit
+							with Not_found -> Lwt.return_unit
 						): unit)];
 						Lwt.return [td [sw]]
 				| _ -> begin
@@ -360,6 +337,46 @@ let%shared presentation_feedback_handler myid () () =
 					| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 					| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 					| Some (u1, u2) -> Lwt.return (u1, u2) in	
+					let pres_radio ?(checked = false) param uid fn ln =
+					let new_radio = D.Form.radio ~a:[a_id (Int64.to_string uid)] ~name:param ~value:uid ~checked Form.int64 in
+						pres_radios := new_radio::!pres_radios;
+						label [new_radio; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
+						ignore [%client ((Lwt.async @@ fun () ->
+							let s = Eliom_content.Html.To_dom.of_input ~%submit in
+							Lwt_js_events.clicks s @@ fun ev _ ->
+							Hashtbl.iter (fun id (name, _, l) ->
+								let is = List.fold_left (fun acc cb ->
+									let inp = Eliom_content.Html.To_dom.of_input cb in
+									(Js_of_ocaml.Js.to_bool inp##.checked) || acc
+								) false l in
+								if not is then
+								begin
+									Os_msg.msg ~level:`Err [%i18n S.no_score_for ~n:name];
+									Js_of_ocaml.Dom.preventDefault ev
+								end
+							) ~%crit_rows;
+							let ps = List.fold_left (fun acc pb ->
+								let inp = Eliom_content.Html.To_dom.of_input pb in
+								(Js_of_ocaml.Js.to_bool inp##.checked) || acc
+							) false !(~%pres_radios) in
+							if not ps then
+							begin
+								Os_msg.msg ~level:`Err [%i18n S.no_presenter_selected];
+								Js_of_ocaml.Dom.preventDefault ev
+							end;
+							Lwt.return_unit
+						): unit)];
+						ignore [%client ((Lwt.async @@ fun () ->
+							let ps = List.map Eliom_content.Html.To_dom.of_input ~%(!pres_radios) in
+							Moab_base.seq_loop_pick Lwt_js_events.click ps @@ fun ev _ ->
+							Js_of_ocaml.Js.Opt.case (ev##.target)
+								(fun () -> Lwt.return_unit)
+								(fun e ->
+									let%lwt sl = get_scores (~%ayear, ~%myid, Int64.of_string (Js_of_ocaml.Js.to_string e##.id)) in
+									fill_table sl ~%crit_rows;
+									Lwt.return_unit
+								)	
+						): unit)];
 					match p1, p2 with
 					| Some u1, None when u1 <> myid ->	
 							let%lwt (fn, ln) = Moab_users.get_name u1 in
