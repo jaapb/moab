@@ -8,3 +8,5 @@ val set_score: string -> int64 -> int64 -> int64 -> int -> string -> unit Lwt.t
 val get_scores: string -> int64 -> int64 -> (int64 * int * string option) list Lwt.t
 val set_admin_scores: string -> int64 -> string -> int -> string -> string -> unit Lwt.t
 val get_admin_scores: string -> int64 -> (string * int * string * string) Lwt.t
+val get_average_scores: string -> int64 -> (int64 * float) list Lwt.t
+val get_comments: string -> int64 -> (int64 * string) list Lwt.t

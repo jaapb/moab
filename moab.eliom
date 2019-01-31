@@ -99,7 +99,11 @@ let%shared () =
 
 	Moab_base.App.register
 		~service:Moab_services.presentation_feedback_service
-		(Moab_page.connected_page Moab_presentations.presentation_feedback_handler)
+		(Moab_page.connected_page Moab_presentations.presentation_feedback_handler);
+
+	Moab_base.App.register
+		~service:Moab_services.view_feedback_service
+		(Moab_page.connected_page Moab_presentations.view_feedback_handler)
 
 let%shared () =
 	CalendarLib.Printer.day_name :=

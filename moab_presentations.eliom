@@ -102,6 +102,20 @@ let%client get_admin_scores =
 	~%(Eliom_client.server_function [%derive.json: string * int64]
 			(Os_session.connected_wrapper get_admin_scores))
 
+let%server get_average_scores (ayear, presenter_id) =
+	Moab_presentation_db.get_average_scores ayear presenter_id
+
+let%client get_average_scores =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+			(Os_session.connected_wrapper get_average_scores))
+
+let%server get_comments (ayear, presenter_id) =
+	Moab_presentation_db.get_comments ayear presenter_id
+
+let%client get_comments =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+			(Os_session.connected_wrapper get_comments))
+
 (* Utility functions *)
 
 let%shared schedule_table av_clicked myid ayear gnr weekday =
@@ -478,6 +492,26 @@ let%shared presentation_feedback_handler myid () () =
 	with
 	| Failure x -> Moab_container.page (Some myid) [p [pcdata x]]
 	| e -> Lwt.fail e
+
+let%shared view_feedback_handler myid (opt_uid) () =
+	let uid = Moab_base.default myid opt_uid in
+	let%lwt (fn, ln) = Moab_users.get_name uid in
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt crits = get_criteria ayear in
+	let%lwt sc = get_average_scores (ayear, uid) in
+	let%lwt cm = get_comments (ayear, uid) in
+	let%lwt (crit_trs, total) = Lwt_list.fold_left_s (fun (cacc, tacc) (crit_id, n, _) ->
+		let score = List.assoc crit_id sc in
+		Lwt.return @@ 
+			(tr [td [pcdata n]; td [pcdata (Printf.sprintf "%.1f" score)]]::cacc,
+			score +. tacc)
+	) ([], 0.0) crits in
+	Moab_container.page (Some myid) [
+		div ~a:[a_class ["content-box"]] [
+			h1 [pcdata (Printf.sprintf "Presentation feedback for %s %s" fn ln)];
+			table (List.rev (tr [td [b [pcdata "Total"]]; td [b [pcdata (Printf.sprintf "%.1f" total)]]]::crit_trs))
+		]
+	]
 
 let%shared () =
 	Eliom_registration.Any.register ~service:presentation_feedback_action 

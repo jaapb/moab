@@ -119,3 +119,31 @@ let get_admin_scores ayear presenter_id =
 	| [] -> Lwt.fail Not_found
 	| [x] -> Lwt.return x
 	| _ -> Lwt.fail (Invalid_argument "get_admin_scores: found multiple results")
+
+let get_average_scores ayear presenter_id =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT criterion_id, round(AVG(score), 1)::float \
+			FROM moab.presentation_scores \
+			WHERE academic_year = $ayear \
+			AND presenter_id = $presenter_id \
+			GROUP BY criterion_id, presenter_id \
+			ORDER BY criterion_id") >>=
+	Lwt_list.map_s (fun (id, avg) ->
+		match avg with
+		| None -> Lwt.return (id, 0.0)
+		| Some a -> Lwt.return (id, a)
+	)
+
+let get_comments ayear presenter_id =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT criterion_id, comment \
+			FROM moab.presentation_scores \
+			WHERE academic_year = $ayear \
+			AND presenter_id = $presenter_id \
+			AND comment IS NOT NULL \
+			ORDER BY criterion_id") >>=
+	Lwt_list.map_s (fun (id, c) ->
+		match c with
+		| None -> Lwt.fail (Invalid_argument "get_comments: null comment found")
+		| Some x -> Lwt.return (id, x)
+	)
