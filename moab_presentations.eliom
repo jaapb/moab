@@ -498,20 +498,48 @@ let%shared view_feedback_handler myid (opt_uid) () =
 	let%lwt (fn, ln) = Moab_users.get_name uid in
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt crits = get_criteria ayear in
-	let%lwt sc = get_average_scores (ayear, uid) in
-	let%lwt cm = get_comments (ayear, uid) in
-	let%lwt (crit_trs, total) = Lwt_list.fold_left_s (fun (cacc, tacc) (crit_id, n, _) ->
-		let score = List.assoc crit_id sc in
-		Lwt.return @@ 
-			(tr [td [pcdata n]; td [pcdata (Printf.sprintf "%.1f" score)]]::cacc,
-			score +. tacc)
-	) ([], 0.0) crits in
-	Moab_container.page (Some myid) [
-		div ~a:[a_class ["content-box"]] [
-			h1 [pcdata (Printf.sprintf "Presentation feedback for %s %s" fn ln)];
-			table (List.rev (tr [td [b [pcdata "Total"]]; td [b [pcdata (Printf.sprintf "%.1f" total)]]]::crit_trs))
+	try%lwt
+		let%lwt sc = get_average_scores (ayear, uid) in
+		let%lwt cm = get_comments (ayear, uid) in
+		let%lwt (topic, duration, grade, comments) = get_admin_scores (ayear, uid) in
+		let%lwt (crit_trs, total) = Lwt_list.fold_left_s (fun (cacc, tacc) (crit_id, n, _) ->
+			let score = List.assoc crit_id sc in
+			Lwt.return @@ 
+				(tr [td [pcdata (Printf.sprintf "%Ld" crit_id)]; td [pcdata n]; td [pcdata (Printf.sprintf "%.1f" score)]]::cacc,
+				score +. tacc)
+		) ([], 0.0) crits in
+		Moab_container.page (Some myid) [
+			div ~a:[a_class ["content-box"]] [
+				h1 [pcdata [%i18n S.presentation_feedback_for]; pcdata " "; pcdata (Printf.sprintf "%s %s" fn ln)];
+				table [
+					tr [td [b [pcdata [%i18n S.topic]]]; td [pcdata topic]]
+				];
+				h2 [pcdata [%i18n S.peer_marks]];
+				p [i [pcdata [%i18n S.peer_marks_message]]];
+				table (List.rev (tr [td [b [pcdata [%i18n S.total]]]; td [b [pcdata (Printf.sprintf "%.1f" total)]]]::crit_trs));
+				h2 [pcdata [%i18n S.remarks]];
+				p [i [pcdata [%i18n S.remarks_message1]]];
+				p [i [pcdata [%i18n S.remarks_message2]]];
+				table (List.map (fun (id, t) ->
+					tr [td [pcdata (Printf.sprintf "(%Ld)" id)]; td [pcdata t]]
+				) cm);
+				h2 [pcdata [%i18n S.tutor_mark]];
+				p [i [pcdata [%i18n S.tutor_mark_message1]]];
+				p [i [pcdata [%i18n S.tutor_mark_message2]]];
+				table [
+					tr [td [b [pcdata [%i18n S.duration]]]; td [pcdata (Printf.sprintf "%d" duration); pcdata " "; pcdata "minutes"]];
+					tr [td [b [pcdata [%i18n S.putative_grade]]]; td [pcdata grade]];
+					tr [td [b [pcdata [%i18n S.tutor_comments]]]; td [pre [pcdata comments]]]
+				]
+			]
 		]
-	]
+	with
+	| Not_found -> Moab_container.page (Some myid) [
+			div ~a:[a_class ["content-box"]] [
+				h1 [pcdata [%i18n S.presentation_feedback_for]; pcdata " "; pcdata (Printf.sprintf "%s %s" fn ln)];
+				p [pcdata [%i18n S.presentation_not_found]]
+			]
+		]
 
 let%shared () =
 	Eliom_registration.Any.register ~service:presentation_feedback_action 

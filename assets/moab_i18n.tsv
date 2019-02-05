@@ -194,3 +194,14 @@ topic	Topic	Sujet
 duration	Duration	Durée
 putative_grade	Putative grade	Note provisionnelle
 tutor_comments	Tutor comments	Commentaire du tuteur
+presentation_feedback_for	Presentation feedback for	Commentaire sur la présentation de
+total	Total	Total
+peer_marks	Peer marks	Notes du groupe
+remarks	Remarks	Commentaire
+tutor_mark	Tutor mark	Note du tuteur
+presentation_not_found	Presentation could not be found. It may not have taken place yet, or the marks and comments may not have been entered yet.	La présentation n'a pas pu être trouvée. Soit elle n'a pas encore eu lieu, soit les notes et commentaires n'ont pas encore été entrés.
+peer_marks_message	This is the average of the scores on all submitted forms. The maximum possible score is 5 per criterion, therefore the maximum total is 25. The criterion numbers to the left correspond to the numbers in the remarks section.	Ceci est la moyenne de scores sur tous les formulaires soumis. Le maximum possible est de 5 par critère, donc 25 en total. Les numéros de critère à gauche correspondent aux numéros dans la section des commentaires.
+remarks_message1	Remarks given on the feedback forms. The numbers between brackets correspond to the criterion numbers in the peer marks section.	Les commentaires données sur les formulaires. Les numéros entre parenthèses correspontdent aux numéros de critère dans la section des notes du groupe.
+remarks_message2	Note that these remarks are from different people, so they may be contradictory!	Notez que ces commentaires proviennent de personnes différentes, et il est donc possible qu'elles soient contradictoires!
+tutor_mark_message1	These marks are indicative only and will be fine-tuned after all presentation have been taken place. However, there should not be any major change. As a reminder, a first (1) corresponds to 70% (17.5-25 points), an upper second (U2) to 60-70% (15-17.5 points), a lower second (L2) to 50-60% (12.5-15 points), a third (3) to 40-50% (10-12.5 points), and a fail (F) is everything below 40% (10 points).	Notes à titre indicatif seulement.
+tutor_mark_message2	The ideal duration is 30 minutes. There is no penalty for a duration of 25 minutes or more; for a duration of 20-25 minutes, 10% is subtracted from the tutor mark; for 15-20 minutes, 20% is subtracted, and so on.	La durée idéale est de 30 minutes. Si la duration est entre 20 et 25 minutes, il y a une minoration de 10% de la note du duteur; entre 15 et 20 minutes, la minoration est de 20%, etc.
