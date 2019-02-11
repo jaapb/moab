@@ -324,18 +324,22 @@ let%shared presentation_feedback_handler myid () () =
 						ignore [%client ((Lwt.async @@ fun () ->
 							let s = Eliom_content.Html.To_dom.of_select ~%sw in
 							Lwt_js_events.changes s @@ fun _ _ ->
+							let ti = Eliom_content.Html.To_dom.of_input ~%topic_input in
+							ti##.value := Js_of_ocaml.Js.string "";
+							let di = Eliom_content.Html.To_dom.of_input ~%duration_input in
+							di##.value := Js_of_ocaml.Js.string "";
+							let gi = Eliom_content.Html.To_dom.of_input ~%grade_input in
+							gi##.value := Js_of_ocaml.Js.string "";
+							let ca = Eliom_content.Html.To_dom.of_textarea ~%comments_ta in
+							ca##.value := Js_of_ocaml.Js.string "";
 							let pres_id = Int64.of_string (Js_of_ocaml.Js.to_string s##.value) in
 							let%lwt sl = get_scores (~%ayear, ~%myid, pres_id) in
 							fill_table sl ~%crit_rows;
 							try%lwt
 								let%lwt (t, d, g, c) = get_admin_scores (~%ayear, pres_id) in
-								let ti = Eliom_content.Html.To_dom.of_input ~%topic_input in
 								ti##.value := Js.string	t;
-								let di = Eliom_content.Html.To_dom.of_input ~%duration_input in
 								di##.value := Js.string	(string_of_int d);
-								let gi = Eliom_content.Html.To_dom.of_input ~%grade_input in
 								gi##.value := Js.string	g;
-								let ca = Eliom_content.Html.To_dom.of_textarea ~%comments_ta in
 								ca##.value := Js.string	c;
 								Lwt.return_unit
 							with Not_found -> Lwt.return_unit
