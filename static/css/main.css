@@ -169,3 +169,14 @@ table.feedback-table td.grade-5
 	margin-right: 10px;
 	padding: 5px;
 }
+
+table.peer-remarks tr:nth-child(even)
+{
+	background-color: darkgray;
+}
+
+table.tutor-marks th
+{
+	text-align: left;
+	vertical-align: top;
+}
