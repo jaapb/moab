@@ -116,6 +116,20 @@ let%client get_comments =
 	~%(Eliom_client.server_function [%derive.json: string * int64]
 			(Os_session.connected_wrapper get_comments))
 
+let%server get_possible_presentations (ayear, user_id, learning_week) =
+	Moab_presentation_db.get_possible_presentations ayear user_id learning_week
+
+let%client get_possible_presentations =
+	~%(Eliom_client.server_function [%derive.json: string * int64 * int option]
+			(Os_session.connected_wrapper get_possible_presentations))
+
+let%server get_followed_presentations (ayear, user_id) =
+	Moab_presentation_db.get_followed_presentations ayear user_id
+
+let%client get_followed_presentations =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+			(Os_session.connected_wrapper get_followed_presentations))
+
 (* Utility functions *)
 
 let%shared schedule_table av_clicked myid ayear gnr weekday =

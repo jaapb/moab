@@ -147,3 +147,38 @@ let get_comments ayear presenter_id =
 		| None -> Lwt.fail (Invalid_argument "get_comments: null comment found")
 		| Some x -> Lwt.return (id, x)
 	)
+
+let get_possible_presentations ayear user_id learning_week =
+	full_transaction_block (fun dbh ->
+		match learning_week with
+		| None -> PGSQL(dbh) "SELECT COUNT(DISTINCT sc.presenter_id) \
+			FROM moab.presentation_scores sc \
+			JOIN moab.presentation_schedule ps ON sc.presenter_id = ps.userid \
+			JOIN moab.students s ON ps.group_number = s.group_number AND ps.academic_year = s.academic_year \
+			WHERE ps.academic_year = $ayear \
+			AND s.userid = $user_id"
+		| Some lw -> PGSQL(dbh) "SELECT COUNT(DISTINCT sc.presenter_id) \
+			FROM moab.presentation_scores sc \
+			JOIN moab.presentation_schedule ps ON sc.presenter_id = ps.userid \
+			JOIN moab.students s ON ps.group_number = s.group_number AND ps.academic_year = s.academic_year \
+			WHERE ps.academic_year = $ayear \
+			AND s.userid = $user_id \
+			AND learning_week <= $lw") >>=
+	function
+	| [] -> Lwt.fail (Invalid_argument "get_possible_presentations: COUNT returned no rows")
+	| [Some x] -> Lwt.return x
+	| [None] -> Lwt.fail (Invalid_argument "get_possible_presentations: COUNT returned NULL")
+	| _ -> Lwt.fail (Invalid_argument "get_possible_presentations: COUNT returned multiple rows")
+
+let get_followed_presentations ayear user_id =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh) "SELECT COUNT(DISTINCT presenter_id) \
+			FROM moab.presentation_scores \
+			WHERE academic_year = $ayear \
+				AND scorer_id = $user_id") >>=
+	function
+	| [] -> Lwt.fail (Invalid_argument "get_followed_presentations: COUNT returned no rows")
+	| [Some x] -> Lwt.return x
+	| [None] -> Lwt.fail (Invalid_argument "get_followed_presentations: COUNT returned NULL")
+	| _ -> Lwt.fail (Invalid_argument "get_followed_presentations: COUNT returned multiple rows")
+

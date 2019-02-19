@@ -181,6 +181,8 @@ let%shared student_dashboard myid =
 			pcdata "."
 		] in
 	let%lwt (jw, lfw) = Moab_students.get_active_period (ayear, myid) in
+	let%lwt p_pres = Moab_presentations.get_possible_presentations (ayear, myid, lw) in
+	let%lwt f_pres = Moab_presentations.get_followed_presentations (ayear, myid) in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [pcdata [%i18n S.dashboard]];
 		p (match lfw with
@@ -216,6 +218,7 @@ let%shared student_dashboard myid =
 				pcdata (match s_room with None -> [%i18n S.none] | Some x -> x);
 				pcdata ")"
 			]));
+		p [pcdata (Printf.sprintf "%Ld/%Ld" f_pres p_pres)];
 		table ~a:[a_class ["dashboard-table"]] [
 			attendance_row;
 			blog_row
