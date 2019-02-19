@@ -180,3 +180,13 @@ table.tutor-marks th
 	text-align: left;
 	vertical-align: top;
 }
+
+tr.feedback-row td.good
+{
+	color: green;
+}
+
+tr.feedback-row td.bad
+{
+	color: red;
+}

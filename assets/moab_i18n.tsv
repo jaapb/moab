@@ -207,3 +207,4 @@ tutor_mark_message1	These marks are indicative only and will be fine-tuned after
 tutor_mark_message2	The ideal duration is 30 minutes. There is no penalty for a duration of 25 minutes or more; for a duration of 20-25 minutes, 10% is subtracted from the tutor mark; for 15-20 minutes, 20% is subtracted, and so on.	La durée idéale est de 30 minutes. Si la duration est entre 20 et 25 minutes, il y a une minoration de 10% de la note du duteur; entre 15 et 20 minutes, la minoration est de 20%, etc.
 tutor_marks_not_entered	Tutor marks have not yet been entered into the database.	Les notes du tuteur n'ont pas encore été entrés.
 view_presentation_feedback	View presentation feedback	Regarder commentaires sur la présentation
+given_feedback	Given feedback percentage	Pourcentage de commentaires données
