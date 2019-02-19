@@ -77,6 +77,12 @@ CREATE SCHEMA moab
 		foreign key (academic_year, term_id) references terms(academic_year, term_id) 
 	)
 
+	CREATE TABLE optional_sessions (
+		session_id bigint not null,
+		learning_week smallint not null,
+		primary key (session_id, learning_week)
+	)	
+
 	CREATE TABLE attendance (
 		session_id bigint not null references sessions(session_id),
 		userid bigint not null references ocsigen_start.users(userid),
