@@ -50,7 +50,7 @@ let%shared student_menu () =
   [ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
 	; item [%i18n S.write_blog] Moab_services.edit_blog_service
 	; item [%i18n S.schedule_presentation] Moab_services.schedule_presentation_service
-	; item [%i18n S.submit_report_or_draft] Moab_services.submit_report_service
+	(* ; item [%i18n S.submit_report_or_draft] Moab_services.submit_report_service *)
 	; item [%i18n S.give_presentation_feedback] Moab_services.presentation_feedback_service
 	; li [a ~a:[a_class ["os-drawer-item"]] ~service:Moab_services.view_feedback_service [pcdata [%i18n S.view_presentation_feedback]] None]
   ; Eliom_content.Html.F.li
