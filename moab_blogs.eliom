@@ -121,8 +121,8 @@ let%shared blog_tr uid =
 	) weeks in
 	let%lwt pred_score = blog_score uid in
 	Lwt.return @@ tr (
-		td [b [pcdata [%i18n S.your_blogs]]; pcdata " "]::
-		(week_list @ [td [b [pcdata (string_of_int pred_score)]]])
+		td [b [pcdata [%i18n S.your_blogs]]; pcdata " "]::week_list
+		(* (week_list @ [td [b [pcdata (string_of_int pred_score)]]]) *)
 	)
 
 let%shared blog_report () =

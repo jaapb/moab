@@ -122,6 +122,13 @@ CREATE SCHEMA moab
 		duration smallint not null,
 		grade text not null,
 		comments text not null,
+		late_penalty boolean not null,
 		primary key (academic_year, presenter_id),
 		foreign key (academic_year, presenter_id) references students(academic_year, userid)
+	)
+
+	CREATE TABLE optional_sessions (
+		session_id bigint not null references sessions(session_id),
+		learning_week smallint not null,
+		primary key (session_id, learning_week)
 	);
