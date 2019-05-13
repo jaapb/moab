@@ -5,6 +5,10 @@
 	open CalendarLib
 ]
 
+[%%client
+	open Js_of_ocaml
+]
+
 (* Types *)
 
 [%%shared
@@ -202,7 +206,7 @@ let%shared setup_sessions_handler myid () () =
 					D.td [gns]
 				]
 			): _ -> _)] l in
-	let%lwt session_form = Form.lwt_post_form ~service:setup_sessions_action (fun params ->
+	let%lwt session_form = Eliom_content.Html.F.Form.lwt_post_form ~service:setup_sessions_action (fun params ->
 		let%lwt ayear_widget = Moab_terms.academic_year_select_widget (`String "academic_year") in
 		ignore [%client ((Lwt.async @@ fun () ->
 			let sel = Eliom_content.Html.To_dom.of_element ~%ayear_widget in

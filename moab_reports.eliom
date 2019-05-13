@@ -4,6 +4,10 @@
 	open Eliom_parameter
 ]
 
+[%%client
+	open Js_of_ocaml
+]
+
 (* Local services *)
 
 let submit_report_action = Eliom_service.create_attached_post
@@ -119,7 +123,7 @@ let%shared submit_report_handler myid () () =
 	[
 		div ~a:[a_class ["content-box"]] [
 			h1 [pcdata [%i18n S.submit_report]];
-			Form.post_form ~service:submit_report_action (fun is_draft ->
+			Eliom_content.Html.F.Form.post_form ~service:submit_report_action (fun is_draft ->
 			[
 				table [
 					tr [

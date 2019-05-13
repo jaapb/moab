@@ -5,6 +5,10 @@
   open Eliom_content.Html.F
 ]
 
+[%%client
+	open Js_of_ocaml
+]
+
 let%server css_name = !Moab_config.css_name
 let%client css_name = try Js.to_string (Js.Unsafe.global##.___css_name_)
   with _ -> ""

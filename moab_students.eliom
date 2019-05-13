@@ -231,7 +231,7 @@ let%server filename_of f =
 	Eliom_request_info.get_tmp_filename f
 
 let%client filename_of f =
-	Js.to_string f##.name
+	Js_of_ocaml.Js.to_string f##.name
  
 let%shared do_add_students myid () (ayear_v, (group, csv)) =
 	let%lwt lw = Moab_terms.learning_week_of_date ayear_v (Date.today ()) in

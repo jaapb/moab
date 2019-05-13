@@ -7,6 +7,10 @@
 	open Moab_base
 ]
 
+[%%client
+	open Js_of_ocaml
+]
+
 (* Local services *)
 
 let%server presentation_feedback_action =
@@ -318,20 +322,20 @@ let%shared presentation_feedback_handler myid () () =
 		let pres_radios = ref [] in
 		let grade_button crit_id param grade =
 			let new_radio = D.Form.radio ~a:[a_id (string_of_int grade)] ~name:param
-				~value:grade Form.int in
+				~value:grade D.Form.int in
 			let (cn, cm, l) = Hashtbl.find crit_rows crit_id in
 			Hashtbl.replace crit_rows crit_id (cn, cm, new_radio::l);
 			td ~a:[a_class [Printf.sprintf "grade-%d" grade; "grade-button"]; a_rowspan 2] [
 				new_radio
 			] in
 		let submit =
-			D.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] Form.string in
+			D.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] D.Form.string in
 		let%lwt form = 
-			Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, (c5, (topic, (duration, (grade, comments)))))))))))))) ->
+			Eliom_content.Html.F.Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, (c5, (topic, (duration, (grade, comments)))))))))))))) ->
 			let%lwt t = Moab_users.get_user_type myid in
-			let topic_input = D.Form.input ~input_type:`Text ~name:topic Form.string in
-			let duration_input = D.Form.input ~input_type:`Number ~name:duration Form.int in
-			let grade_input = D.Form.input ~input_type:`Text ~name:grade Form.string in
+			let topic_input = D.Form.input ~input_type:`Text ~name:topic D.Form.string in
+			let duration_input = D.Form.input ~input_type:`Number ~name:duration D.Form.int in
+			let grade_input = D.Form.input ~input_type:`Text ~name:grade D.Form.string in
 			let comments_ta = D.Form.textarea ~a:[a_rows 8; a_cols 80] ~name:comments () in
 			let%lwt ps = match t with
 				| Admin -> let%lwt sw = Moab_students.student_select_widget (`Param pid) in
@@ -370,7 +374,7 @@ let%shared presentation_feedback_handler myid () () =
 					| Some (None, None) -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
 					| Some (u1, u2) -> Lwt.return (u1, u2) in	
 					let pres_radio ?(checked = false) param uid fn ln =
-					let new_radio = D.Form.radio ~a:[a_id (Int64.to_string uid)] ~name:param ~value:uid ~checked Form.int64 in
+					let new_radio = D.Form.radio ~a:[a_id (Int64.to_string uid)] ~name:param ~value:uid ~checked D.Form.int64 in
 						pres_radios := new_radio::!pres_radios;
 						label [new_radio; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
 						ignore [%client ((Lwt.async @@ fun () ->
@@ -465,7 +469,7 @@ let%shared presentation_feedback_handler myid () () =
 							grade_button id s 4;
 							grade_button id s 5;
 							td ~a:[a_rowspan 2] [
-								let new_comment = D.Form.input ~input_type:`Text ~name:c Form.string in
+								let new_comment = D.Form.input ~input_type:`Text ~name:c D.Form.string in
 								Hashtbl.add crit_rows id (text, new_comment, []);
 								new_comment
 							]

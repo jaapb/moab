@@ -6,6 +6,10 @@
 	open Lwt.Infix
 ]
 
+[%%client
+	open Js_of_ocaml
+]
+
 (* Local services *)
 
 let%server generate_attendance_report_action = Eliom_service.create_attached_post
@@ -155,17 +159,17 @@ let%shared real_generate_report_handler myid () () =
 	[
 		div ~a:[a_class ["content-box"]] [
 			h1 [pcdata [%i18n S.generate_attendance_report]];
-			Form.post_form ~service:generate_attendance_report_action
+			Eliom_content.Html.F.Form.post_form ~service:generate_attendance_report_action
 			(fun (start_week, end_week) -> [
 				table [
 					tr [
-						td [label [pcdata [%i18n S.start_week]; pcdata " "; Form.input ~name:start_week ~input_type:`Text Form.int]]
+						td [label [pcdata [%i18n S.start_week]; pcdata " "; F.Form.input ~name:start_week ~input_type:`Text F.Form.int]]
 					];
 					tr [
-						td [label [pcdata [%i18n S.end_week]; pcdata " "; Form.input ~name:end_week ~input_type:`Text Form.int]]
+						td [label [pcdata [%i18n S.end_week]; pcdata " "; F.Form.input ~name:end_week ~input_type:`Text F.Form.int]]
 					];
 					tr [
-						td [Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.generate] Form.string]
+						td [F.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.generate] F.Form.string]
 					]
 				];
 			]) ()
