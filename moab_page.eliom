@@ -57,8 +57,8 @@ let%shared the_local_css = [
       Moab_container.page None
         [
 					div ~a:[a_class ["content-box"]] [
-						h1 [pcdata [%i18n S.error ~capitalize:true]];
-						p [pcdata (Printexc.to_string exn)]
+						h1 [txt [%i18n S.error ~capitalize:true]];
+						p [txt (Printexc.to_string exn)]
 					]
 				]
 
@@ -66,8 +66,8 @@ let%shared the_local_css = [
       Moab_container.page myid_o
         [
 					div ~a:[a_class ["content-box"]] [
-						h1 [pcdata [%i18n S.error ~capitalize:true]];
-						p [pcdata (Printexc.to_string exn)]
+						h1 [txt [%i18n S.error ~capitalize:true]];
+						p [txt (Printexc.to_string exn)]
 					]
 				]
 

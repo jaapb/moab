@@ -14,7 +14,7 @@ let%shared os_header ?user () = Eliom_content.Html.F.(
     header ~a:[a_class ["os-page-header"; user_class]]
       [ a ~a:[a_class ["os-page-header-app-name"]]
           ~service:Os_services.main_service
-          [ pcdata Moab_base.displayed_app_name ]
+          [ txt Moab_base.displayed_app_name ]
           ()
       ; user_box
       ]
@@ -24,13 +24,13 @@ let%shared os_header ?user () = Eliom_content.Html.F.(
 let%shared os_footer () = Eliom_content.Html.F.(
   footer ~a:[a_class ["os-page-footer"]] [
     p [
-      pcdata [%i18n S.footer_generated];
+      txt [%i18n S.footer_generated];
       a ~service:Moab_services.os_github_service
-        [ pcdata " Ocsigen Start " ] ();
-      pcdata [%i18n S.footer_eliom_distillery];
+        [ txt " Ocsigen Start " ] ();
+      txt [%i18n S.footer_eliom_distillery];
       a ~service:Moab_services.ocsigen_service
-        [ pcdata " Ocsigen " ] ();
-      pcdata [%i18n S.footer_technology]
+        [ txt " Ocsigen " ] ();
+      txt [%i18n S.footer_technology]
     ]
   ]
 
@@ -49,11 +49,11 @@ let%shared connected_welcome_box () = Eliom_content.Html.F.(
     match wrong_pdata with
     | None ->
       p [
-        pcdata [%i18n S.personal_information_not_set];
+        txt [%i18n S.personal_information_not_set];
         br ();
-        pcdata [%i18n S.take_time_enter_name_password];
+        txt [%i18n S.take_time_enter_name_password];
       ], (("", ""), ("", ""))
-    | Some wpd -> p [pcdata [%i18n S.wrong_data_fix]], wpd
+    | Some wpd -> p [txt [%i18n S.wrong_data_fix]], wpd
   in
   Lwt.return @@
     div ~a:[a_class ["os-welcome-box"]] [

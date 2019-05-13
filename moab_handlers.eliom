@@ -139,20 +139,20 @@ let%shared admin_dashboard () =
 	let%lwt att_rep = Moab_attendance.attendance_report () in
 	let%lwt blog_rep = Moab_blogs.blog_report () in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
-		h1 [pcdata [%i18n S.dashboard]];
+		h1 [txt [%i18n S.dashboard]];
 		p [
-			pcdata [%i18n S.current_academic_year ~capitalize:true]; pcdata ": ";
-			pcdata ayear; pcdata "; ";
-			pcdata [%i18n S.learning_week]; pcdata ": ";
+			txt [%i18n S.current_academic_year ~capitalize:true]; txt ": ";
+			txt ayear; txt "; ";
+			txt [%i18n S.learning_week]; txt ": ";
 			(match lw with
-			| None -> b [pcdata [%i18n S.none]]
-			| Some l -> pcdata (string_of_int l)); pcdata "; ";
-			pcdata [%i18n S.number_of_students]; pcdata ": ";
-			pcdata (string_of_int (List.length sids))
+			| None -> b [txt [%i18n S.none]]
+			| Some l -> txt (string_of_int l)); txt "; ";
+			txt [%i18n S.number_of_students]; txt ": ";
+			txt (string_of_int (List.length sids))
 		];
-		h2 [pcdata [%i18n S.attendance]];
+		h2 [txt [%i18n S.attendance]];
 		att_rep;
-		h2 [pcdata [%i18n S.blogs_to_be_approved]];
+		h2 [txt [%i18n S.blogs_to_be_approved]];
 		blog_rep
 	]]
 
@@ -172,56 +172,56 @@ let%shared student_dashboard myid =
 	let%lwt s_room = Moab_sessions.get_session_room (List.hd s_sid) in
 	let%lwt pres_lw = Moab_presentations.find_presentation_opt (ayear, myid) in
 	let%lwt pres_row = match pres_lw with
-	| None -> Lwt.return @@ p [pcdata [%i18n S.no_presentation_scheduled]]
+	| None -> Lwt.return @@ p [txt [%i18n S.no_presentation_scheduled]]
 	| Some (pr, _) -> 
 		let%lwt pres_d = Moab_terms.date_of_learning_week ayear pr (Date.day_of_int s_wd) in
-		Lwt.return @@ p [pcdata [%i18n S.your_presentation_is_scheduled_on];
-			pcdata " ";
-			pcdata (Printer.Date.sprint "%d %B %Y" pres_d);
-			pcdata "."
+		Lwt.return @@ p [txt [%i18n S.your_presentation_is_scheduled_on];
+			txt " ";
+			txt (Printer.Date.sprint "%d %B %Y" pres_d);
+			txt "."
 		] in
 	let%lwt (jw, lfw) = Moab_students.get_active_period (ayear, myid) in
 	let%lwt p_pres = Moab_presentations.get_possible_presentations (ayear, myid, lw) in
 	let%lwt f_pres = Moab_presentations.get_followed_presentations (ayear, myid) in
 	let perc = Int64.div (Int64.mul f_pres 100L) p_pres in
 	let feedback_row = tr ~a:[a_class ["feedback-row"]] [
-		td [b [pcdata [%i18n S.given_feedback]]];
-		td ~a:[a_class [if perc < 75L then "bad" else "good"]; a_colspan 25] [pcdata (Printf.sprintf "%Ld%%" perc)]
+		td [b [txt [%i18n S.given_feedback]]];
+		td ~a:[a_class [if perc < 75L then "bad" else "good"]; a_colspan 25] [txt (Printf.sprintf "%Ld%%" perc)]
 	] in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
-		h1 [pcdata [%i18n S.dashboard]];
+		h1 [txt [%i18n S.dashboard]];
 		p (match lfw with
 		| None -> []
-		| Some x -> [b [pcdata [%i18n S.deactivated_since]; pcdata " "; pcdata (string_of_int x); pcdata " "]]);
-		p [pcdata [%i18n S.dashboard_message]];
-		p [pcdata [%i18n S.learning_week ~capitalize:true]; pcdata ": ";
+		| Some x -> [b [txt [%i18n S.deactivated_since]; txt " "; txt (string_of_int x); txt " "]]);
+		p [txt [%i18n S.dashboard_message]];
+		p [txt [%i18n S.learning_week ~capitalize:true]; txt ": ";
 		match lw with
-		| None -> b [pcdata [%i18n S.none]]
-		| Some l -> pcdata (string_of_int l)];
-		p (pcdata [%i18n S.group_number]::pcdata ": "::(match gn with
-		| None -> [b [pcdata [%i18n S.none]]]
-		| Some g -> [pcdata (string_of_int g);
-				pcdata "; ";
-				pcdata [%i18n S.lecture_on];
-				pcdata " ";
-				pcdata (Printer.name_of_day (Date.day_of_int l_wd)); 
-				pcdata " ";
-				pcdata (Printer.Time.sprint "%H:%M" l_st);
-				pcdata "-";
-				pcdata (Printer.Time.sprint "%H:%M" l_et);
-				pcdata " (";
-				pcdata (match l_room with None -> [%i18n S.none] | Some x -> x);
-				pcdata "), ";
-				pcdata [%i18n S.seminar_on];
-				pcdata " ";
-				pcdata (Printer.name_of_day (Date.day_of_int s_wd)); 
-				pcdata " ";
-				pcdata (Printer.Time.sprint "%H:%M" s_st);
-				pcdata "-";
-				pcdata (Printer.Time.sprint "%H:%M" s_et);
-				pcdata " (";
-				pcdata (match s_room with None -> [%i18n S.none] | Some x -> x);
-				pcdata ")"
+		| None -> b [txt [%i18n S.none]]
+		| Some l -> txt (string_of_int l)];
+		p (txt [%i18n S.group_number]::txt ": "::(match gn with
+		| None -> [b [txt [%i18n S.none]]]
+		| Some g -> [txt (string_of_int g);
+				txt "; ";
+				txt [%i18n S.lecture_on];
+				txt " ";
+				txt (Printer.name_of_day (Date.day_of_int l_wd)); 
+				txt " ";
+				txt (Printer.Time.sprint "%H:%M" l_st);
+				txt "-";
+				txt (Printer.Time.sprint "%H:%M" l_et);
+				txt " (";
+				txt (match l_room with None -> [%i18n S.none] | Some x -> x);
+				txt "), ";
+				txt [%i18n S.seminar_on];
+				txt " ";
+				txt (Printer.name_of_day (Date.day_of_int s_wd)); 
+				txt " ";
+				txt (Printer.Time.sprint "%H:%M" s_st);
+				txt "-";
+				txt (Printer.Time.sprint "%H:%M" s_et);
+				txt " (";
+				txt (match s_room with None -> [%i18n S.none] | Some x -> x);
+				txt ")"
 			]));
 		table ~a:[a_class ["dashboard-table"]] [
 			attendance_row;
@@ -233,7 +233,7 @@ let%shared student_dashboard myid =
 
 let%shared examiner_dashboard () =
 	Lwt.return [div ~a:[a_class ["content-box"]] [
-		h1 [pcdata [%i18n S.dashboard]]	
+		h1 [txt [%i18n S.dashboard]]	
 	]]
 
 let%shared main_service_handler myid_o () () =

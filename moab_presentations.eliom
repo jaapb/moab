@@ -150,28 +150,28 @@ let%shared schedule_table av_clicked myid ayear gnr weekday =
 				if (2*i) < List.length group_members then
 					Lwt.return @@
 					td ~a:[a_class ["available"]; a_onclick av_clicked; a_id (id_string (i+sw) first)]
-						[pcdata [%i18n S.available]]
+						[txt [%i18n S.available]]
 				else
 					Lwt.return @@
-					td ~a:[a_class ["not-available"]] [pcdata [%i18n S.not_available]]
+					td ~a:[a_class ["not-available"]] [txt [%i18n S.not_available]]
 		| Some u -> let%lwt (fn, ln) = Moab_users.get_name u in
-			Lwt.return @@ td [pcdata fn; pcdata " "; pcdata ln] in
+			Lwt.return @@ td [txt fn; txt " "; txt ln] in
 		let%lwt f1 = create_field true uid1 in
 		let%lwt f2 = create_field false uid2 in
 		let (d1, _) = Date.week_first_last (Int32.to_int w) y in
 		let d = Date.add d1 (Date.Period.day (weekday - 1)) in
 		Lwt.return @@ tr [
 			td [
-				pcdata (Printer.Date.sprint "%b %d" d);
+				txt (Printer.Date.sprint "%b %d" d);
 			];
 			f1;
 			f2
 		]) schedule learning_weeks in
 	Lwt.return @@ table ~a:[a_class ["schedule-table"]] (
 		tr [
-			th [pcdata [%i18n S.date]];
-			th [pcdata [%i18n S.first_presenter]];
-			th [pcdata [%i18n S.second_presenter]]
+			th [txt [%i18n S.date]];
+			th [txt [%i18n S.first_presenter]];
+			th [txt [%i18n S.second_presenter]]
 		]::
 		trs
 	)
@@ -217,17 +217,17 @@ let%shared schedule_presentation_handler myid () () =
 					let%lwt date = Moab_terms.date_of_learning_week ~%ayear lw (Date.day_of_int ~%weekday) in
 					let%lwt ok = Ot_popup.confirm [
 							p [
-								pcdata [%i18n S.schedule_message1];
-								pcdata " ";
-								pcdata (Printer.Date.sprint "%-d %B %Y" date);
-								pcdata "."
+								txt [%i18n S.schedule_message1];
+								txt " ";
+								txt (Printer.Date.sprint "%-d %B %Y" date);
+								txt "."
 							];
 							p [
-								pcdata [%i18n S.schedule_message2]
+								txt [%i18n S.schedule_message2]
 							]
 						]
-						[pcdata [%i18n S.confirm ~capitalize:true]]
-						[pcdata [%i18n S.cancel ~capitalize:true]] in
+						[txt [%i18n S.confirm ~capitalize:true]]
+						[txt [%i18n S.cancel ~capitalize:true]] in
 					if ok then
 						let%lwt () = schedule_presentation (~%ayear, lw, ~%g, order = "first", ~%myid) in
 						Os_lib.reload ()
@@ -237,12 +237,12 @@ let%shared schedule_presentation_handler myid () () =
 		)
 	] in
 	match gnr with
-	| None -> Moab_container.page (Some myid) [p [pcdata [%i18n S.no_group_number]]]
+	| None -> Moab_container.page (Some myid) [p [txt [%i18n S.no_group_number]]]
 	| Some g -> let%lwt schedule_table = schedule_table (av_clicked g) myid ayear g weekday in
 			Moab_container.page (Some myid) [
 				div ~a:[a_class ["content-box"]] [
-					h1 [pcdata [%i18n S.schedule_presentation]];
-					p [pcdata [%i18n S.schedule_message]];
+					h1 [txt [%i18n S.schedule_presentation]];
+					p [txt [%i18n S.schedule_message]];
 					schedule_table
 				]
 			]
@@ -277,16 +277,16 @@ let%shared view_schedule_handler myid (gnr) () =
 	let%lwt student_trs = get_unassigned_students (ayear, gnr, current_lw) >>=
 		Lwt_list.map_s (fun uid -> let%lwt u = Os_user_proxy.get_data uid in
 			Lwt.return @@ tr ~a:[a_id (Printf.sprintf "s%Ld" uid)] [
-				td [pcdata (Printf.sprintf "%s %s" u.fn u.ln)]
+				td [txt (Printf.sprintf "%s %s" u.fn u.ln)]
 			]
 		) in
 	Moab_container.page (Some myid) [
 		div ~a:[a_class ["content-box"]] [
-			h1 [pcdata [%i18n S.schedule_for_group]; pcdata " "; pcdata (string_of_int gnr)];
+			h1 [txt [%i18n S.schedule_for_group]; txt " "; txt (string_of_int gnr)];
 			div ~a:[a_class ["flex-container"; "flex-row"]]
 			[
 				schedule_table;
-				table ~a:[a_class ["unassigned-students-table"]] (tr [th [pcdata [%i18n S.unassigned_students]]]::student_trs)
+				table ~a:[a_class ["unassigned-students-table"]] (tr [th [txt [%i18n S.unassigned_students]]]::student_trs)
 			]
 		]
 	]
@@ -381,7 +381,7 @@ let%shared presentation_feedback_handler myid () () =
 					let pres_radio ?(checked = false) param uid fn ln =
 					let new_radio = D.Form.radio ~a:[a_id (Int64.to_string uid)] ~name:param ~value:uid ~checked D.Form.int64 in
 						pres_radios := new_radio::!pres_radios;
-						label [new_radio; pcdata " "; pcdata fn; pcdata " "; pcdata ln] in
+						label [new_radio; txt " "; txt fn; txt " "; txt ln] in
 						ignore [%client ((Lwt.async @@ fun () ->
 							let s = Eliom_content.Html.To_dom.of_input ~%submit in
 							Lwt_js_events.clicks s @@ fun ev _ ->
@@ -446,27 +446,27 @@ let%shared presentation_feedback_handler myid () () =
 				[
 					[tr ~a:[a_class ["grade-descriptions"]] [
 						td [];
-						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.nonexistent]];
-						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.poor]];
-						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.barely_sufficient]];
-						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.ok]];
-						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.good]];
-						td ~a:[a_class ["grade-button"]] [pcdata [%i18n S.excellent]];
+						td ~a:[a_class ["grade-button"]] [txt [%i18n S.nonexistent]];
+						td ~a:[a_class ["grade-button"]] [txt [%i18n S.poor]];
+						td ~a:[a_class ["grade-button"]] [txt [%i18n S.barely_sufficient]];
+						td ~a:[a_class ["grade-button"]] [txt [%i18n S.ok]];
+						td ~a:[a_class ["grade-button"]] [txt [%i18n S.good]];
+						td ~a:[a_class ["grade-button"]] [txt [%i18n S.excellent]];
 						td []
 					]];
 					[tr ~a:[a_class ["grades"]] [
 						th [];
-						th ~a:[a_class ["grade-button"]] [pcdata "0"];
-						th ~a:[a_class ["grade-button"]] [pcdata "1"];
-						th ~a:[a_class ["grade-button"]] [pcdata "2"];
-						th ~a:[a_class ["grade-button"]] [pcdata "3"];
-						th ~a:[a_class ["grade-button"]] [pcdata "4"];
-						th ~a:[a_class ["grade-button"]] [pcdata "5"];
-						th [pcdata [%i18n S.comment]]
+						th ~a:[a_class ["grade-button"]] [txt "0"];
+						th ~a:[a_class ["grade-button"]] [txt "1"];
+						th ~a:[a_class ["grade-button"]] [txt "2"];
+						th ~a:[a_class ["grade-button"]] [txt "3"];
+						th ~a:[a_class ["grade-button"]] [txt "4"];
+						th ~a:[a_class ["grade-button"]] [txt "5"];
+						th [txt [%i18n S.comment]]
 					]];
 					List.flatten (List.map2 (fun (id, text, descr) (s, c) -> [
 						tr [
-							th [pcdata text];
+							th [txt text];
 							grade_button id s 0;
 							grade_button id s 1;
 							grade_button id s 2;
@@ -480,7 +480,7 @@ let%shared presentation_feedback_handler myid () () =
 							]
 						];
 						tr [
-							th ~a:[a_class ["crit-description"]] [pcdata (match descr with None -> "" | Some x -> x)]
+							th ~a:[a_class ["crit-description"]] [txt (match descr with None -> "" | Some x -> x)]
 						]
 					]) crits [s1, c1; s2, c2; s3, c3; s4, c4; s5, c5]);
 					(match t with
@@ -513,12 +513,12 @@ let%shared presentation_feedback_handler myid () () =
 			)]]
 		(Some myid) [
 			div ~a:[a_class ["content-box"]] [
-				h1 [pcdata [%i18n S.presentation_feedback]];
+				h1 [txt [%i18n S.presentation_feedback]];
 				form
 			]
 		]
 	with
-	| Failure x -> Moab_container.page (Some myid) [p [pcdata x]]
+	| Failure x -> Moab_container.page (Some myid) [p [txt x]]
 	| e -> Lwt.fail e
 
 let%shared view_feedback_handler myid (opt_uid) () =
@@ -532,7 +532,7 @@ let%shared view_feedback_handler myid (opt_uid) () =
 		let%lwt (crit_trs, total) = Lwt_list.fold_left_s (fun (cacc, tacc) (crit_id, n, _) ->
 			let score = List.assoc crit_id sc in
 			Lwt.return @@ 
-				(tr [td [pcdata (Printf.sprintf "%Ld" crit_id)]; td [pcdata n]; td [pcdata (Printf.sprintf "%.1f" score)]]::cacc,
+				(tr [td [txt (Printf.sprintf "%Ld" crit_id)]; td [txt n]; td [txt (Printf.sprintf "%.1f" score)]]::cacc,
 				score +. tacc)
 		) ([], 0.0) crits in
 		let%lwt tutor_marks = try%lwt
@@ -546,30 +546,30 @@ let%shared view_feedback_handler myid (opt_uid) () =
 				tr [th  [txt [%i18n S.tutor_comments]]; td [pre [txt comments]]]
 			]
 		with Not_found -> Lwt.return @@
-			p [pcdata [%i18n S.tutor_marks_not_entered]] in
+			p [txt [%i18n S.tutor_marks_not_entered]] in
 		Moab_container.page (Some myid) [
 			div ~a:[a_class ["content-box"]] [
-				h1 [pcdata [%i18n S.presentation_feedback_for]; pcdata " "; pcdata (Printf.sprintf "%s %s" fn ln)];
-				h2 [pcdata [%i18n S.peer_marks]];
-				p [i [pcdata [%i18n S.peer_marks_message]]];
-				table (List.rev (tr [td [b [pcdata [%i18n S.total]]]; td [b [pcdata (Printf.sprintf "%.1f" total)]]]::crit_trs));
-				h2 [pcdata [%i18n S.remarks]];
-				p [i [pcdata [%i18n S.remarks_message1]]];
-				p [i [pcdata [%i18n S.remarks_message2]]];
+				h1 [txt [%i18n S.presentation_feedback_for]; txt " "; txt (Printf.sprintf "%s %s" fn ln)];
+				h2 [txt [%i18n S.peer_marks]];
+				p [i [txt [%i18n S.peer_marks_message]]];
+				table (List.rev (tr [td [b [txt [%i18n S.total]]]; td [b [txt (Printf.sprintf "%.1f" total)]]]::crit_trs));
+				h2 [txt [%i18n S.remarks]];
+				p [i [txt [%i18n S.remarks_message1]]];
+				p [i [txt [%i18n S.remarks_message2]]];
 				table ~a:[a_class ["peer-remarks"]] (List.map (fun (id, t) ->
-					tr [td [pcdata (Printf.sprintf "(%Ld)" id)]; td [pcdata t]]
+					tr [td [txt (Printf.sprintf "(%Ld)" id)]; td [txt t]]
 				) cm);
-				h2 [pcdata [%i18n S.tutor_mark]];
-				p [i [pcdata [%i18n S.tutor_mark_message1]]];
-				p [i [pcdata [%i18n S.tutor_mark_message2]]];
+				h2 [txt [%i18n S.tutor_mark]];
+				p [i [txt [%i18n S.tutor_mark_message1]]];
+				p [i [txt [%i18n S.tutor_mark_message2]]];
 				tutor_marks
 			]
 		]
 	with
 	| Not_found -> Moab_container.page (Some myid) [
 			div ~a:[a_class ["content-box"]] [
-				h1 [pcdata [%i18n S.presentation_feedback_for]; pcdata " "; pcdata (Printf.sprintf "%s %s" fn ln)];
-				p [pcdata [%i18n S.presentation_not_found]]
+				h1 [txt [%i18n S.presentation_feedback_for]; txt " "; txt (Printf.sprintf "%s %s" fn ln)];
+				p [txt [%i18n S.presentation_not_found]]
 			]
 		]
 

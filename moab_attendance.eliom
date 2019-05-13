@@ -72,10 +72,10 @@ let%shared attendance_tr uid =
 				else if a = s then ["dt-good"]
 				else if a = 0 then ["dt-bad"]
 				else ["dt-warning"] in
-		Lwt.return @@	td ~a:[a_class att_class] [pcdata (string_of_int week_nr)]
+		Lwt.return @@	td ~a:[a_class att_class] [txt (string_of_int week_nr)]
 	) weeks in
 	Lwt.return @@ tr (
-		td [b [pcdata [%i18n S.your_attendance]]; pcdata " "]::
+		td [b [txt [%i18n S.your_attendance]]; txt " "]::
 		week_list
 	)
 
@@ -98,9 +98,9 @@ let%shared attendance_report () =
 	) l in
 	Lwt.return @@ table (List.map (fun (name, student_id, perc, _, _) ->
 		tr [
-			td [pcdata name];
-			td [pcdata student_id];
-			td [pcdata (string_of_int perc)]
+			td [txt name];
+			td [txt student_id];
+			td [txt (string_of_int perc)]
 		]
 	) (List.sort (fun (_, _, x, _, _) (_, _, y, _, _) -> compare x y)
 			(List.filter (fun (_, _, p, j, l) -> p < 25 && (fits lw j l)) att_list)))
@@ -158,15 +158,15 @@ let%shared real_generate_report_handler myid () () =
 	Moab_container.page (Some myid)
 	[
 		div ~a:[a_class ["content-box"]] [
-			h1 [pcdata [%i18n S.generate_attendance_report]];
+			h1 [txt [%i18n S.generate_attendance_report]];
 			Eliom_content.Html.F.Form.post_form ~service:generate_attendance_report_action
 			(fun (start_week, end_week) -> [
 				table [
 					tr [
-						td [label [pcdata [%i18n S.start_week]; pcdata " "; F.Form.input ~name:start_week ~input_type:`Text F.Form.int]]
+						td [label [txt [%i18n S.start_week]; txt " "; F.Form.input ~name:start_week ~input_type:`Text F.Form.int]]
 					];
 					tr [
-						td [label [pcdata [%i18n S.end_week]; pcdata " "; F.Form.input ~name:end_week ~input_type:`Text F.Form.int]]
+						td [label [txt [%i18n S.end_week]; txt " "; F.Form.input ~name:end_week ~input_type:`Text F.Form.int]]
 					];
 					tr [
 						td [F.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.generate] F.Form.string]
@@ -208,18 +208,18 @@ let%shared register_attendance_handler myid () () =
 		[%shared ((fun (uid, mdx_id, fn, ln) ->
 			tr [
 				td [Moab_icons.D.trash ()];
-				td [pcdata mdx_id];
-				td [pcdata fn; pcdata " "; pcdata ln]
+				td [txt mdx_id];
+				td [txt fn; txt " "; txt ln]
 			]
 		): _ -> _)] l in
 	let%lwt session_id_select = Moab_sessions.session_select_widget ?current_sid:sid ayear in
 	let student_id_input = D.Raw.input () in
 	let fplayer = Eliom_content.Html.D.(audio 
 		~srcs:[source ~a:[a_src (D.make_uri ~service:(Eliom_service.static_dir ()) ["failure.wav"])] ()]
-		[pcdata "alt"]) in
+		[txt "alt"]) in
 	let splayer = Eliom_content.Html.D.(audio 
 		~srcs:[source ~a:[a_src (D.make_uri ~service:(Eliom_service.static_dir ()) ["success.wav"])] ()]
-		[pcdata "alt"]) in
+		[txt "alt"]) in
 	ignore [%client ((Lwt.async @@ fun () ->
 		let student_id_regexp = Re.Str.regexp "M[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" in
 		let splayer = Eliom_content.Html.To_dom.of_audio ~%splayer in
@@ -277,20 +277,20 @@ let%shared register_attendance_handler myid () () =
 		splayer;
 		fplayer;
 		div ~a:[a_class ["content-box"]] [
-			h1 [pcdata [%i18n S.register_attendance]];
+			h1 [txt [%i18n S.register_attendance]];
 			table [
 				tr [
 					td [session_id_select]
 				];
 				tr [
-					td [b [pcdata [%i18n S.student_id]]; pcdata " "; student_id_input]
+					td [b [txt [%i18n S.student_id]]; txt " "; student_id_input]
 				]
 			];
 			R.table ~thead:(Eliom_shared.React.S.const (thead [
 				tr [
 					th [];
-					th [pcdata [%i18n S.student_id]];
-					th [pcdata [%i18n S.name]]
+					th [txt [%i18n S.student_id]];
+					th [txt [%i18n S.name]]
 				]
 			]))
 			(attendance_rows attendance_l)

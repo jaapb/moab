@@ -63,7 +63,7 @@ let%shared connect_form () =
 				~name:password ~input_type:`Password Form.string;
 			label [
 				Form.bool_checkbox_one ~a:[a_checked ()] ~name:keepmeloggedin ();
-				pcdata [%i18n S.keep_logged_in]
+				txt [%i18n S.keep_logged_in]
 			];
 			Form.input ~a:[a_class ["button"; "os-sign-in"]]
 				~input_type:`Submit ~value:[%i18n S.sign_in] Form.string
@@ -88,13 +88,13 @@ let%shared bind_popup_button ?a ~button
 let%shared forgotpwd_button close =
 	let popup_content = [%client fun _ ->
 		Lwt.return @@ div [
-			h2 [pcdata [%i18n S.recover_password]];
+			h2 [txt [%i18n S.recover_password]];
 			forgot_password_form ()
 		]
 	] in
 	let button = D.Raw.a ~a:[a_class ["os-forgot-pwd-link"];
 		a_onclick [%client fun _ -> ~%close ()]]
-		[pcdata [%i18n S.forgot_your_password_q]] in
+		[txt [%i18n S.forgot_your_password_q]] in
 	bind_popup_button
 		~a:[a_class ["os-forgot-pwd"]]
 		~button
@@ -105,14 +105,14 @@ let%shared forgotpwd_button close =
 let%shared sign_in_button () =
 	let popup_content = [%client fun close -> Lwt.return @@
 		div
-		[ h2 [pcdata [%i18n S.sign_in]]
+		[ h2 [txt [%i18n S.sign_in]]
 		; connect_form ()
 		; forgotpwd_button (fun () -> Lwt.async close)
 		]
 	] in
 	let button =
 		D.button ~a:[a_class ["button"; "os-sign-in-btn"]]
-			[pcdata [%i18n S.sign_in]] in
+			[txt [%i18n S.sign_in]] in
 	bind_popup_button
 		~a:[a_class ["os-sign-in"]]
 		~button
@@ -129,7 +129,7 @@ let%shared connected_user_box user =
 	D.div ~a:[a_class ["connected-user-box"]]
 	[
 		avatar;
-		div [pcdata username]
+		div [txt username]
 	]
 
 let%shared connection_box () =

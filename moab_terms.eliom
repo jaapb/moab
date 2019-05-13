@@ -84,11 +84,11 @@ let%shared academic_year_select_widget param =
 		D.Form.Option ([], t, None, false) in
 	let%lwt ayears = get_academic_years () in
 	match ayears with
-	| [] -> Lwt.return (pcdata [%i18n S.no_academic_years_yet])
+	| [] -> Lwt.return (txt [%i18n S.no_academic_years_yet])
 	| h::t -> begin
 		match param with
 		| `Param p ->  Lwt.return @@ D.Form.select ~name:p Form.string (ayear_opt h) (List.map ayear_opt t)
-		| `String s -> Lwt.return @@ D.Raw.select ~a:[a_name s] (List.map (fun x -> option (pcdata x)) (h::t))
+		| `String s -> Lwt.return @@ D.Raw.select ~a:[a_name s] (List.map (fun x -> option (txt x)) (h::t))
 	end
 
 (* Handlers *)
@@ -111,29 +111,29 @@ let%shared real_setup_terms_handler myid () () =
 	[
 		div ~a:[a_class ["content-box"]]
 		[
-			h1 [pcdata [%i18n S.setup_terms]];
+			h1 [txt [%i18n S.setup_terms]];
 			Form.post_form ~service:setup_terms_action (fun (new_ayear, (s1, (e1, (s2, (e2, (s3, e3)))))) -> [
 				table [
 					tr [
 						th ~a:[a_colspan 2] [
-							pcdata [%i18n S.add_academic_year];
+							txt [%i18n S.add_academic_year];
 							Form.input ~name:new_ayear ~input_type:`Text Form.string
 						]
 					];
 					tr
 					[
-						td [pcdata [%i18n S.from]; pcdata " "; Form.input ~name:s1 ~input_type:`Date Form.string];
-						td [pcdata [%i18n S.until]; pcdata " "; Form.input ~name:e1 ~input_type:`Date Form.string]
+						td [txt [%i18n S.from]; txt " "; Form.input ~name:s1 ~input_type:`Date Form.string];
+						td [txt [%i18n S.until]; txt " "; Form.input ~name:e1 ~input_type:`Date Form.string]
 					];
 					tr
 					[
-						td [pcdata [%i18n S.from]; pcdata " "; Form.input ~name:s2 ~input_type:`Date Form.string];
-						td [pcdata [%i18n S.until]; pcdata " "; Form.input ~name:e2 ~input_type:`Date Form.string]
+						td [txt [%i18n S.from]; txt " "; Form.input ~name:s2 ~input_type:`Date Form.string];
+						td [txt [%i18n S.until]; txt " "; Form.input ~name:e2 ~input_type:`Date Form.string]
 					];
 					tr
 					[
-						td [pcdata [%i18n S.from]; pcdata " "; Form.input ~name:s3 ~input_type:`Date Form.string];
-						td [pcdata [%i18n S.until]; pcdata " "; Form.input ~name:e3 ~input_type:`Date Form.string]
+						td [txt [%i18n S.from]; txt " "; Form.input ~name:s3 ~input_type:`Date Form.string];
+						td [txt [%i18n S.until]; txt " "; Form.input ~name:e3 ~input_type:`Date Form.string]
 					];
 					tr
 					[ 

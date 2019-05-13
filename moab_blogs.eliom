@@ -115,14 +115,14 @@ let%shared blog_tr uid =
 				end
 		in
 		Lwt.return @@	td ~a:[a_class att_class] [match x with
-		| None -> pcdata (string_of_int week_nr)
-		| Some w -> a ~service:Moab_services.show_blog_service [pcdata (string_of_int week_nr)] (Some uid, Some week_nr)
+		| None -> txt (string_of_int week_nr)
+		| Some w -> a ~service:Moab_services.show_blog_service [txt (string_of_int week_nr)] (Some uid, Some week_nr)
 		]
 	) weeks in
 	let%lwt pred_score = blog_score uid in
 	Lwt.return @@ tr (
-		td [b [pcdata [%i18n S.your_blogs]]; pcdata " "]::week_list
-		(* (week_list @ [td [b [pcdata (string_of_int pred_score)]]]) *)
+		td [b [txt [%i18n S.your_blogs]]; txt " "]::week_list
+		(* (week_list @ [td [b [txt (string_of_int pred_score)]]]) *)
 	)
 
 let%shared blog_report () =
@@ -131,9 +131,9 @@ let%shared blog_report () =
 	let%lwt trs = Lwt_list.map_s (fun (uid, title, week) ->
 		let%lwt (fn, ln) = Moab_users.get_name uid in
 		Lwt.return @@ tr [
-			td [pcdata fn; pcdata " "; pcdata ln];
-			td [a ~service:Moab_services.show_blog_service [pcdata title] (Some uid, Some week)];
-			td [pcdata (string_of_int week)]
+			td [txt fn; txt " "; txt ln];
+			td [a ~service:Moab_services.show_blog_service [txt title] (Some uid, Some week)];
+			td [txt (string_of_int week)]
 		]) blogs in
 	Lwt.return @@ table (trs)
 
@@ -147,25 +147,25 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 	let%lwt u = Os_user_proxy.get_data  uid in
 	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
-	let approve_button = D.button ~a:[a_class ["button"; "approve"]] [pcdata [%i18n S.approve]] in
-	let disapprove_button = D.button ~a:[a_class ["button"; "disapprove"]] [pcdata [%i18n S.disapprove]] in
+	let approve_button = D.button ~a:[a_class ["button"; "approve"]] [txt [%i18n S.approve]] in
+	let disapprove_button = D.button ~a:[a_class ["button"; "disapprove"]] [txt [%i18n S.disapprove]] in
 	let display_blog week =
 		let%lwt x = get_blog_opt (uid, ayear, week) in
 		match x with
-		| None -> Lwt.return @@ p [pcdata [%i18n S.no_blog_for_week]]
+		| None -> Lwt.return @@ p [txt [%i18n S.no_blog_for_week]]
 		| Some (title, text, _)  -> Lwt.return @@
 			div ~a:[a_class ["content-box"]]
 			(List.flatten [
-				[h1 [pcdata title]];
-				(if myid <> uid then [i [pcdata "By "; pcdata u.fn; pcdata " "; pcdata u.ln]] else []);	
+				[h1 [txt title]];
+				(if myid <> uid then [i [txt "By "; txt u.fn; txt " "; txt u.ln]] else []);	
 				List.map (fun x ->
-					p [pcdata x]
+					p [txt x]
 				) (List.filter (fun x -> x <> "") (String.split_on_char '\n' text));
 				(if tp = Admin then [approve_button; disapprove_button] else [])
 			])
 		in
 	let%lwt blog = match opt_week, lw with
-	| None, None -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]] 
+	| None, None -> Lwt.return @@ p [txt [%i18n S.no_week_specified]] 
 	| Some w, _ -> display_blog w
 	| _, Some w -> display_blog w in
 	ignore [%client ((Lwt.async @@ fun () ->
@@ -173,7 +173,7 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 		Lwt_js_events.clicks button @@ fun _ _ ->
 			match ~%opt_week with
 			| None -> let%lwt _ =
-					Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]) in
+					Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [txt [%i18n S.no_week_specified]]) in
 				Lwt.return_unit
 			| Some w ->
 				let ay = ~%ayear in
@@ -188,7 +188,7 @@ let%shared show_blog_handler myid (opt_uid, opt_week) () =
 		Lwt_js_events.clicks button @@ fun _ _ ->
 			match ~%opt_week with
 			| None -> let%lwt _ =
-					Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [pcdata [%i18n S.no_week_specified]]) in
+					Ot_popup.popup ~close_button:[Os_icons.F.close ()] (fun _ -> Lwt.return @@ p [txt [%i18n S.no_week_specified]]) in
 				Lwt.return_unit
 			| Some w ->
 				let ay = ~%ayear in
@@ -211,15 +211,15 @@ let%shared do_edit_blog myid () (title, text) =
 		| None ->
 			Lwt.return @@
 				div ~a:[a_class ["content-box"]] [
-					h1 [pcdata [%i18n S.error ~capitalize:true]];
-					p [pcdata [%i18n S.no_blog_needed]]
+					h1 [txt [%i18n S.error ~capitalize:true]];
+					p [txt [%i18n S.no_blog_needed]]
 				]
 		| Some learning_week ->
 			let%lwt () = update_blog (myid, ayear, learning_week, title, text) in
 			Lwt.return @@
 				div ~a:[a_class ["content-box"]] [
-					h1 [pcdata [%i18n S.success]];
-					p [pcdata [%i18n S.blog_stored]]
+					h1 [txt [%i18n S.success]];
+					p [txt [%i18n S.blog_stored]]
 				] in
 	Moab_container.page (Some myid) [d]
 
@@ -228,20 +228,20 @@ let%shared edit_blog_handler myid () () =
 	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt blog_content = match lw with
-	| None -> Lwt.return [p [pcdata [%i18n S.no_blog_needed]]]
+	| None -> Lwt.return [p [txt [%i18n S.no_blog_needed]]]
 	| Some learning_week -> 
 		let%lwt x = get_blog_opt (myid, ayear, learning_week) in
 		let (title_v, text_v) = match x with
 		| None -> ("", "")
 		| Some (tt, tx, _) -> (tt, tx) in
 		Lwt.return [
-			p [pcdata [%i18n S.writing_blog_for_week]; pcdata " "; pcdata (string_of_int learning_week)];
-			p [b [pcdata [%i18n S.blog_message1]]; pcdata " "; pcdata [%i18n S.blog_message2]];
-			p ~a:[a_class ["warning-paragraph"]] [pcdata [%i18n S.blog_message3]];
+			p [txt [%i18n S.writing_blog_for_week]; txt " "; txt (string_of_int learning_week)];
+			p [b [txt [%i18n S.blog_message1]]; txt " "; txt [%i18n S.blog_message2]];
+			p ~a:[a_class ["warning-paragraph"]] [txt [%i18n S.blog_message3]];
 			Form.post_form ~service:edit_blog_action (fun (title, text) -> [
 				table [
 					tr [
-						th [pcdata [%i18n S.title]];
+						th [txt [%i18n S.title]];
 						td [Form.input ~a:[a_size 60] ~input_type:`Text ~name:title ~value:title_v Form.string]
 					];
 					tr [
@@ -261,7 +261,7 @@ let%shared edit_blog_handler myid () () =
 	Moab_container.page (Some myid)
 	[
 		div ~a:[a_class ["content-box"]] (
-			h1 [pcdata [%i18n S.write_blog]]::
+			h1 [txt [%i18n S.write_blog]]::
 			blog_content
 		)
 	]

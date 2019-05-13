@@ -123,7 +123,7 @@ let%client get_active_period =
 (* Widgets *)
 let%shared student_select_widget param =
 	let student_opt (id, fn, ln) =
-		D.Form.Option ([], id, Some (pcdata (Printf.sprintf "%s %s" fn ln)), false) in
+		D.Form.Option ([], id, Some (txt (Printf.sprintf "%s %s" fn ln)), false) in
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt current_lw = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let%lwt students = get_students (ayear, None, current_lw) in
@@ -136,7 +136,7 @@ let%shared student_select_widget param =
 	| h::t -> begin
 		match param with
 		| `Param p -> Lwt.return @@ D.Form.select ~name:p Form.int64 (student_opt h) (List.map student_opt t)
-		| `String s -> Lwt.return @@ D.Raw.select ~a:[a_name s] (List.map (fun (id, fn, ln) -> option ~a:[a_value (Int64.to_string id)] (pcdata (Printf.sprintf "%s %s" fn ln))) (h::t))
+		| `String s -> Lwt.return @@ D.Raw.select ~a:[a_name s] (List.map (fun (id, fn, ln) -> option ~a:[a_value (Int64.to_string id)] (txt (Printf.sprintf "%s %s" fn ln))) (h::t))
 	end
 
 (* Handlers *)
@@ -240,42 +240,42 @@ let%shared do_add_students myid () (ayear_v, (group, csv)) =
 	[
 		div ~a:[a_class ["content-box"]]
 		[
-			h1 [pcdata [%i18n S.changes_to_be_made]];
+			h1 [txt [%i18n S.changes_to_be_made]];
 			Form.post_form ~service:add_students_action2 (fun (ayear, changes_list) ->
 				[Form.input ~input_type:`Hidden ~name:ayear ~value:ayear_v Form.string;
 				table (
-					tr [th []; th [pcdata [%i18n S.action]]; th [pcdata [%i18n S.name]]; th [pcdata [%i18n S.student_id]]; th [pcdata [%i18n S.email_address]]]::
+					tr [th []; th [txt [%i18n S.action]]; th [txt [%i18n S.name]]; th [txt [%i18n S.student_id]]; th [txt [%i18n S.email_address]]]::
 					changes_list.it (fun (do_b, (act, (uid, (fn, (ln, (mdx_id, email)))))) (act_v, uid_ov, fn_v, ln_v, mdx_id_v, email_v) init ->
 						tr [
 							td [Form.bool_checkbox_one ~checked:true ~name:do_b ()];
 							td (match act_v with
 							| New x -> [
 									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "join_%d" x) Form.string;
-									pcdata [%i18n S.joining_week]; pcdata " "; pcdata (string_of_int x)
+									txt [%i18n S.joining_week]; txt " "; txt (string_of_int x)
 								]
 							| To_group x -> (
-									pcdata [%i18n S.to_group]::pcdata " "::pcdata (string_of_int x)::
+									txt [%i18n S.to_group]::txt " "::txt (string_of_int x)::
 									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "group_%d" x) Form.string::
 									(match uid_ov with
 									| None -> []
 									| Some u -> [Form.input ~input_type:`Hidden ~name:uid ~value:u Form.int64])
 								)
 							| Deactivate x -> (
-									pcdata [%i18n S.deactivate]::
+									txt [%i18n S.deactivate]::
 									Form.input ~input_type:`Hidden ~name:act ~value:(Printf.sprintf "deactivate_%d" x) Form.string::
 									(match uid_ov with
 									| None -> []
 									| Some u -> [Form.input ~input_type:`Hidden ~name:uid ~value:u Form.int64])
 								)
 							);
-							td [pcdata fn_v; pcdata " "; pcdata ln_v;
+							td [txt fn_v; txt " "; txt ln_v;
 								Form.input ~input_type:`Hidden ~name:fn ~value:fn_v Form.string;
 								Form.input ~input_type:`Hidden ~name:ln ~value:ln_v Form.string	
 							];
-							td [pcdata mdx_id_v;
+							td [txt mdx_id_v;
 								Form.input ~input_type:`Hidden ~name:mdx_id ~value:mdx_id_v Form.string
 							];
-							td [pcdata email_v;
+							td [txt email_v;
 								Form.input ~input_type:`Hidden ~name:email ~value:email_v Form.string
 							]
 						]::
@@ -299,17 +299,17 @@ let%shared add_students_handler myid () () =
 			[
 				tr
 				[
-					th [pcdata [%i18n S.academic_year]];
+					th [txt [%i18n S.academic_year]];
 					td [ayear_widget]
 				];
 				tr
 				[
-					th [pcdata [%i18n S.group_number]];
+					th [txt [%i18n S.group_number]];
 					td [Form.input ~name:group ~input_type:`Text Form.string]
 				];
 				tr 
 				[
-					th [pcdata [%i18n S.csv_file_from_misis]];
+					th [txt [%i18n S.csv_file_from_misis]];
 					td [Form.file_input ~name:csv ()]
 				];
 				tr
@@ -322,7 +322,7 @@ let%shared add_students_handler myid () () =
 	[
 		div ~a:[a_class ["content-box"]]
 		[
-			h1 [pcdata [%i18n S.add_students ~capitalize:true]];
+			h1 [txt [%i18n S.add_students ~capitalize:true]];
 			student_form
 		]
 	]

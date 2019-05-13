@@ -61,11 +61,11 @@ let%client handle_add_file input_element rl_handle () =
 let%shared do_submit_report myid () params =
 	let params_tr = List.map (fun (n, v) ->
 		tr [
-			td [pcdata n];
-			td [pcdata v]
+			td [txt n];
+			td [txt v]
 		]) params in
 	let page = [
-		table (tr [th [pcdata "Name"]; th [pcdata "Value"]]::params_tr)
+		table (tr [th [txt "Name"]; th [txt "Value"]]::params_tr)
 	] in	
 	Moab_base.App.send
 		(Moab_page.make_page (Os_page.content page))
@@ -94,11 +94,11 @@ let%shared submit_report_handler myid () () =
 		let d = Eliom_content.Html.To_dom.of_input ~%draft in
 		let fv = Eliom_content.Html.To_dom.of_input ~%final_version in
 		Lwt_js_events.clicks ~use_capture:true fv @@ fun _ _ ->
-		let%lwt ok = Ot_popup.confirm [p [pcdata [%i18n S.final_version_warning1]];
-			p [pcdata [%i18n S.final_version_warning2]];
-			p [pcdata [%i18n S.final_version_warning3]]
+		let%lwt ok = Ot_popup.confirm [p [txt [%i18n S.final_version_warning1]];
+			p [txt [%i18n S.final_version_warning2]];
+			p [txt [%i18n S.final_version_warning3]]
 		]
-		[pcdata [%i18n S.yes]] [pcdata [%i18n S.no]] in
+		[txt [%i18n S.yes]] [txt [%i18n S.no]] in
 		if not ok then
 		begin
 			d##.checked := Js.bool true;
@@ -115,52 +115,52 @@ let%shared submit_report_handler myid () () =
 
 	let quality_lis = Eliom_shared.ReactiveData.RList.map
 		[%shared ((function
-			| `URL url -> li [pcdata url]
-			| _ -> li [pcdata "summat else"]
+			| `URL url -> li [txt url]
+			| _ -> li [txt "summat else"]
 		): _ -> _)] quality_l in
 
 	Moab_container.page (Some myid)
 	[
 		div ~a:[a_class ["content-box"]] [
-			h1 [pcdata [%i18n S.submit_report]];
+			h1 [txt [%i18n S.submit_report]];
 			Eliom_content.Html.F.Form.post_form ~service:submit_report_action (fun is_draft ->
 			[
 				table [
 					tr [
-						td [label [draft; pcdata " "; pcdata [%i18n S.draft]]];
-						td [label [final_version; pcdata " "; pcdata [%i18n S.final_version]]]
+						td [label [draft; txt " "; txt [%i18n S.draft]]];
+						td [label [final_version; txt " "; txt [%i18n S.final_version]]]
 					];
 				];
-				h2 [pcdata [%i18n S.introduction]];
-				h3 [pcdata [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.introduction_text]; a_name "introduction_text"] (pcdata "");
-				h2 [pcdata [%i18n S.quality]];
-				h3 [pcdata [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.quality_text]; a_name "quality_text"] (pcdata "");
-				h3 [pcdata [%i18n S.evidence]];
+				h2 [txt [%i18n S.introduction]];
+				h3 [txt [%i18n S.text]];
+				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.introduction_text]; a_name "introduction_text"] (txt "");
+				h2 [txt [%i18n S.quality]];
+				h3 [txt [%i18n S.text]];
+				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.quality_text]; a_name "quality_text"] (txt "");
+				h3 [txt [%i18n S.evidence]];
 				R.ol (quality_lis);
 				ul [
-					li [label [pcdata "Add URL "; pcdata " "; quality_url]];
-					li [label [pcdata "Upload file"; pcdata " "; quality_file]]
+					li [label [txt "Add URL "; txt " "; quality_url]];
+					li [label [txt "Upload file"; txt " "; quality_file]]
 				];
-				h2 [pcdata [%i18n S.independence]];
-				h3 [pcdata [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.independence_text]; a_name "independence_text"] (pcdata "");
-				h3 [pcdata [%i18n S.evidence]];
+				h2 [txt [%i18n S.independence]];
+				h3 [txt [%i18n S.text]];
+				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.independence_text]; a_name "independence_text"] (txt "");
+				h3 [txt [%i18n S.evidence]];
 				ul [
 					li [Raw.input ~a:[a_input_type `File; a_class ["ot-pup-input"]; a_accept ["text/*"]] ()]
 				];
-				h2 [pcdata [%i18n S.communication]];
-				h3 [pcdata [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.communication_text]; a_name "communication_text"] (pcdata "");
-				h3 [pcdata [%i18n S.evidence]];
+				h2 [txt [%i18n S.communication]];
+				h3 [txt [%i18n S.text]];
+				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.communication_text]; a_name "communication_text"] (txt "");
+				h3 [txt [%i18n S.evidence]];
 				ul [
 					li [Raw.input ~a:[a_input_type `File; a_class ["ot-pup-input"]; a_accept ["text/*"]] ()]
 				];
 				table [
 					tr [
-						td [button ~a:[a_button_type `Button; a_class ["button"]] [pcdata [%i18n S.save]]];
-						td [button ~a:[a_button_type `Submit; a_class ["button"]] [pcdata [%i18n S.submit]]]
+						td [button ~a:[a_button_type `Button; a_class ["button"]] [txt [%i18n S.save]]];
+						td [button ~a:[a_button_type `Submit; a_class ["button"]] [txt [%i18n S.submit]]]
 					]
 				]
 			]) ()

@@ -107,8 +107,8 @@ let%shared session_select_widget ?current_sid ayear =
 			(Printer.Time.sprint "%H:%M" et)
 			(match rm with None -> "TBD" | Some x -> x) in
 		if (Some sid) = current_sid
-		then D.Raw.option ~a:[a_selected (); a_value (Int64.to_string sid)] (pcdata text)
-		else D.Raw.option ~a:[a_value (Int64.to_string sid)] (pcdata text)
+		then D.Raw.option ~a:[a_selected (); a_value (Int64.to_string sid)] (txt text)
+		else D.Raw.option ~a:[a_value (Int64.to_string sid)] (txt text)
 	) sessions)
 		
 (* Handlers *)
@@ -145,27 +145,27 @@ let%shared term_selector nr v terms =
 	R.select ~a:[a_name (Printf.sprintf "term_id[%Ld]" nr)]
 		(Eliom_shared.ReactiveData.RList.map 
 			[%shared ((fun x -> if x = ~%v
-			then option ~a:[a_selected ()] (pcdata (Int64.to_string x))
-			else option (pcdata (Int64.to_string x))): _ -> _)] terms)
+			then option ~a:[a_selected ()] (txt (Int64.to_string x))
+			else option (txt (Int64.to_string x))): _ -> _)] terms)
 
 let%shared session_selector nr v =
 	Raw.select ~a:[a_name (Printf.sprintf "session_type[%Ld]" nr)] 
 		(List.map (fun x -> if x = v
-			then option ~a:[a_selected ()] (pcdata x)
-			else option (pcdata x)) ["L"; "S"])
+			then option ~a:[a_selected ()] (txt x)
+			else option (txt x)) ["L"; "S"])
 
 let%shared weekday_selector nr v =
 	Raw.select ~a:[a_name (Printf.sprintf "weekday[%Ld]" nr)]
 		(List.map (fun x -> if x = v
-			then option ~a:[a_selected (); a_value (string_of_int x)] (pcdata (Printer.name_of_day (Date.day_of_int x)))
-			else option ~a:[a_value (string_of_int x)] (pcdata (Printer.name_of_day (Date.day_of_int x)))) [1; 2; 3; 4; 5; 6; 7])
+			then option ~a:[a_selected (); a_value (string_of_int x)] (txt (Printer.name_of_day (Date.day_of_int x)))
+			else option ~a:[a_value (string_of_int x)] (txt (Printer.name_of_day (Date.day_of_int x)))) [1; 2; 3; 4; 5; 6; 7])
 
 let%shared group_number_selector nr v groups =
 	R.select ~a:[a_name (Printf.sprintf "group_number[%Ld]" nr)]
 		(Eliom_shared.ReactiveData.RList.map
 			[%shared ((fun x -> if x = ~%v
-			then option ~a:[a_selected ()] (pcdata x)
-			else option (pcdata x)): _ -> _)] groups)
+			then option ~a:[a_selected ()] (txt x)
+			else option (txt x)): _ -> _)] groups)
  
 let%shared sessions_aux terms groups (tid, sid, t, wd, st, et, rm, gn) =
  (term_selector sid tid terms, sid, t, wd, Some st, Some et, rm,
@@ -236,23 +236,23 @@ let%shared setup_sessions_handler myid () () =
 			Lwt.return_unit
 			): unit)
 		];
-		let submit_button = D.button ~a:[a_class ["button"]] [pcdata [%i18n S.save]] in
+		let submit_button = D.button ~a:[a_class ["button"]] [txt [%i18n S.save]] in
 		let session_rows = display_session_rows session_l in
 		let session_table = 
 			Eliom_content.Html.R.table ~thead:(Eliom_shared.React.S.const (thead [
 				tr [
-					th ~a:[a_colspan 2] [pcdata [%i18n S.academic_year]];
+					th ~a:[a_colspan 2] [txt [%i18n S.academic_year]];
 					td ~a:[a_colspan 5] [ayear_widget]
 				];
 				tr [
 					th [];	
-					th [pcdata [%i18n S.term]];
-					th [pcdata [%i18n S.session_type]];
-					th [pcdata [%i18n S.weekday]];
-					th [pcdata [%i18n S.start_time]];
-					th [pcdata [%i18n S.end_time]];
-					th [pcdata [%i18n S.room]];
-					th [pcdata [%i18n S.group_number]]
+					th [txt [%i18n S.term]];
+					th [txt [%i18n S.session_type]];
+					th [txt [%i18n S.weekday]];
+					th [txt [%i18n S.start_time]];
+					th [txt [%i18n S.end_time]];
+					th [txt [%i18n S.room]];
+					th [txt [%i18n S.group_number]]
 				]
 			])) ~tfoot:(Eliom_shared.React.S.const (tfoot [
 				tr [
@@ -297,7 +297,7 @@ let%shared setup_sessions_handler myid () () =
 	Moab_container.page (Some myid)
 	[
 		div ~a:[a_class ["content-box"]] [
-			h1 [pcdata [%i18n S.setup_sessions ~capitalize:true]];
+			h1 [txt [%i18n S.setup_sessions ~capitalize:true]];
 			session_form
 		]
 	]
