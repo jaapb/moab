@@ -326,25 +326,3 @@ let%shared add_students_handler myid () () =
 			student_form
 		]
 	]
-
-let%shared view_grades_handler myid () () =
-	let%lwt t = Moab_users.get_user_type myid in
-	match t with
-	| Admin -> 
-		let ayear = ~%(!Moab_config.current_academic_year) in
-		let%lwt trs = get_students (ayear, None, Some 24) >>=
-			Lwt_list.map_p (fun uid ->
-				let%lwt (fn, ln) = Moab_users.get_name uid in
-				let%lwt sid = get_student_id uid in
-				(* let%lwt pres_peer = Moab_presentations.get_average_scores (ayear, uid) >>=
-				 Lwt_list.fold_left_s (fun acc (_, s) -> Lwt.return (s +. acc)) 0.0 in *)
-				Lwt.return @@ tr [td [pcdata (Printf.sprintf "%s %s" fn ln)]; td [pcdata sid]; td [pcdata (Printf.sprintf "%.1f" 0.7)]]
-			)
-		in
-		Moab_container.page (Some myid)
-		[
-			table 
-			(tr [th [pcdata [%i18n S.name]]; th [pcdata [%i18n S.student_id]]]::trs)
-		]
-	| _ -> Moab_container.page (Some myid) []
-	

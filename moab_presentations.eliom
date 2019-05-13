@@ -17,7 +17,7 @@ let%server presentation_feedback_action =
 	Eliom_service.create_attached_post
 		~name:"presentation_feedback_action"
 		~fallback:Moab_services.presentation_feedback_service
-		~post_params:(sum (radio int64 "presenter_id") (int64 "presenter_id") ** radio int "score1" ** string "comment1" ** radio int "score2" ** string "comment2" ** radio int "score3" ** string "comment3" ** radio int "score4" ** string "comment4" ** radio int "score5" ** string "comment5" ** opt (string "topic" ** int "duration" ** string "grade" ** string "comments"))
+		~post_params:(sum (radio int64 "presenter_id") (int64 "presenter_id") ** radio int "score1" ** string "comment1" ** radio int "score2" ** string "comment2" ** radio int "score3" ** string "comment3" ** radio int "score4" ** string "comment4" ** radio int "score5" ** string "comment5" ** opt (string "topic" ** int "duration" ** string "prov_grade" ** string "final_grade" ** string "comments"))
 		()
 
 let%client presentation_feedback_action =
@@ -92,11 +92,11 @@ let%client get_scores =
 	~%(Eliom_client.server_function [%derive.json: string * int64 * int64]
 			(Os_session.connected_wrapper get_scores))
 
-let%server set_admin_scores (ayear, presenter_id, topic, duration, grade, comments) =
-	Moab_presentation_db.set_admin_scores ayear presenter_id topic duration grade comments
+let%server set_admin_scores (ayear, presenter_id, topic, duration, pgrade, fgrade, comments) =
+	Moab_presentation_db.set_admin_scores ayear presenter_id topic duration pgrade fgrade comments
 
 let%client set_admin_scores =
-	~%(Eliom_client.server_function [%derive.json: string * int64 * string * int * string * string]
+	~%(Eliom_client.server_function [%derive.json: string * int64 * string * int * string * string option * string]
 			(Os_session.connected_wrapper set_admin_scores))
 
 let%server get_admin_scores (ayear, presenter_id) =
@@ -195,7 +195,8 @@ let%shared do_presentation_feedback myid () (pres_id, (s1, (c1, (s2, (c2, (s3, (
 		begin
 			match admin with
 			| None -> Lwt.return_unit
-			| Some (t, (d, (g, c))) -> set_admin_scores (ayear, p_id, t, d, g, c)
+			| Some (t, (d, (pg, (fg, c)))) ->
+				set_admin_scores (ayear, p_id, t, d, pg, (if fg = "" then None else Some fg), c)
 		end in
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
@@ -331,11 +332,12 @@ let%shared presentation_feedback_handler myid () () =
 		let submit =
 			D.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] D.Form.string in
 		let%lwt form = 
-			Eliom_content.Html.F.Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, (c5, (topic, (duration, (grade, comments)))))))))))))) ->
+			Eliom_content.Html.F.Form.lwt_post_form ~service:presentation_feedback_action (fun ((pid_radio, pid), (s1, (c1, (s2, (c2, (s3, (c3, (s4, (c4, (s5, (c5, (topic, (duration, (pgrade, (fgrade, comments))))))))))))))) ->
 			let%lwt t = Moab_users.get_user_type myid in
 			let topic_input = D.Form.input ~input_type:`Text ~name:topic D.Form.string in
 			let duration_input = D.Form.input ~input_type:`Number ~name:duration D.Form.int in
-			let grade_input = D.Form.input ~input_type:`Text ~name:grade D.Form.string in
+			let pgrade_input = D.Form.input ~input_type:`Text ~name:pgrade D.Form.string in
+			let fgrade_input = D.Form.input ~input_type:`Text ~name:fgrade D.Form.string in
 			let comments_ta = D.Form.textarea ~a:[a_rows 8; a_cols 80] ~name:comments () in
 			let%lwt ps = match t with
 				| Admin -> let%lwt sw = Moab_students.student_select_widget (`Param pid) in
@@ -346,18 +348,21 @@ let%shared presentation_feedback_handler myid () () =
 							ti##.value := Js_of_ocaml.Js.string "";
 							let di = Eliom_content.Html.To_dom.of_input ~%duration_input in
 							di##.value := Js_of_ocaml.Js.string "";
-							let gi = Eliom_content.Html.To_dom.of_input ~%grade_input in
-							gi##.value := Js_of_ocaml.Js.string "";
+							let pgi = Eliom_content.Html.To_dom.of_input ~%pgrade_input in
+							pgi##.value := Js_of_ocaml.Js.string "";
+							let fgi = Eliom_content.Html.To_dom.of_input ~%fgrade_input in
+							fgi##.value := Js_of_ocaml.Js.string "";
 							let ca = Eliom_content.Html.To_dom.of_textarea ~%comments_ta in
 							ca##.value := Js_of_ocaml.Js.string "";
 							let pres_id = Int64.of_string (Js_of_ocaml.Js.to_string s##.value) in
 							let%lwt sl = get_scores (~%ayear, ~%myid, pres_id) in
 							fill_table sl ~%crit_rows;
 							try%lwt
-								let%lwt (t, d, g, c) = get_admin_scores (~%ayear, pres_id) in
+								let%lwt (t, d, pg, fg, c) = get_admin_scores (~%ayear, pres_id) in
 								ti##.value := Js.string	t;
 								di##.value := Js.string	(string_of_int d);
-								gi##.value := Js.string	g;
+								pgi##.value := Js.string pg;
+								fgi##.value := Js.string (default "" fg);
 								ca##.value := Js.string	c;
 								Lwt.return_unit
 							with Not_found -> Lwt.return_unit
@@ -480,10 +485,11 @@ let%shared presentation_feedback_handler myid () () =
 					]) crits [s1, c1; s2, c2; s3, c3; s4, c4; s5, c5]);
 					(match t with
 					| Admin -> [
-							tr [td [pcdata [%i18n S.topic]]; td ~a:[a_colspan 7] [topic_input]];
-							tr [td [pcdata [%i18n S.duration]]; td ~a:[a_colspan 7] [duration_input]];
-							tr [td [pcdata [%i18n S.putative_grade]]; td ~a:[a_colspan 7] [grade_input]];
-							tr [td ~a:[a_colspan 8] [pcdata [%i18n S.tutor_comments]]];
+							tr [td [txt [%i18n S.topic]]; td ~a:[a_colspan 7] [topic_input]];
+							tr [td [txt [%i18n S.duration]]; td ~a:[a_colspan 7] [duration_input]];
+							tr [td [txt [%i18n S.putative_grade]]; td ~a:[a_colspan 7] [pgrade_input]];
+							tr [td [txt [%i18n S.final_grade]]; td ~a:[a_colspan 7] [fgrade_input]];
+							tr [td ~a:[a_colspan 8] [txt [%i18n S.tutor_comments]]];
 							tr [td ~a:[a_colspan 8] [comments_ta]]
 						]
 					| _ -> []);
@@ -530,12 +536,14 @@ let%shared view_feedback_handler myid (opt_uid) () =
 				score +. tacc)
 		) ([], 0.0) crits in
 		let%lwt tutor_marks = try%lwt
-			let%lwt (topic, duration, grade, comments) = get_admin_scores (ayear, uid) in
+			let%lwt (topic, duration, pgrade, fgrade, comments) = get_admin_scores (ayear, uid) in
 			Lwt.return @@ table ~a:[a_class ["tutor-marks"]] [
-				tr [th [pcdata [%i18n S.topic]]; td [pcdata topic]];
-				tr [th [pcdata [%i18n S.duration]]; td [pcdata (Printf.sprintf "%d" duration); pcdata " "; pcdata "minutes"]];
-				tr [th [pcdata [%i18n S.putative_grade]]; td [pcdata grade]];
-				tr [th  [pcdata [%i18n S.tutor_comments]]; td [pre [pcdata comments]]]
+				tr [th [txt [%i18n S.topic]]; td [txt topic]];
+				tr [th [txt [%i18n S.duration]]; td [txt (Printf.sprintf "%d" duration); txt " "; txt "minutes"]];
+				tr [th [txt [%i18n S.putative_grade]]; td [txt pgrade]];
+				tr [th [txt [%i18n S.final_grade]];
+					td [txt (default [%i18n S.tbd] fgrade)]];
+				tr [th  [txt [%i18n S.tutor_comments]]; td [pre [txt comments]]]
 			]
 		with Not_found -> Lwt.return @@
 			p [pcdata [%i18n S.tutor_marks_not_entered]] in

@@ -193,6 +193,7 @@ blog_message3	Please note that there is a bug in the web framework; when you sub
 topic	Topic	Sujet
 duration	Duration	Durée
 putative_grade	Putative grade	Note provisionnelle
+final_grade	Final grade	Note finale
 tutor_comments	Tutor comments	Commentaire du tuteur
 presentation_feedback_for	Presentation feedback for	Commentaire sur la présentation de
 total	Total	Total
@@ -208,3 +209,4 @@ tutor_mark_message2	The ideal duration is 30 minutes. There is no penalty for a 
 tutor_marks_not_entered	Tutor marks have not yet been entered into the database.	Les notes du tuteur n'ont pas encore été entrés.
 view_presentation_feedback	View presentation feedback	Regarder commentaires sur la présentation
 given_feedback	Given feedback percentage	Pourcentage de commentaires données
+results_not_found	Results not found	Notes non trouvées

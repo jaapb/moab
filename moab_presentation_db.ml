@@ -97,20 +97,20 @@ let get_scores ayear scorer_id presenter_id =
 			AND presenter_id = $presenter_id"
 	)
 
-let set_admin_scores ayear presenter_id topic duration grade comments =
+let set_admin_scores ayear presenter_id topic duration pgrade fgrade comments =
 	full_transaction_block (fun dbh ->
 		PGSQL(dbh) "INSERT INTO moab.presentation_admin_scores \
-			(academic_year, presenter_id, topic, duration, grade, comments) \
+			(academic_year, presenter_id, topic, duration, provisional_grade, final_grade, comments) \
 			VALUES \
-			($ayear, $presenter_id, $topic, $duration, $grade, $comments) \
+			($ayear, $presenter_id, $topic, $duration, $pgrade, $?fgrade, $comments) \
 			ON CONFLICT (academic_year, presenter_id) DO UPDATE \
 				SET topic = EXCLUDED.topic, duration = EXCLUDED.duration, \
-				grade = EXCLUDED.grade, comments = EXCLUDED.comments"
+				provisional_grade = EXCLUDED.provisional_grade, comments = EXCLUDED.comments"
 	)
 
 let get_admin_scores ayear presenter_id =
 	full_transaction_block (fun dbh ->
-		PGSQL(dbh) "SELECT topic, duration, grade, comments \
+		PGSQL(dbh) "SELECT topic, duration, provisional_grade, final_grade, comments \
 			FROM moab.presentation_admin_scores \
 			WHERE academic_year = $ayear \
 				AND presenter_id = $presenter_id"
@@ -181,4 +181,3 @@ let get_followed_presentations ayear user_id =
 	| [Some x] -> Lwt.return x
 	| [None] -> Lwt.fail (Invalid_argument "get_followed_presentations: COUNT returned NULL")
 	| _ -> Lwt.fail (Invalid_argument "get_followed_presentations: COUNT returned multiple rows")
-
