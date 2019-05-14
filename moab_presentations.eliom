@@ -315,9 +315,6 @@ let%shared presentation_feedback_handler myid () () =
 	try%lwt
 		let ayear = ~%(!Moab_config.current_academic_year) in
 		let%lwt l = Moab_terms.learning_week_of_date ayear (Date.today ())	in
-		let%lwt lw = match l with
-			| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
-			| Some x -> Lwt.return x in
 		let%lwt crits = get_criteria ayear in
 		let crit_rows = Hashtbl.create 5 in
 		let pres_radios = ref [] in
@@ -369,6 +366,9 @@ let%shared presentation_feedback_handler myid () () =
 						): unit)];
 						Lwt.return [td [sw]]
 				| _ -> begin
+					let%lwt lw = match l with
+					| None -> Lwt.fail_with [%i18n S.no_presentations_scheduled]
+					| Some x -> Lwt.return x in
 					let%lwt g = Moab_students.get_group_number (ayear, myid) in
 					let%lwt gnr = match g with
 					| None -> Lwt.fail_with [%i18n S.no_group_number]	
