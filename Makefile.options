@@ -17,6 +17,7 @@ SERVER_FILES          := moab.eliom \
 	moab_config.eliom moab_config.eliomi \
 	moab_container.eliom moab_container.eliomi \
 	moab_drawer.eliom \
+	moab_grades.eliom \
 	moab_handlers.eliom moab_handlers.eliomi \
 	moab_icons.eliom \
 	moab_language.eliom moab_language.eliomi \
@@ -47,6 +48,7 @@ CLIENT_FILES          := moab.eliom \
 	moab_config.eliom moab_config.eliomi \
 	moab_container.eliom moab_container.eliomi \
 	moab_drawer.eliom \
+	moab_grades.eliom \
 	moab_handlers.eliom moab_handlers.eliomi \
 	moab_icons.eliom \
 	moab_language.eliom moab_language.eliomi \

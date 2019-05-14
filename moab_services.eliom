@@ -124,6 +124,13 @@ let%server view_grades_service =
 		~meth:(Get unit)
 		()
 
+let%server report_feedback_service =
+	create
+		~name:"report_feedback"
+		~path:(Path ["report-feedback"])
+		~meth:(Get unit)
+		()
+
 let%client settings_service =
   ~%settings_service
 
@@ -174,6 +181,9 @@ let%client view_feedback_service =
 
 let%client view_grades_service =
 	~%view_grades_service
+
+let%client report_feedback_service =
+	~%report_feedback_service
 
 (* The OS lib needs access to the settings service to perform
    redirections to it. We need to register it *)

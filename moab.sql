@@ -129,7 +129,7 @@ CREATE SCHEMA moab
 		provisional_grade text not null,
 		final_grade numeric(3,1),
 		comments text not null,
-		late_penalty boolean not null,
+		late_penalty boolean not null default false,
 		primary key (academic_year, presenter_id),
 		foreign key (academic_year, presenter_id) references students(academic_year, userid)
 	)
@@ -138,4 +138,17 @@ CREATE SCHEMA moab
 		session_id bigint not null references sessions(session_id),
 		learning_week smallint not null,
 		primary key (session_id, learning_week)
+	)
+
+	CREATE TABLE report_scores (
+		academic_year varchar(8) not null,
+		student_id bigint not null,
+		quality_feedback text not null,
+		quality_grade smallint not null,
+		independence_feedback text not null,
+		independence_grade smallint not null,
+		community_feedback text not null,
+		community_grade smallint not null,
+		primary key (academic_year, student_id),
+		foreign key (academic_year, student_id) references students(academic_year, userid)
 	);

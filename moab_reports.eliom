@@ -10,20 +10,32 @@
 
 (* Local services *)
 
-let submit_report_action = Eliom_service.create_attached_post
+let%server submit_report_action = Eliom_service.create_attached_post
 	~name:"submit_report_action"
 	~fallback:Moab_services.submit_report_service
 	~post_params:(any)
 	()
 
-let report_upload_service = Eliom_registration.Ocaml.create
+let%server report_upload_service = Eliom_registration.Ocaml.create
 	~name:"report_upload_service"
 	~path:Eliom_service.No_path
 	~meth:(Eliom_service.Post (unit, file "f"))
 	(fun () f -> Lwt.return_unit)
 
+let%server report_feedback_action = Eliom_service.create_attached_post
+	~name:"report_feedback_action"
+	~fallback:Moab_services.report_feedback_service
+	~post_params:(int64 "student_id" ** string "quality_feedback" ** int "quality_grade" ** string "independence_feedback" ** int "independence_feedback" ** string "community_feedback" ** int "community_grade")
+	()
+
 let%client submit_report_action = 
 	~%submit_report_action
+
+let%client report_upload_service =
+	~%report_upload_service
+
+let%client report_feedback_action =
+	~%report_feedback_action
 
 (* Database access *)
 
@@ -52,7 +64,7 @@ let%client handle_add_file input_element rl_handle () =
 		Lwt.return
 		(fun f ->
 			Eliom_client.call_ocaml_service
-				~service:~%report_upload_service () f
+				~service:report_upload_service () f
 		)
 	)
 
@@ -166,3 +178,29 @@ let%shared submit_report_handler myid () () =
 			]) ()
 		]
 	]
+
+let%shared do_report_feedback myid () (sid, (qf, (qg, (inf, (ing, (cf, cg)))))) =
+		Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
+
+let%shared report_feedback_handler myid () () =
+	try%lwt
+		let%lwt t = Moab_users.get_user_type myid in
+		match t with
+		| Admin ->
+			let%lwt form = F.Form.lwt_post_form ~service:report_feedback_action (fun (pid, _) ->
+				let%lwt sw = Moab_students.student_select_widget (`Param pid) in
+				Lwt.return [table [tr [td [sw]]]]) () in
+			Moab_container.page (Some myid) [
+				div ~a:[a_class ["context-box"]] [
+					h1 [txt [%i18n S.report_feedback]];
+					form
+				]
+			]
+		| _ -> Moab_container.page (Some myid) []
+	with
+	| Failure x -> Moab_container.page (Some myid) [p [txt x]]
+	| e -> Lwt.fail e
+
+let%shared () =
+	Eliom_registration.Any.register ~service:report_feedback_action
+		(Os_session.connected_fun do_report_feedback);
