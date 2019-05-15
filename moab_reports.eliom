@@ -145,10 +145,10 @@ let%shared submit_report_handler myid () () =
 				];
 				h2 [txt [%i18n S.introduction]];
 				h3 [txt [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.introduction_text]; a_name "introduction_text"] (txt "");
+				Raw.textarea ~a:[a_cols 80; a_rows 8; a_placeholder [%i18n S.introduction_text]; a_name "introduction_text"] (txt "");
 				h2 [txt [%i18n S.quality]];
 				h3 [txt [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.quality_text]; a_name "quality_text"] (txt "");
+				Raw.textarea ~a:[a_cols 80; a_rows 8; a_placeholder [%i18n S.quality_text]; a_name "quality_text"] (txt "");
 				h3 [txt [%i18n S.evidence]];
 				R.ol (quality_lis);
 				ul [
@@ -157,14 +157,14 @@ let%shared submit_report_handler myid () () =
 				];
 				h2 [txt [%i18n S.independence]];
 				h3 [txt [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.independence_text]; a_name "independence_text"] (txt "");
+				Raw.textarea ~a:[a_cols 80; a_rows 8; a_placeholder [%i18n S.independence_text]; a_name "independence_text"] (txt "");
 				h3 [txt [%i18n S.evidence]];
 				ul [
 					li [Raw.input ~a:[a_input_type `File; a_class ["ot-pup-input"]; a_accept ["text/*"]] ()]
 				];
 				h2 [txt [%i18n S.communication]];
 				h3 [txt [%i18n S.text]];
-				Raw.textarea ~a:[a_cols 70; a_rows 8; a_placeholder [%i18n S.communication_text]; a_name "communication_text"] (txt "");
+				Raw.textarea ~a:[a_cols 80; a_rows 8; a_placeholder [%i18n S.communication_text]; a_name "communication_text"] (txt "");
 				h3 [txt [%i18n S.evidence]];
 				ul [
 					li [Raw.input ~a:[a_input_type `File; a_class ["ot-pup-input"]; a_accept ["text/*"]] ()]
@@ -187,11 +187,25 @@ let%shared report_feedback_handler myid () () =
 		let%lwt t = Moab_users.get_user_type myid in
 		match t with
 		| Admin ->
-			let%lwt form = F.Form.lwt_post_form ~service:report_feedback_action (fun (pid, _) ->
+			let%lwt form = F.Form.lwt_post_form ~service:report_feedback_action (fun (pid, (qf, (qg, (inf, (ing, (cf, cg)))))) ->
 				let%lwt sw = Moab_students.student_select_widget (`Param pid) in
-				Lwt.return [table [tr [td [sw]]]]) () in
+				Lwt.return @@ [table ~a:[a_class ["report-feedback"]] [
+					tr [td ~a:[a_colspan 2] [sw]];
+					tr [th []; th [txt [%i18n S.quality]]];
+					tr [th [txt [%i18n S.comments]]; td [F.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:qf ()]];
+					tr [th [txt [%i18n S.grade]]; td [F.Form.input ~input_type:`Number ~name:qg F.Form.int]];
+					tr [th []; th [txt [%i18n S.independence]]];
+					tr [th [txt [%i18n S.comments]]; td [F.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:inf ()]];
+					tr [th [txt [%i18n S.grade]]; td [F.Form.input ~input_type:`Number ~name:ing F.Form.int]];
+					tr [th []; th [txt [%i18n S.communication]]];
+					tr [th [txt [%i18n S.comments]]; td [F.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:cf ()]];
+					tr [th [txt [%i18n S.grade]]; td [F.Form.input ~input_type:`Number ~name:cg F.Form.int]];
+					tr [td ~a:[a_colspan 2] [
+ 						F.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] F.Form.string
+					]]
+				]]) () in
 			Moab_container.page (Some myid) [
-				div ~a:[a_class ["context-box"]] [
+				div ~a:[a_class ["content-box"]] [
 					h1 [txt [%i18n S.report_feedback]];
 					form
 				]

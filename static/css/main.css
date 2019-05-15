@@ -190,3 +190,9 @@ tr.feedback-row td.bad
 {
 	color: red;
 }
+
+table.report-feedback th
+{
+	text-align: left;
+	vertical-align: top;
+}
