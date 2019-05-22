@@ -134,12 +134,6 @@ CREATE SCHEMA moab
 		foreign key (academic_year, presenter_id) references students(academic_year, userid)
 	)
 
-	CREATE TABLE optional_sessions (
-		session_id bigint not null references sessions(session_id),
-		learning_week smallint not null,
-		primary key (session_id, learning_week)
-	)
-
 	CREATE TABLE report_scores (
 		academic_year varchar(8) not null,
 		student_id bigint not null,
