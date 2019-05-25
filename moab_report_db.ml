@@ -28,4 +28,4 @@ let get_report_feedback ayear userid =
 	function
 	| [] -> Lwt.fail Not_found
 	| [r] -> Lwt.return r
-	| _ -> Lwt.fail (Invalid_argument "get_report_feedback found multiple instances with the same ID")
+	| _ -> Lwt.fail_with "get_report_feedback found multiple instances with the same ID"

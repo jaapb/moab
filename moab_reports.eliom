@@ -203,23 +203,57 @@ let%shared do_report_feedback myid () (sid, (qf, (qg, (inf, (ing, (cf, cg)))))) 
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared report_feedback_handler myid () () =
+	let ayear = ~%(!Moab_config.current_academic_year) in
 	try%lwt
 		let%lwt t = Moab_users.get_user_type myid in
 		match t with
 		| Admin ->
 			let%lwt form = F.Form.lwt_post_form ~service:report_feedback_action (fun (pid, (qf, (qg, (inf, (ing, (cf, cg)))))) ->
 				let%lwt sw = Moab_students.student_select_widget (`Param pid) in
+				let qf_input = D.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:qf () in
+				let qg_input = D.Form.input ~input_type:`Number ~name:qg F.Form.int in
+				let inf_input = D.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:inf () in
+				let ing_input = D.Form.input ~input_type:`Number ~name:ing F.Form.int in
+				let cf_input = D.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:cf () in
+				let cg_input = D.Form.input ~input_type:`Number ~name:cg F.Form.int in
+				ignore [%client ((Lwt.async @@ fun () ->
+					let s = Eliom_content.Html.To_dom.of_select ~%sw in
+					Lwt_js_events.changes s @@ fun _ _ ->
+					let qfi = Eliom_content.Html.To_dom.of_textarea ~%qf_input in
+					qfi##.value := Js_of_ocaml.Js.string "";
+					let qgi = Eliom_content.Html.To_dom.of_input ~%qg_input in
+					qgi##.value := Js_of_ocaml.Js.string "";
+					let infi = Eliom_content.Html.To_dom.of_textarea ~%inf_input in
+					infi##.value := Js_of_ocaml.Js.string "";
+					let ingi = Eliom_content.Html.To_dom.of_input ~%ing_input in
+					ingi##.value := Js_of_ocaml.Js.string "";
+					let cfi = Eliom_content.Html.To_dom.of_textarea ~%cf_input in
+					cfi##.value := Js_of_ocaml.Js.string "";
+					let cgi = Eliom_content.Html.To_dom.of_input ~%cg_input in
+					cgi##.value := Js_of_ocaml.Js.string "";
+					let sid = Int64.of_string (Js_of_ocaml.Js.to_string s##.value) in
+					try%lwt
+						let%lwt (qf, qg, inf, ing, cf, cg) = get_report_feedback (~%ayear, sid) in
+						qfi##.value := Js.string qf;
+						qgi##.value := Js.string (string_of_int qg);
+						infi##.value := Js.string inf;
+						ingi##.value := Js.string (string_of_int ing);
+						cfi##.value := Js.string cf;
+						cgi##.value := Js.string (string_of_int cg);
+						Lwt.return_unit
+					with Not_found -> Lwt.return_unit
+				): unit)];
 				Lwt.return @@ [table ~a:[a_class ["report-feedback"]] [
 					tr [td ~a:[a_colspan 2] [sw]];
 					tr [th []; th [txt [%i18n S.quality]]];
-					tr [th [txt [%i18n S.comments]]; td [F.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:qf ()]];
-					tr [th [txt [%i18n S.grade]]; td [F.Form.input ~input_type:`Number ~name:qg F.Form.int]];
+					tr [th [txt [%i18n S.comments]]; td [qf_input]];
+					tr [th [txt [%i18n S.grade]]; td [qg_input]];
 					tr [th []; th [txt [%i18n S.independence]]];
-					tr [th [txt [%i18n S.comments]]; td [F.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:inf ()]];
-					tr [th [txt [%i18n S.grade]]; td [F.Form.input ~input_type:`Number ~name:ing F.Form.int]];
+					tr [th [txt [%i18n S.comments]]; td [inf_input]];
+					tr [th [txt [%i18n S.grade]]; td [ing_input]];
 					tr [th []; th [txt [%i18n S.communication]]];
-					tr [th [txt [%i18n S.comments]]; td [F.Form.textarea ~a:[a_cols 80; a_rows 8] ~name:cf ()]];
-					tr [th [txt [%i18n S.grade]]; td [F.Form.input ~input_type:`Number ~name:cg F.Form.int]];
+					tr [th [txt [%i18n S.comments]]; td [cf_input]];
+					tr [th [txt [%i18n S.grade]]; td [cg_input]];
 					tr [td ~a:[a_colspan 2] [
  						F.Form.input ~a:[a_class ["button"]] ~input_type:`Submit ~value:[%i18n S.submit] F.Form.string
 					]]
