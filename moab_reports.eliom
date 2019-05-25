@@ -39,8 +39,8 @@ let%client report_feedback_action =
 
 (* Database access *)
 
-let%server set_report_feedback (ayear, gnr, qf, qg, inf, ing, cf, cg) =
-	Moab_report_db.set_report_feedback ayear gnr qf qg inf ing cf cg
+let%server set_report_feedback (ayear, sid, qf, qg, inf, ing, cf, cg) =
+	Moab_report_db.set_report_feedback ayear sid qf qg inf ing cf cg
 
 let%client set_report_feedback =
 	~%(Eliom_client.server_function [%derive.json: string * int64 * string * int * string * int * string * int]
@@ -194,8 +194,12 @@ let%shared submit_report_handler myid () () =
 	]
 
 let%shared do_report_feedback myid () (sid, (qf, (qg, (inf, (ing, (cf, cg)))))) =
-	let ayear = ~%(!Moab_config.current_academic_year) in
-	let%lwt () = set_report_feedback (ayear, sid, qf, qg, inf, ing, cf, cg) in
+	let%lwt t = Moab_users.get_user_type myid in
+	let%lwt () = match t with
+	| Admin ->
+			let ayear = ~%(!Moab_config.current_academic_year) in
+			set_report_feedback (ayear, sid, qf, qg, inf, ing, cf, cg)
+	| _ -> Lwt.return () in  	 
 	Eliom_registration.Redirection.send (Eliom_registration.Redirection Os_services.main_service)
 
 let%shared report_feedback_handler myid () () =
