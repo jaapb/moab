@@ -83,7 +83,7 @@ let%shared view_grades_handler myid () () =
 		in
 		Moab_container.page (Some myid)
 		[
-			table 
+			table ~a:[a_class ["grades-table"]]
 			(tr [th [txt [%i18n S.name]]; th [txt [%i18n S.student_id]]]::trs)
 		]
 	| _ -> Moab_container.page (Some myid) []

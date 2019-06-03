@@ -196,3 +196,8 @@ table.report-feedback th
 	text-align: left;
 	vertical-align: top;
 }
+
+table.grades-table tr:nth-child(even)
+{
+	background-color: lightgrey;
+}
