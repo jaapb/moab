@@ -30,11 +30,16 @@ let%shared view_grades_handler myid () () =
 					let%lwt pres_peer = Moab_presentations.get_average_scores (ayear, uid) >>=
 						Lwt_list.fold_left_s (fun acc (_, s) -> Lwt.return (s +. acc)) 0.0 in
 					let%lwt (_, _, _, pres_tutor, _) = Moab_presentations.get_admin_scores (ayear, uid) in
+					let pt_float = match pres_tutor with None -> 0.0 | Some t -> float_of_string t in
+					let pres_total = pres_peer +. pt_float in
+					let%lwt blogs = Moab_blogs.get_nr_blogs (uid, ayear, true) >|= (fun x -> max 0 ((Int64.to_int x) - 14)) in
 					Lwt.return @@ tr [
 						td [txt (Printf.sprintf "%s %s" fn ln)];
 						td [txt sid];
 						td [txt (Printf.sprintf "%.1f" pres_peer)];
-						td [txt (default [%i18n S.tbd] pres_tutor)]
+						td [txt (default [%i18n S.tbd] pres_tutor)];
+						td [txt (Printf.sprintf "%.1f" pres_total)];
+						td [txt (string_of_int blogs)];
 					]
 				with
 				| Not_found -> Lwt.return @@ tr [
