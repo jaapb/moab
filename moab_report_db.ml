@@ -18,3 +18,14 @@ let set_report_feedback ayear userid qc qg ic ig cc cg =
 				community_feedback = EXCLUDED.community_feedback,
 				community_grade = EXCLUDED.community_grade")
 
+let get_report_feedback ayear userid =
+	full_transaction_block (fun dbh ->
+		PGSQL(dbh)
+			"SELECT quality_feedback, quality_grade, independence_feedback, independence_grade,
+				community_feedback, community_grade \
+			FROM moab.report_scores \
+			WHERE academic_year = $ayear AND student_id = $userid") >>=
+	function
+	| [] -> Lwt.fail Not_found
+	| [r] -> Lwt.return r
+	| _ -> Lwt.fail (Invalid_argument "get_report_feedback found multiple instances with the same ID")

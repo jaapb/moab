@@ -46,6 +46,13 @@ let%client set_report_feedback =
 	~%(Eliom_client.server_function [%derive.json: string * int64 * string * int * string * int * string * int]
 		(Os_session.connected_wrapper set_report_feedback))
 
+let%server get_report_feedback (ayear, gnr) =
+	Moab_report_db.get_report_feedback ayear gnr
+
+let%client get_report_feedback =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+		(Os_session.connected_wrapper get_report_feedback))
+
 (* Utility functions *)
 
 (* Client side functions *)
