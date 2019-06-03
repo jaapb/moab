@@ -39,7 +39,8 @@ SERVER_FILES          := moab.eliom \
 	moab_attendance_db.ml moab_attendance_db.mli \
 	moab_presentations.eliom \
 	moab_presentation_db.ml moab_presentation_db.mli \
-	moab_reports.eliom
+	moab_reports.eliom \
+	moab_report_db.ml moab_report_db.mli
 
 # Source files for the client. By default, it's all eliom and eliomi files
 # in the project root directory.
