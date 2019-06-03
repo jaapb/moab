@@ -64,12 +64,12 @@ let%shared view_grades_handler myid () () =
 						td [txt sid];
 						td [txt (Printf.sprintf "%.1f" pres_peer)];
 						td [txt (default [%i18n S.tbd] pres_tutor)];
-						td [txt (Printf.sprintf "%.1f" pres_total)];
-						td [txt (string_of_int blogs)];
+						td [b [txt (Printf.sprintf "%.1f" pres_total)]];
+						td [b [txt (string_of_int blogs)]];
 						td [txt (string_of_int qg)];
 						td [txt (string_of_int ing)];
 						td [txt (string_of_int cg)];
-						td [txt (string_of_int total_report)];
+						td [b [txt (string_of_int total_report)]];
 						td [txt (Printf.sprintf "%.1f" full_total)];
 						td [b [txt (string_of_int (to_20point full_total))]]
 					]
@@ -84,7 +84,26 @@ let%shared view_grades_handler myid () () =
 		Moab_container.page (Some myid)
 		[
 			table ~a:[a_class ["grades-table"]]
-			(tr [th [txt [%i18n S.name]]; th [txt [%i18n S.student_id]]]::trs)
+			(tr [
+				th ~a:[a_colspan 2] [];
+				th ~a:[a_colspan 3] [txt [%i18n S.presentation]];
+				th [];	
+				th ~a:[a_colspan 4] [txt [%i18n S.report]];
+				th ~a:[a_colspan 2] []
+			 ]::tr [
+				th [txt [%i18n S.name]];
+				th [txt [%i18n S.student_id]];
+				th [txt [%i18n S.peer]];
+				th [txt [%i18n S.tutor]];
+				th [txt [%i18n S.total]];
+				th [txt [%i18n S.blog]];
+				th [txt [%i18n S.quality]];
+				th [txt [%i18n S.independence]];
+				th [txt [%i18n S.communication]];
+				th [txt [%i18n S.total]];
+				th [txt [%i18n S.total]];
+				th [txt [%i18n S.twenty_point]]
+			]::trs)
 		]
 	| _ -> Moab_container.page (Some myid) []
 	
