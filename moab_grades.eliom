@@ -18,24 +18,24 @@
 (* Utility functions *)
 
 let%shared to_20point f =
-	if Float.compare f 79.0 > 0 then 1
-	else if Float.compare f 76.0 > 0 then 2
-	else if Float.compare f 73.0 > 0 then 3
-	else if Float.compare f 70.0 > 0 then 4
-	else if Float.compare f 67.0 > 0 then 5
-	else if Float.compare f 65.0 > 0 then 6
-	else if Float.compare f 62.0 > 0 then 7
-	else if Float.compare f 60.0 > 0 then 8
-	else if Float.compare f 57.0 > 0 then 9
-	else if Float.compare f 55.0 > 0 then 10
-	else if Float.compare f 52.0 > 0 then 11
-	else if Float.compare f 50.0 > 0 then 12
-	else if Float.compare f 47.0 > 0 then 13
-	else if Float.compare f 45.0 > 0 then 14
-	else if Float.compare f 42.0 > 0 then 15
-	else if Float.compare f 40.0 > 0 then 16
-	else if Float.compare f 35.0 > 0 then 17
-	else if Float.compare f 30.0 > 0 then 18
+	if Float.compare f 78.5 > 0 then 1
+	else if Float.compare f 75.5 > 0 then 2
+	else if Float.compare f 72.5 > 0 then 3
+	else if Float.compare f 69.5 > 0 then 4
+	else if Float.compare f 66.5 > 0 then 5
+	else if Float.compare f 64.5 > 0 then 6
+	else if Float.compare f 61.5 > 0 then 7
+	else if Float.compare f 59.5 > 0 then 8
+	else if Float.compare f 56.5 > 0 then 9
+	else if Float.compare f 54.5 > 0 then 10
+	else if Float.compare f 51.5 > 0 then 11
+	else if Float.compare f 49.5 > 0 then 12
+	else if Float.compare f 46.5 > 0 then 13
+	else if Float.compare f 44.5 > 0 then 14
+	else if Float.compare f 41.5 > 0 then 15
+	else if Float.compare f 39.5 > 0 then 16
+	else if Float.compare f 34.5 > 0 then 17
+	else if Float.compare f 29.5 > 0 then 18
 	else 19
 
 (* Handlers *)
