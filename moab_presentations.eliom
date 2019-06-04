@@ -533,7 +533,10 @@ let%shared presentation_feedback_handler myid () () =
 	| e -> Lwt.fail e
 
 let%shared view_feedback_handler myid (opt_uid) () =
-	let uid = Moab_base.default myid opt_uid in
+	let%lwt t = Moab_users.get_user_type myid in
+	let uid = match t with
+		| Admin | Examiner -> Moab_base.default myid opt_uid
+		| Student -> myid in
 	let%lwt (fn, ln) = Moab_users.get_name uid in
 	let ayear = ~%(!Moab_config.current_academic_year) in
 	let%lwt crits = get_criteria ayear in

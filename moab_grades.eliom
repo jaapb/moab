@@ -60,7 +60,7 @@ let%shared compute_pres_total peer duration tutor =
 let%shared view_grades_handler myid () () =
 	let%lwt t = Moab_users.get_user_type myid in
 	match t with
-	| Admin -> 
+	| Admin | Examiner -> 
 		let ayear = ~%(!Moab_config.current_academic_year) in
 		let%lwt trs = Moab_students.get_students (ayear, None, Some 24) >>=
 			Lwt_list.map_p (fun uid ->
@@ -139,5 +139,10 @@ let%shared view_grades_handler myid () () =
 				th [txt [%i18n S.twenty_point]]
 			]::trs)
 		]
-	| _ -> Moab_container.page (Some myid) []
+	| _ -> Moab_container.page (Some myid) [
+			div ~a:[a_class ["content-box"]] [
+				h1 [txt [%i18n S.error ~capitalize:true]];
+       p [txt [%i18n S.not_admin_or_examiner]]
+			]]
+			
 	
