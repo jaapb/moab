@@ -285,10 +285,33 @@ let%shared view_feedback_handler myid (opt_uid) () =
 	let uid = match t with
 		| Admin | Examiner -> Moab_base.default myid opt_uid
 		| Student -> myid in
+	let%lwt (fn, ln) = Moab_users.get_name uid in
+	let ayear = ~%(!Moab_config.current_academic_year) in
+	let%lwt fb = get_report_feedback_opt (ayear, uid) in
+	let contents = match fb with
+		| None -> [p [txt [%i18n S.report_not_found]]]
+		| Some (qf, qg, inf, ing, cf, cg) -> [
+				h2 [txt [%i18n S.quality]];
+				h3 [txt [%i18n S.comments]];
+				p [txt qf];
+				p [b [txt [%i18n S.grade]]; txt " "; txt (string_of_int qg); txt " "; txt [%i18n S.out_of ~full:"10"]];
+				h2 [txt [%i18n S.independence]];
+				h3 [txt [%i18n S.comments]];
+				p [txt inf];
+				p [b [txt [%i18n S.grade]]; txt " "; txt (string_of_int ing); txt " "; txt [%i18n S.out_of ~full:"10"]];
+				h2 [txt [%i18n S.communication]];
+				h3 [txt [%i18n S.comments]];
+				p [txt cf];
+				p [b [txt [%i18n S.grade]]; txt " "; txt (string_of_int cg); txt " "; txt [%i18n S.out_of ~full:"20"]];
+				h2 [txt [%i18n S.total_grade]];
+				p [b [txt (string_of_int (qg + ing + cg))]; txt " "; txt [%i18n S.out_of ~full:"40"]]
+			]
+	in
 	Moab_container.page (Some myid) [
-		div ~a:[a_class ["content-box"]] [
-			h1 [txt (Printf.sprintf "Viewing feedback for UID %Ld" uid)]
-		]
+		div ~a:[a_class ["content-box"]] (
+			h1 [txt [%i18n S.report_feedback_for]; txt " "; txt (Printf.sprintf "%s %s" fn ln)]::
+			contents
+		)
 	]
 
 let%shared () =
