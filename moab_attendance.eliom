@@ -64,7 +64,10 @@ let%shared attendance_tr uid =
 		let%lwt (a, s) = get_week_attendance (uid, ayear, t, week_nr) in
 		let att_class = 
 			match lw with
-			| None -> []
+			| None -> 
+				if a = s then ["dt-good"]
+				else if a = 0 then ["dt-bad"]
+				else ["dt-warning"]
 			| Some learning_week ->
 				if week_nr > learning_week then []
 				else if week_nr < jw then []

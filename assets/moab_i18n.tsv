@@ -230,3 +230,8 @@ report_feedback_for	Report feedback for	Commentaire sur le report de
 out_of	out of {{full}}	sur {{full}}
 total_grade	Total grade	Note totale
 total_grade_message1	This does include the penalty for short duration (if any).	Cette note comprend une déduction (si il y en a uen) pour une durée trop courte.
+dashboard_grade_message1	Feedback for your presentation and report is available through the menu on the top left.	Les commentaires sur votre présentation et votre rapport sont disponibles à travers le menu en haut sur la gauche.
+presentation_grade	Presentation grade	Note pour la présentation
+blog_grade	Blog grade	Note pour les blogs
+report_grade	Report grade	Note pour le rapport
+grades	Grades	Notes

@@ -282,3 +282,8 @@ table.grades-table tr:nth-child(even) td.blog
 	background-color: cyan;
 }
 
+table.dashboard-grade-table th
+{
+	text-align: left;
+}
+

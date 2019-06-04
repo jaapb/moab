@@ -4,6 +4,7 @@
 [%%shared
   open Eliom_content.Html.F
 	open CalendarLib
+	open Lwt.Infix
 ]
 
 (* Set personal data *)
@@ -188,6 +189,20 @@ let%shared student_dashboard myid =
 		td [b [txt [%i18n S.given_feedback]]];
 		td ~a:[a_class [if perc < 75L then "bad" else "good"]; a_colspan 25] [txt (Printf.sprintf "%Ld%%" perc)]
 	] in
+	let%lwt pres_peer = Moab_presentations.get_average_scores_opt (ayear, myid) >>=
+	function
+		| None -> Lwt.return_none
+		| Some s -> Lwt_list.fold_left_s (fun acc (_, s) -> Lwt.return (s +. acc)) 0.0 s >>= Lwt.return_some in
+	let%lwt (_, duration, _, pres_tutor, _) = Moab_presentations.get_admin_scores (ayear, myid) in
+	let pres_total = Moab_base.compute_pres_total pres_peer duration pres_tutor in
+	let%lwt blogs = Moab_blogs.get_nr_blogs (myid, ayear, true) >|= (fun x -> max 0 ((Int64.to_int x) - 14)) in
+	let%lwt feedback = Moab_reports.get_report_feedback_opt (ayear, myid) in
+	let total_report = match feedback with
+		| None -> None
+		| Some (_, q, _, i, _, g) -> Some (q + i + g) in
+	let full_total = match pres_total, total_report with
+		| None, _ | _, None -> None
+		| Some p, Some r -> Some (p +. (float_of_int blogs) +. (float_of_int r)) in
 	Lwt.return [div ~a:[a_class ["content-box"]] [
 		h1 [txt [%i18n S.dashboard]];
 		p (match lfw with
@@ -228,7 +243,19 @@ let%shared student_dashboard myid =
 			blog_row;
 			feedback_row
 		];
-		pres_row
+		pres_row;
+		h2 [txt [%i18n S.grades]];
+		p [txt [%i18n S.dashboard_grade_message1]];
+		table ~a:[a_class ["dashboard-grade-table"]] [
+			tr [th [txt [%i18n S.presentation_grade]]; td [txt (match pres_total with None -> "--" | Some x -> Printf.sprintf "%.1f" x)]];
+			tr [th [txt [%i18n S.blog_grade]]; td [txt (string_of_int blogs)]];
+			tr [th [txt [%i18n S.report_grade]]; td [txt (match total_report with None -> "--" | Some x -> string_of_int x)]];
+			tr [th [txt [%i18n S.total]]; td [txt (match full_total with None -> "--" | Some x -> Printf.sprintf "%.1f" x)]];
+			tr [th [txt [%i18n S.twenty_point]]; 
+				let (g, c) = Moab_base.to_20point full_total in
+				td [txt (string_of_int g); txt " ("; txt c; txt ")"]	
+			]
+		]
 	]]
 
 let%shared examiner_dashboard () =

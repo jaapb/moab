@@ -102,7 +102,12 @@ let%shared blog_tr uid =
 		let%lwt x = get_blog_opt (uid, ayear, week_nr) in
 		let att_class = 
 			match lw with
-			| None -> []
+			| None -> begin
+					match x with
+					| Some (_, _, Some true) -> ["dt-good"]
+					| Some (_, _, None) -> ["dt-warning"]
+					| _ -> ["dt-bad"]
+				end
 			| Some learning_week ->
 				if week_nr > learning_week then []
 				else if week_nr < jw then []
