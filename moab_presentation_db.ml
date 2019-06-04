@@ -128,11 +128,13 @@ let get_average_scores ayear presenter_id =
 			AND presenter_id = $presenter_id \
 			GROUP BY criterion_id, presenter_id \
 			ORDER BY criterion_id") >>=
-	Lwt_list.map_s (fun (id, avg) ->
-		match avg with
-		| None -> Lwt.return (id, 0.0)
-		| Some a -> Lwt.return (id, a)
-	)
+	function
+	| [] -> Lwt.fail Not_found
+	| l -> Lwt_list.map_s (fun (id, avg) ->
+					match avg with
+					| None -> Lwt.return (id, 0.0)
+					| Some a -> Lwt.return (id, a)
+				) l
 
 let get_comments ayear presenter_id =
 	full_transaction_block (fun dbh ->

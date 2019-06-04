@@ -113,6 +113,17 @@ let%client get_average_scores =
 	~%(Eliom_client.server_function [%derive.json: string * int64]
 			(Os_session.connected_wrapper get_average_scores))
 
+let%server get_average_scores_opt (ayear, presenter_id) =
+	try%lwt
+		let%lwt x = get_average_scores (ayear, presenter_id) in
+		Lwt.return_some x
+	with
+		Not_found -> Lwt.return_none
+
+let%client get_average_scores_opt =
+	~%(Eliom_client.server_function [%derive.json: string * int64]
+			(Os_session.connected_wrapper get_average_scores_opt))
+
 let%server get_comments (ayear, presenter_id) =
 	Moab_presentation_db.get_comments ayear presenter_id
 

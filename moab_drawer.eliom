@@ -29,6 +29,7 @@ let%shared admin_menu () =
 		)]
 	; item [%i18n S.give_presentation_feedback] ~%Moab_services.presentation_feedback_service
 	; item [%i18n S.give_report_feedback] ~%Moab_services.report_feedback_service
+	;	item [%i18n S.view_grades] ~%Moab_services.view_grades_service
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]
@@ -39,6 +40,7 @@ let%shared admin_menu () =
 let%shared examiner_menu () =
   Lwt.return @@
 	[ item [%i18n S.settings ~capitalize:true] Moab_services.settings_service
+	;	item [%i18n S.view_grades] ~%Moab_services.view_grades_service
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]
