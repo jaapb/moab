@@ -222,10 +222,11 @@ blog	Blog	Blog
 twenty_point	20-point grade	Note universitaire
 view_grades	View grades	Voir les notes
 final_tutor_grade	Final tutor grade	Note finale du tuteur
-does_not_include_penalty	(does not include a possible penalty for short duration)	(ne comprend pas une déduction éventuelle pour une durée trop courte)
+does_not_include_penalty	does not include a possible penalty for short duration	ne comprend pas une déduction éventuelle pour une durée trop courte
 not_admin_or_examiner	You are not an admin or an examiner.	Vous n'êtes pas administrateur ou examinateur.
 grades_explanation	In order to see feedback, please click on the total grades for presentation and report.	Pour voir les évaluation, veuillez cliquer sur les notes totales pour la présentation et le rapport.
 report_not_found	Report could not be found. Either you have not submitted it, or it has not been marked.	Le rapport n'a pas pu être trouvé. Soit vous ne l'avez pas soumis, soit il n'a pas été noté.
 report_feedback_for	Report feedback for	Commentaire sur le report de
 out_of	out of {{full}}	sur {{full}}
 total_grade	Total grade	Note totale
+total_grade_message1	This does include the penalty for short duration (if any).	Cette note comprend une déduction (si il y en a uen) pour une durée trop courte.

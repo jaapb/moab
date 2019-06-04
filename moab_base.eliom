@@ -123,3 +123,42 @@ let seq_loop_pick evh ?(cancel_handler = false) ?use_capture targets handler =
   in
   Lwt.async (catch_cancel aux);
   lt
+
+let%shared to_20point percent_grade =
+	match percent_grade with
+	| None -> (20, "fail")
+	| Some f -> 
+		if Float.compare f 78.5 >= 0 then (1, "first")
+		else if Float.compare f 75.5 >= 0 then (2, "first")
+		else if Float.compare f 72.5 >= 0 then (3, "first")
+		else if Float.compare f 69.5 >= 0 then (4, "first")
+		else if Float.compare f 66.5 >= 0 then (5, "upper-second")
+		else if Float.compare f 64.5 >= 0 then (6, "upper-second")
+		else if Float.compare f 61.5 >= 0 then (7, "upper-second")
+		else if Float.compare f 59.5 >= 0 then (8, "upper-second")
+		else if Float.compare f 56.5 >= 0 then (9, "lower-second")
+		else if Float.compare f 54.5 >= 0 then (10, "lower-second")
+		else if Float.compare f 51.5 >= 0 then (11, "lower-second")
+		else if Float.compare f 49.5 >= 0 then (12, "lower-second")
+		else if Float.compare f 46.5 >= 0 then (13, "third")
+		else if Float.compare f 44.5 >= 0 then (14, "third")
+		else if Float.compare f 41.5 >= 0 then (15, "third")
+		else if Float.compare f 39.5 >= 0 then (16, "third")
+		else if Float.compare f 34.5 >= 0 then (17, "fail")
+		else if Float.compare f 29.5 >= 0 then (18, "fail")
+		else (19, "fail")
+
+let%shared compute_pres_total peer duration tutor =
+	let duration_factor =
+		if duration >= 25 then 1.0
+		else if duration >= 20 then 0.9
+		else if duration >= 15 then 0.8
+		else if duration >= 10 then 0.7
+		else if duration >= 5 then 0.6
+		else 0.5 in
+	match peer, tutor with
+	| None, None -> None
+	| Some p, None -> Some p
+	| None, Some t -> Some (duration_factor *. (float_of_string t))
+	| Some p, Some t -> Some (p +. (duration_factor *. (float_of_string t)))
+

@@ -549,24 +549,25 @@ let%shared view_feedback_handler myid (opt_uid) () =
 				(tr [td [txt (Printf.sprintf "%Ld" crit_id)]; td [txt n]; td [txt (Printf.sprintf "%.1f" score)]]::cacc,
 				score +. tacc)
 		) ([], 0.0) crits in
-		let%lwt tutor_marks = try%lwt
+		let%lwt (tutor_marks, total_mark) = try%lwt
 			let%lwt (topic, duration, pgrade, fgrade, comments) = get_admin_scores (ayear, uid) in
-			Lwt.return @@ table ~a:[a_class ["tutor-marks"]] [
+			let table = table ~a:[a_class ["tutor-marks"]] [
 				tr [th [txt [%i18n S.topic]]; td [txt topic]];
 				tr [th [txt [%i18n S.duration]]; td [txt (Printf.sprintf "%d" duration); txt " "; txt "minutes"]];
 				tr [th [txt [%i18n S.putative_grade]]; td [txt pgrade]];
 				tr [th [txt [%i18n S.final_tutor_grade]];
-					td [txt (default [%i18n S.tbd] fgrade); txt " "; txt [%i18n S.does_not_include_penalty]]];
+					td [txt (default [%i18n S.tbd] fgrade); txt " "; txt [%i18n S.out_of ~full:"25"]; txt "; "; txt [%i18n S.does_not_include_penalty]]];
 				tr [th  [txt [%i18n S.tutor_comments]]; td [pre [txt comments]]]
-			]
-		with Not_found -> Lwt.return @@
-			p [txt [%i18n S.tutor_marks_not_entered]] in
+			] in
+			Lwt.return (table, Moab_base.compute_pres_total (Some total) duration fgrade)
+		with Not_found -> Lwt.return 
+			(p [txt [%i18n S.tutor_marks_not_entered]], None)  in
 		Moab_container.page (Some myid) [
 			div ~a:[a_class ["content-box"]] [
 				h1 [txt [%i18n S.presentation_feedback_for]; txt " "; txt (Printf.sprintf "%s %s" fn ln)];
 				h2 [txt [%i18n S.peer_marks]];
 				p [i [txt [%i18n S.peer_marks_message]]];
-				table (List.rev (tr [td [b [txt [%i18n S.total]]]; td [b [txt (Printf.sprintf "%.1f" total)]]]::crit_trs));
+				table (List.rev (tr [td [b [txt [%i18n S.total]]]; td [b [txt (Printf.sprintf "%.1f" total); txt " "; txt [%i18n S.out_of ~full:"25"]]]]::crit_trs));
 				h2 [txt [%i18n S.remarks]];
 				p [i [txt [%i18n S.remarks_message1]]];
 				p [i [txt [%i18n S.remarks_message2]]];
@@ -576,7 +577,10 @@ let%shared view_feedback_handler myid (opt_uid) () =
 				h2 [txt [%i18n S.tutor_mark]];
 				p [i [txt [%i18n S.tutor_mark_message1]]];
 				p [i [txt [%i18n S.tutor_mark_message2]]];
-				tutor_marks
+				tutor_marks;
+				h2 [txt [%i18n S.total_grade]];
+				p [i [txt [%i18n S.total_grade_message1]]];
+				p [b [txt (match total_mark with None -> [%i18n S.tbd] | Some m -> Printf.sprintf "%.1f" m)]; txt " "; txt [%i18n S.out_of ~full:"50"]]
 			]
 		]
 	with
