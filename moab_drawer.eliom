@@ -55,7 +55,7 @@ let%shared student_menu () =
 	; item [%i18n S.schedule_presentation] Moab_services.schedule_presentation_service
 	(* ; item [%i18n S.submit_report_or_draft] Moab_services.submit_report_service *)
 	; item [%i18n S.give_presentation_feedback] Moab_services.presentation_feedback_service
-	; li [a ~a:[a_class ["os-drawer-item"]] ~service:Moab_services.view_feedback_service [txt [%i18n S.view_presentation_feedback]] None]
+	; li [a ~a:[a_class ["os-drawer-item"]] ~service:Moab_services.view_presentation_feedback_service [txt [%i18n S.view_presentation_feedback]] None]
   ; Eliom_content.Html.F.li
       [ Os_user_view.disconnect_link
           ~text_logout:[%i18n S.logout ~capitalize:true]

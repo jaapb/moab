@@ -110,10 +110,10 @@ let%server presentation_feedback_service =
 		~meth:(Get unit)
 		()
 
-let%server view_feedback_service =
+let%server view_presentation_feedback_service =
 	create
-		~name:"view_feedback"
-		~path:(Path ["view-feedback"])
+		~name:"view_presentation_feedback"
+		~path:(Path ["view-presentation-feedback"])
 		~meth:(Get (suffix (opt (int64 "uid"))))
 		()
 
@@ -176,8 +176,8 @@ let%client submit_report_service =
 let%client presentation_feedback_service =
 	~%presentation_feedback_service
 
-let%client view_feedback_service =
-	~%view_feedback_service
+let%client view_presentation_feedback_service =
+	~%view_presentation_feedback_service
 
 let%client view_grades_service =
 	~%view_grades_service

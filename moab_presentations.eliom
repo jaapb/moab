@@ -499,7 +499,7 @@ let%shared presentation_feedback_handler myid () () =
 							tr [td [txt [%i18n S.topic]]; td ~a:[a_colspan 7] [topic_input]];
 							tr [td [txt [%i18n S.duration]]; td ~a:[a_colspan 7] [duration_input]];
 							tr [td [txt [%i18n S.putative_grade]]; td ~a:[a_colspan 7] [pgrade_input]];
-							tr [td [txt [%i18n S.final_grade]]; td ~a:[a_colspan 7] [fgrade_input]];
+							tr [td [txt [%i18n S.final_tutor_grade]]; td ~a:[a_colspan 7] [fgrade_input]];
 							tr [td ~a:[a_colspan 8] [txt [%i18n S.tutor_comments]]];
 							tr [td ~a:[a_colspan 8] [comments_ta]]
 						]
@@ -552,8 +552,8 @@ let%shared view_feedback_handler myid (opt_uid) () =
 				tr [th [txt [%i18n S.topic]]; td [txt topic]];
 				tr [th [txt [%i18n S.duration]]; td [txt (Printf.sprintf "%d" duration); txt " "; txt "minutes"]];
 				tr [th [txt [%i18n S.putative_grade]]; td [txt pgrade]];
-				tr [th [txt [%i18n S.final_grade]];
-					td [txt (default [%i18n S.tbd] fgrade)]];
+				tr [th [txt [%i18n S.final_tutor_grade]];
+					td [txt (default [%i18n S.tbd] fgrade); txt " "; txt [%i18n S.does_not_include_penalty]]];
 				tr [th  [txt [%i18n S.tutor_comments]]; td [pre [txt comments]]]
 			]
 		with Not_found -> Lwt.return @@

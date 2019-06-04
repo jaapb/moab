@@ -231,7 +231,7 @@ val presentation_feedback_service :
     Eliom_service.non_ocaml
   ) Eliom_service.t
 
-val view_feedback_service :
+val view_presentation_feedback_service :
   (
     int64 option,
     unit,

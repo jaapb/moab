@@ -41,6 +41,20 @@ let%shared to_20point percent_grade =
 		else if Float.compare f 29.5 >= 0 then (18, "fail")
 		else (19, "fail")
 
+let%shared compute_pres_total peer duration tutor =
+	let duration_factor =
+		if duration >= 25 then 1.0
+		else if duration >= 20 then 0.9
+		else if duration >= 15 then 0.8
+		else if duration >= 10 then 0.7
+		else if duration >= 5 then 0.6
+		else 0.5 in
+	match peer, tutor with
+	| None, None -> None
+	| Some p, None -> Some p
+	| None, Some t -> Some (duration_factor *. (float_of_string t))
+	| Some p, Some t -> Some (p +. (duration_factor *. (float_of_string t)))
+
 (* Handlers *)
 
 let%shared view_grades_handler myid () () =
@@ -57,10 +71,8 @@ let%shared view_grades_handler myid () () =
 						function
 						| None -> Lwt.return_none
 						| Some s -> Lwt_list.fold_left_s (fun acc (_, s) -> Lwt.return (s +. acc)) 0.0 s >>= Lwt.return_some in
-					let%lwt (_, _, _, pres_tutor, _) = Moab_presentations.get_admin_scores (ayear, uid) in
-					let pres_total = match pres_peer, pres_tutor with
-						| None, _ | _, None -> None
-						| Some p, Some t -> Some (p +. float_of_string t) in
+					let%lwt (_, duration, _, pres_tutor, _) = Moab_presentations.get_admin_scores (ayear, uid) in
+					let pres_total = compute_pres_total pres_peer duration pres_tutor in
 					let%lwt blogs = Moab_blogs.get_nr_blogs (uid, ayear, true) >|= (fun x -> max 0 ((Int64.to_int x) - 14)) in
 					let%lwt feedback = Moab_reports.get_report_feedback_opt (ayear, uid) in
 					let total_report = match feedback with
@@ -72,20 +84,25 @@ let%shared view_grades_handler myid () () =
 					Lwt.return @@ tr ([
 						td [txt (Printf.sprintf "%s %s" fn ln)];
 						td [txt sid];
-						td ~a:[a_class ["presentation"]] [txt (match pres_peer with None -> [%i18n S.tbd] | Some p -> Printf.sprintf "%.1f" p)];
-						td ~a:[a_class ["presentation"]] [txt (default [%i18n S.tbd] pres_tutor)];
-						td ~a:[a_class ["presentation"]] [b [txt (match pres_total with None -> [%i18n S.tbd] | Some t -> Printf.sprintf "%.1f" t)]];
+						td ~a:[a_class ["presentation"]] [txt (match pres_peer with None -> "--" | Some p -> Printf.sprintf "%.1f" p)];
+						td ~a:[a_class ["presentation"]] [txt (default "--" pres_tutor)];
+						td ~a:[a_class ["presentation"]] [txt (string_of_int duration)];
+						td ~a:[a_class ["presentation"]]
+							[b [a ~service:Moab_services.view_presentation_feedback_service
+								[txt (match pres_total with None -> "--" | Some t -> Printf.sprintf "%.1f" t)]
+								(Some uid)
+							]];
 						td ~a:[a_class ["blog"]]  [b [txt (string_of_int blogs)]]
 					] @
 					(match feedback with
-					| None -> [td ~a:[a_colspan 3; a_class ["report"]] [txt [%i18n S.tbd]]]
+					| None -> [td ~a:[a_colspan 3; a_class ["report"]] [txt "--"]]
 					| Some (_, qg, _, ing, _, cg) -> [
 							td ~a:[a_class ["report"]] [txt (string_of_int qg)];
 							td ~a:[a_class ["report"]] [txt (string_of_int ing)];
 							td ~a:[a_class ["report"]] [txt (string_of_int cg)]
 					]) @ [
-						td ~a:[a_class ["report"]] [b [txt (match total_report with None -> [%i18n S.tbd] | Some t -> string_of_int t)]];
-						td [txt (match full_total with None -> [%i18n S.tbd] | Some t -> Printf.sprintf "%.1f" t)];
+						td ~a:[a_class ["report"]] [b [txt (match total_report with None -> "--" | Some t -> string_of_int t)]];
+						td [txt (match full_total with None -> "--" | Some t -> Printf.sprintf "%.1f" t)];
 						let (g, c) = to_20point full_total in
 							td ~a:[a_class [c]] [b [txt (string_of_int g)]]
 					])
@@ -93,7 +110,7 @@ let%shared view_grades_handler myid () () =
 				| Not_found -> Lwt.return @@ tr [
 						td [txt (Printf.sprintf "%s %s" fn ln)];
 						td [txt sid];
-						td ~a:[a_colspan 10] [txt [%i18n S.results_not_found]]
+						td ~a:[a_colspan 11] [txt [%i18n S.results_not_found]]
 					]
 			)
 		in
@@ -102,7 +119,7 @@ let%shared view_grades_handler myid () () =
 			table ~a:[a_class ["grades-table"]]
 			(tr [
 				th ~a:[a_colspan 2] [];
-				th ~a:[a_colspan 3; a_class ["presentation"]] [txt [%i18n S.presentation]];
+				th ~a:[a_colspan 4; a_class ["presentation"]] [txt [%i18n S.presentation]];
 				th [];	
 				th ~a:[a_colspan 4; a_class ["report"]] [txt [%i18n S.report]];
 				th ~a:[a_colspan 2] []
@@ -111,6 +128,7 @@ let%shared view_grades_handler myid () () =
 				th [txt [%i18n S.student_id]];
 				th ~a:[a_class ["presentation"]] [txt [%i18n S.peer]];
 				th ~a:[a_class ["presentation"]] [txt [%i18n S.tutor]];
+				th ~a:[a_class ["presentation"]] [txt [%i18n S.duration]];
 				th ~a:[a_class ["presentation"]] [txt [%i18n S.total]];
 				th ~a:[a_class ["blog"]] [txt [%i18n S.blog]];
 				th ~a:[a_class ["report"]] [txt [%i18n S.quality]];
