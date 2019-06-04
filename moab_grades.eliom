@@ -87,11 +87,12 @@ let%shared view_grades_handler myid () () =
 						td ~a:[a_class ["presentation"]] [txt (match pres_peer with None -> "--" | Some p -> Printf.sprintf "%.1f" p)];
 						td ~a:[a_class ["presentation"]] [txt (default "--" pres_tutor)];
 						td ~a:[a_class ["presentation"]] [txt (string_of_int duration)];
-						td ~a:[a_class ["presentation"]]
-							[b [a ~service:Moab_services.view_presentation_feedback_service
-								[txt (match pres_total with None -> "--" | Some t -> Printf.sprintf "%.1f" t)]
-								(Some uid)
-							]];
+						td ~a:[a_class ["presentation"]] [b [match pres_total with
+							| None -> txt "--"
+							| Some t -> a ~service:Moab_services.view_presentation_feedback_service
+									[txt (Printf.sprintf "%.1f" t)]
+									(Some uid)
+						]];
 						td ~a:[a_class ["blog"]]  [b [txt (string_of_int blogs)]]
 					] @
 					(match feedback with
@@ -101,7 +102,12 @@ let%shared view_grades_handler myid () () =
 							td ~a:[a_class ["report"]] [txt (string_of_int ing)];
 							td ~a:[a_class ["report"]] [txt (string_of_int cg)]
 					]) @ [
-						td ~a:[a_class ["report"]] [b [txt (match total_report with None -> "--" | Some t -> string_of_int t)]];
+						td ~a:[a_class ["report"]] [b [match total_report with
+							| None -> txt "--"
+							| Some t -> a ~service:Moab_services.view_report_feedback_service
+									[txt (string_of_int t)]
+									(Some uid)
+						]];	
 						td [txt (match full_total with None -> "--" | Some t -> Printf.sprintf "%.1f" t)];
 						let (g, c) = to_20point full_total in
 							td ~a:[a_class [c]] [b [txt (string_of_int g)]]
@@ -116,6 +122,7 @@ let%shared view_grades_handler myid () () =
 		in
 		Moab_container.page (Some myid)
 		[
+			p [txt [%i18n S.grades_explanation]];
 			table ~a:[a_class ["grades-table"]]
 			(tr [
 				th ~a:[a_colspan 2] [];

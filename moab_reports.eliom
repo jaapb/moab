@@ -280,6 +280,17 @@ let%shared report_feedback_handler myid () () =
 	| Failure x -> Moab_container.page (Some myid) [p [txt x]]
 	| e -> Lwt.fail e
 
+let%shared view_feedback_handler myid (opt_uid) () =
+	let%lwt t = Moab_users.get_user_type myid in
+	let uid = match t with
+		| Admin | Examiner -> Moab_base.default myid opt_uid
+		| Student -> myid in
+	Moab_container.page (Some myid) [
+		div ~a:[a_class ["content-box"]] [
+			h1 [txt (Printf.sprintf "Viewing feedback for UID %Ld" uid)]
+		]
+	]
+
 let%shared () =
 	Eliom_registration.Any.register ~service:report_feedback_action
 		(Os_session.connected_fun do_report_feedback);

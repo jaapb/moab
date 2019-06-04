@@ -224,3 +224,4 @@ view_grades	View grades	Voir les notes
 final_tutor_grade	Final tutor grade	Note finale du tuteur
 does_not_include_penalty	(does not include a possible penalty for short duration)	(ne comprend pas une déduction éventuelle pour une durée trop courte)
 not_admin_or_examiner	You are not an admin or an examiner.	Vous n'êtes pas administrateur ou examinateur.
+grades_explanation	In order to see feedback, please click on the total grades for presentation and report.	Pour voir les évaluation, veuillez cliquer sur les notes totales pour la présentation et le rapport.
