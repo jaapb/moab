@@ -260,7 +260,8 @@ let%shared student_dashboard myid =
 
 let%shared examiner_dashboard () =
 	Lwt.return [div ~a:[a_class ["content-box"]] [
-		h1 [txt [%i18n S.dashboard]]	
+		h1 [txt [%i18n S.dashboard]];
+		p [txt [%i18n S.examiner_message1]]
 	]]
 
 let%shared main_service_handler myid_o () () =
