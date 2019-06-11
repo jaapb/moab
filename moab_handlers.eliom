@@ -195,7 +195,11 @@ let%shared student_dashboard myid =
 		| Some s -> Lwt_list.fold_left_s (fun acc (_, s) -> Lwt.return (s +. acc)) 0.0 s >>= Lwt.return_some in
 	let%lwt (_, duration, _, pres_tutor, _) = Moab_presentations.get_admin_scores (ayear, myid) in
 	let pres_total = Moab_base.compute_pres_total pres_peer duration pres_tutor in
-	let%lwt blogs = Moab_blogs.get_nr_blogs (myid, ayear, true) >|= (fun x -> max 0 ((Int64.to_int x) - 14)) in
+  let%lwt (jw, lw) = Moab_students.get_active_period (ayear, myid) in
+  let weeks = match lw with
+  | None -> 25 - jw
+  | Some l -> l - jw + 1 in
+	let%lwt blogs = Moab_blogs.get_nr_blogs (myid, ayear, true) >|= (fun x -> max 0 ((Int64.to_int x) - (weeks - 10))) in
 	let%lwt feedback = Moab_reports.get_report_feedback_opt (ayear, myid) in
 	let total_report = match feedback with
 		| None -> None

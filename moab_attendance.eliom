@@ -90,7 +90,7 @@ let%shared attendance_report () =
 	let ayear = !(~%Moab_config.current_academic_year) in
 	let%lwt x = Moab_terms.learning_week_of_date ayear (Date.today ()) in
 	let lw = match x with
-	| None -> 0 
+	| None -> 24
 	| Some l -> l in
 	let%lwt l = get_attendance_list (ayear, lw) in
 	let%lwt att_list = Lwt_list.map_s (fun (uid, pos, att) ->
