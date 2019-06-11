@@ -26,6 +26,9 @@ let%shared view_grades_handler myid () () =
 			Lwt_list.map_p (fun uid ->
 				let%lwt (fn, ln) = Moab_users.get_name uid in
 				let%lwt sid = Moab_students.get_student_id uid in
+				Lwt.return (uid, fn, ln, sid)) >>=
+			fun l -> Lwt.return @@ List.sort (fun (_, _, _, s1) (_, _, _, s2) -> compare s1 s2) l >>=
+			Lwt_list.map_p (fun (uid, fn, ln, sid) ->
 				try%lwt
 					let%lwt pres_peer = Moab_presentations.get_average_scores_opt (ayear, uid) >>=
 						function
