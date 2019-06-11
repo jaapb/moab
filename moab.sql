@@ -80,7 +80,8 @@ CREATE SCHEMA moab
 	CREATE TABLE optional_sessions (
 		session_id bigint not null,
 		learning_week smallint not null,
-		primary key (session_id, learning_week)
+		primary key (session_id, learning_week),
+		foreign key (session_id) references sessions(session_id)
 	)	
 
 	CREATE TABLE attendance (
